@@ -1,2 +1,6 @@
 **/*.rs.bk
 **/target
+**/.gradle
+**/.idea
+**/build
+
