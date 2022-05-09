@@ -1,24 +1,23 @@
-name: PR Build Check
+name: Protobuf
 
 on:
   pull_request:
+  push:
+    branches: [ main ]
+
 jobs:
-  editorconfig-checker:
-    name: Check editorconfig
-    runs-on: ubuntu-latest
-    steps:
-      - uses: editorconfig-checker/action-editorconfig-checker@v1
-  proto-format-check:
-    name: Check Protobuf Style
+  style:
+    name: Style
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - uses: bufbuild/buf-setup-action@v1.3.1
+      - uses: bufbuild/buf-setup-action@v1.4.0
       - run: buf format --diff --exit-code
-  proto:
-    name: Check Protobuf
+
+  check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -29,10 +28,3 @@ jobs:
       - uses: bufbuild/buf-lint-action@v1
       - name: Compile protobuf
         run: buf generate
-  yamllint:
-    name: Lint YAML files
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run yamllint
-        run: yamllint .

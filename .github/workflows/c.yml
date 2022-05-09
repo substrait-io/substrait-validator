@@ -1,4 +1,4 @@
-name: Validator (C)
+name: C
 
 on:
   pull_request:
@@ -6,7 +6,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test-linux:
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -23,3 +24,13 @@ jobs:
         run: cmake --build build
       - name: Test
         run: ctest --output-on-failure --test-dir build
+
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jidicula/clang-format-action@v4.5.0
+        with:
+          clang-format-version: '13'
+          check-path: c
