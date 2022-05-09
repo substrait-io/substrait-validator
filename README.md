@@ -1,5 +1,5 @@
-Validator
-=========
+Substrait validator
+===================
 
 This repository contains a validator for
 [Substrait](https://github.com/substrait-io/substrait) plans. It's written in
