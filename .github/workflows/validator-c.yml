@@ -10,13 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
       - name: Configure
-        run: mkdir -p build && cd build && cmake ../validator/c -DSUBSTRAIT_VALIDATOR_BUILD_TESTS=ON
+        run: mkdir -p build && cd build && cmake ../c -DSUBSTRAIT_VALIDATOR_BUILD_TESTS=ON
       - name: Build
         run: cmake --build build
       - name: Test

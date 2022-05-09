@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -27,6 +29,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -41,13 +45,15 @@ jobs:
         # No need to run validation tests for all operating systems, and Linux
         # runners are the fastest of the bunch.
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        working-directory: validator/tests
+        working-directory: tests
         run: python3 runner.py run --no-html
 
   style:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -62,6 +68,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -78,6 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
