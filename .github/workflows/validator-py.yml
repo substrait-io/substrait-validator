@@ -18,6 +18,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: Install sdist-only dependencies
       if: ${{ matrix.type == 'sdist' }}
       uses: actions-rs/toolchain@v1
@@ -27,7 +29,7 @@ jobs:
         override: true
     - name: sdist-only build prep
       if: ${{ matrix.type == 'sdist' }}
-      working-directory: validator/rs
+      working-directory: rs
       run: cargo check
       # ^ this ensures that its build.rs is run, which is all we need. Sadly
       # there doesn't seem to be a way to do this that doesn't pull in all
@@ -35,33 +37,33 @@ jobs:
     - name: Install build dependencies
       run: python3 -m pip install --upgrade pip maturin
     - name: Prepare build environment
-      working-directory: validator/py
+      working-directory: py
       run: python3 prepare_build.py populate
     - name: Create sdist
       if: ${{ matrix.type == 'sdist' }}
       uses: messense/maturin-action@v1
       with:
         command: sdist
-        args: -o dist -m validator/py/Cargo.toml
+        args: -o dist -m py/Cargo.toml
     - name: Build manylinux wheels
       if: ${{ matrix.type == 'wheel' && matrix.os == 'ubuntu-latest' }}
       uses: messense/maturin-action@v1
       with:
         manylinux: auto
         command: build
-        args: --release --no-sdist -o dist -m validator/py/Cargo.toml
+        args: --release --no-sdist -o dist -m py/Cargo.toml
     - name: Build Windows wheels
       if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
       uses: messense/maturin-action@v1
       with:
         command: build
-        args: --release --no-sdist -o dist -m validator/py/Cargo.toml
+        args: --release --no-sdist -o dist -m py/Cargo.toml
     - name: Build MacOS wheels
       if: ${{ matrix.type == 'wheel' && matrix.os == 'macos-latest' }}
       uses: messense/maturin-action@v1
       with:
         command: build
-        args: --release --no-sdist -o dist --universal2 -m validator/py/Cargo.toml
+        args: --release --no-sdist -o dist --universal2 -m py/Cargo.toml
     - name: Install runtime dependencies
       run: python3 -m pip install --upgrade protobuf pytest click pyyaml git+https://github.com/saulpw/jsom.git@d41b2b4
     - name: Install generated sdist
@@ -71,7 +73,7 @@ jobs:
       if: ${{ matrix.type == 'wheel' }}
       run: python3 -m pip install --no-index --find-links=dist substrait-validator
     - name: Test
-      working-directory: validator/py/tests
+      working-directory: py/tests
       run: python3 -m pytest
     - name: Upload wheels
       if: "startsWith(github.ref, 'refs/tags/')"

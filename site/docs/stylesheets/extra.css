@@ -1,6 +1,0 @@
-img.bordered {
-    height: auto;
-    width: auto;
-    border: 1px solid #9f9f9f;
-    transition: transform ease-in-out 0.3s;
-}

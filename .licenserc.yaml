@@ -4,6 +4,5 @@ header:
 
   paths:
     - 'proto/substrait/**'
-    - 'proto/validator/**'
 
   comment: never
