@@ -6,8 +6,8 @@
 
 use crate::output::diagnostic;
 use crate::output::extension;
-use crate::string_util;
-use crate::string_util::Describe;
+use crate::util;
+use crate::util::string::Describe;
 use std::collections::HashSet;
 use std::fmt::Write;
 use std::sync::Arc;
@@ -37,7 +37,7 @@ impl Describe for DataType {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        limit: string_util::Limit,
+        limit: util::string::Limit,
     ) -> std::fmt::Result {
         let mut name = String::new();
         write!(&mut name, "{}", self.class)?;
@@ -51,7 +51,7 @@ impl Describe for DataType {
         let (_, limit) = limit.split(name.len());
         if self.class.has_parameters() {
             write!(f, "<")?;
-            string_util::describe_sequence(
+            util::string::describe_sequence(
                 f,
                 &self.parameters,
                 limit,
@@ -473,7 +473,7 @@ pub trait ParameterInfo {
 }
 
 /// Type class.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Class {
     /// Well-known simple type.
     Simple(Simple),
@@ -556,7 +556,7 @@ impl Class {
 }
 
 /// Enumeration of simple types defined by Substrait.
-#[derive(Clone, Debug, PartialEq, Display, EnumString)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Display, EnumString)]
 #[strum(ascii_case_insensitive, serialize_all = "snake_case")]
 pub enum Simple {
     Boolean,
@@ -578,7 +578,7 @@ pub enum Simple {
 }
 
 /// Enumeration of compound types defined by Substrait.
-#[derive(Clone, Debug, PartialEq, Display, EnumString)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Display, EnumString)]
 #[strum(ascii_case_insensitive, serialize_all = "UPPERCASE")]
 pub enum Compound {
     FixedChar,
@@ -762,13 +762,13 @@ impl Describe for Parameter {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        limit: string_util::Limit,
+        limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
             Parameter::Type(data_type) => data_type.describe(f, limit),
             Parameter::NamedType(name, data_type) => {
                 let (name_limit, type_limit) = limit.split(name.len());
-                string_util::describe_identifier(f, name, name_limit)?;
+                util::string::describe_identifier(f, name, name_limit)?;
                 write!(f, ": ")?;
                 data_type.describe(f, type_limit)
             }

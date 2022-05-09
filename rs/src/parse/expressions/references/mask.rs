@@ -6,7 +6,7 @@ use crate::input::proto::substrait;
 use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::parse::context;
-use crate::string_util;
+use crate::util;
 use std::sync::Arc;
 
 /// Parse a struct item.
@@ -91,7 +91,7 @@ fn parse_list_select_item_element(
         y,
         Expression,
         "Select {} element",
-        string_util::describe_index(x.field)
+        util::string::describe_index(x.field)
     );
     Ok(())
 }
@@ -127,8 +127,8 @@ fn parse_list_select_item_slice(
     } else {
         format!(
             "Select {} until {} element (inclusive)",
-            string_util::describe_index(x.start),
-            string_util::describe_index(x.end)
+            util::string::describe_index(x.start),
+            util::string::describe_index(x.end)
         )
     };
     describe!(y, Expression, "{}", description);
