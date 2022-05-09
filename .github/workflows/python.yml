@@ -1,4 +1,4 @@
-name: Validator (Python)
+name: Python
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    name: Test
     strategy:
       fail-fast: false
       matrix:
@@ -100,7 +101,7 @@ jobs:
           args: --skip-existing *
 
   fmt-lint:
-    name: Format & lint
+    name: Style & lint
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
