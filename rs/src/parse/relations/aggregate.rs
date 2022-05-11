@@ -100,7 +100,7 @@ pub fn parse_aggregate_rel(
     let mut sets = vec![];
     proto_repeated_field!(x, y, groupings, |x, y| {
         sets.push(vec![]);
-        proto_required_repeated_field!(x, y, grouping_expressions, |x, y| {
+        proto_repeated_field!(x, y, grouping_expressions, |x, y| {
             let result = expressions::parse_expression(x, y);
 
             // See if we parsed this expression before. If not, add it to the
@@ -127,6 +127,19 @@ pub fn parse_aggregate_rel(
 
             result
         });
+        match x.grouping_expressions.len() {
+            0 => summary!(y, "A grouping set that aggregates all rows."),
+            1 => summary!(
+                y,
+                "A grouping set that aggregates all rows for which \
+                the expression yields the same value."
+            ),
+            x => summary!(
+                y,
+                "A grouping set that aggregates all rows for which \
+                the {x} expressions yield the same tuple of values."
+            ),
+        }
         Ok(())
     });
     drop(grouping_set_expressions);
