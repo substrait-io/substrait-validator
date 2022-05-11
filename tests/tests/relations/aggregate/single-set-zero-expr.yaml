@@ -18,7 +18,5 @@ plan:
               - test
         groupings:
         - groupingExpressions: []
-        groupings.0__test:
-        - diag: { level: e, code: 1002, msg: "*missing required protobuf field: grouping_expressions*" }
         __test:
         - diag: { level: e, code: 5003, msg: "*must have at least one grouping expression or measure*" }
