@@ -54,3 +54,9 @@ pub fn parse<B: prost::bytes::Buf>(buffer: B, config: &Config) -> ParseResult {
 pub fn iter_diagnostics() -> impl Iterator<Item = Classification> {
     Classification::iter()
 }
+
+/// Returns the version of Substrait that this version of the validator was
+/// built against.
+pub fn substrait_version() -> &'static str {
+    include_str!("resources/substrait-version")
+}

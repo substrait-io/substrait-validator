@@ -2,6 +2,8 @@
 
 import substrait_validator as sv
 import pytest
+import subprocess
+import os
 from data import BASIC_PLAN, BASIC_YAML
 
 
@@ -154,3 +156,21 @@ def test_resolver_callback():
             },
             config,
         )
+
+
+def test_version():
+    """Tests whether Substrait version retrieval works and returns the right
+    version."""
+    version = (
+        subprocess.run(
+            ["git", "describe", "--dirty", "--tags"],
+            check=True,
+            capture_output=True,
+            cwd=os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "../../substrait"
+            ),
+        )
+        .stdout.decode("utf-8")
+        .strip()
+    )
+    assert sv.substrait_version() == version

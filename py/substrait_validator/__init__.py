@@ -10,7 +10,12 @@ from io import BytesIO
 from typing import Iterable
 from google.protobuf import json_format
 from google.protobuf.message import DecodeError as ProtoDecodeError
-from .substrait_validator import ResultHandle, Config as _Config, get_diagnostic_codes
+from .substrait_validator import (
+    ResultHandle,
+    Config as _Config,
+    get_diagnostic_codes,
+    get_substrait_version as _get_substrait_version,
+)
 from .substrait.plan_pb2 import Plan
 from .substrait.validator.validator_pb2 import ParseResult, Diagnostic, Path
 
@@ -282,6 +287,12 @@ def path_to_string(path: Path) -> str:
         else:
             raise ValueError("invalid path element")
     return "".join(elements)
+
+
+def substrait_version() -> str:
+    """Returns the version of Substrait that the validator was built
+    against."""
+    return _get_substrait_version()
 
 
 @click.command()

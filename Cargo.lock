@@ -1171,6 +1171,7 @@ version = "0.0.1"
 dependencies = [
  "cbindgen",
  "libc",
+ "once_cell",
  "substrait-validator",
  "thiserror",
 ]
