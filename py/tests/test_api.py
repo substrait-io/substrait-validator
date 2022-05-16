@@ -34,10 +34,10 @@ def test_proto_roundtrip():
     round_tripped_plan = sv.load_plan_from_yaml(data)
     assert round_tripped_plan == original_plan
 
-    # Round-trip via JSOM.
-    data = sv.plan_to_jsom(original_plan)
+    # Round-trip via JDOT.
+    data = sv.plan_to_jdot(original_plan)
     assert type(data) is str
-    round_tripped_plan = sv.load_plan_from_jsom(data)
+    round_tripped_plan = sv.load_plan_from_jdot(data)
     assert round_tripped_plan == original_plan
 
     # Check identity.

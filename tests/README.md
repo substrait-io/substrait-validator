@@ -44,7 +44,7 @@ You can remove all generated files by running `python3 runner.py clean`.
 Test descriptions
 -----------------
 
-Tests can currently only be described using YAML (TODO: also support JSOM when
+Tests can currently only be described using YAML (TODO: also support JDOT when
 this stabilizes). Any `*.yaml` file found recursively in the `tests` folder
 (that isn't a generated file, so not `*.test.*.yaml`) is a test case.
 
