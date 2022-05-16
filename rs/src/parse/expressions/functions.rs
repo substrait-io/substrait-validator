@@ -227,6 +227,12 @@ pub fn parse_aggregate_function(
     // Parse modifiers.
     proto_repeated_field!(x, y, sorts, sorts::parse_sort_field);
     proto_enum_field!(x, y, phase, substrait::AggregationPhase);
+    proto_enum_field!(
+        x,
+        y,
+        invocation,
+        substrait::aggregate_function::AggregationInvocation
+    );
 
     // Describe node.
     y.set_data_type(return_type);

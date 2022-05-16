@@ -57,6 +57,12 @@ pub fn parse_cast(
         .1
         .unwrap_or_default();
     let expression = expressions::Expression::Cast(data_type, Box::new(input));
+    proto_enum_field!(
+        x,
+        y,
+        failure_behavior,
+        substrait::expression::cast::FailureBehavior
+    );
 
     // TODO: check if this is a valid typecast.
     // FIXME: how?
