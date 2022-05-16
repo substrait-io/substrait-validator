@@ -4,5 +4,10 @@ header:
 
   paths:
     - 'proto/substrait/**'
+    - 'derive/**'
+    - 'rs/**'
+    - 'py/**'
+    - 'c/**'
+    - 'tests/**'
 
   comment: never
