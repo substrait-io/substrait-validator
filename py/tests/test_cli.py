@@ -38,8 +38,8 @@ def test_mconvert_auto():
             a = f.read()
 
         convert("plan.proto", "plan.yaml")
-        convert("plan.yaml", "plan.jsom")
-        convert("plan.jsom", "plan.json")
+        convert("plan.yaml", "plan.jdot")
+        convert("plan.jdot", "plan.json")
         convert("plan.json", "plan.bin")
 
         with open(pjoin(tmp, "plan.bin"), "rb") as f:
@@ -75,8 +75,8 @@ def test_mconvert_manual():
             a = f.read()
 
         convert("proto", "yaml")
-        convert("yaml", "jsom")
-        convert("jsom", "json")
+        convert("yaml", "jdot")
+        convert("jdot", "json")
         convert("json", "proto")
 
         with open(pjoin(tmp, "data"), "rb") as f:
@@ -112,8 +112,8 @@ def test_mconvert_complex():
             a = f.read()
 
         convert("proto", "yaml")
-        convert("yaml", "jsom")
-        convert("jsom", "json")
+        convert("yaml", "jdot")
+        convert("jdot", "json")
         convert("json", "proto")
 
         with open(pjoin(tmp, "data"), "rb") as f:
@@ -212,7 +212,7 @@ def test_export():
         assert y("output.proto")[0] == 10
         assert y("output.json").startswith(b'{\n  "root":')
         assert y("output.yaml").startswith(b"root:")
-        assert y("output.jsom").startswith(b"@macros")
+        assert y("output.jdot").startswith(b"@macros")
         assert b"<!DOCTYPE html>" in y("output.html")
         assert y("output.txt").startswith(b"Info")
 
