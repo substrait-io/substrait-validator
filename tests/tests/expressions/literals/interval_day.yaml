@@ -19,50 +19,71 @@ plan:
             - interval_day_to_second:
                 days: 0
                 seconds: 0
+                microseconds: 0
               nullable: false
             - interval_day_to_second:
                 days: 123
                 seconds: 456
+                microseconds: 789000
               nullable: true
           - fields:
             - interval_day_to_second:
                 days: 3650000
                 seconds: 0
+                microseconds: 0
               nullable: false
             - interval_day_to_second:
                 days: 3650001
                 days__test: [ diag: { level: e, code: 6002, msg: "*out of range*" } ]
                 seconds: 0
+                microseconds: 0
               nullable: true
           - fields:
             - interval_day_to_second:
                 days: -3650000
                 seconds: 0
+                microseconds: 0
               nullable: false
             - interval_day_to_second:
                 days: -3650001
                 days__test: [ diag: { level: e, code: 6002, msg: "*out of range*" } ]
                 seconds: 0
+                microseconds: 0
               nullable: true
           - fields:
             - interval_day_to_second:
                 days: -2147483648
                 days__test: [ diag: { level: e, code: 6002, msg: "*out of range*" } ]
                 seconds: 0
+                microseconds: 0
               nullable: false
             - interval_day_to_second:
                 days: 2147483647
                 days__test: [ diag: { level: e, code: 6002, msg: "*out of range*" } ]
                 seconds: 0
+                microseconds: 0
               nullable: true
           - fields:
             - interval_day_to_second:
                 days: 0
                 seconds: -2147483648
+                microseconds: 0
               nullable: false
             - interval_day_to_second:
                 days: 0
                 seconds: 2147483647
+                microseconds: 0
+              nullable: true
+          - fields:
+            - interval_day_to_second:
+                days: 0
+                seconds: 0
+                microseconds: -2147483648
+              nullable: false
+            - interval_day_to_second:
+                days: 0
+                seconds: 0
+                microseconds: 2147483647
               nullable: true
           - fields:
             - "null":
