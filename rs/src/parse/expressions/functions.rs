@@ -12,7 +12,118 @@ use crate::parse::expressions;
 use crate::parse::extensions;
 use crate::parse::sorts;
 use crate::parse::types;
+use crate::string_util;
+use crate::string_util::Describe;
 use std::sync::Arc;
+
+/// A function argument; either a value, a type, or an enum option.
+#[derive(Clone, Debug, PartialEq)]
+pub enum FunctionArgument {
+    /// Used for value arguments or normal expressions.
+    Value(expressions::Expression),
+
+    /// Used for type arguments.
+    Type(Arc<data_type::DataType>),
+
+    /// Used for enum option arguments.
+    Enum(Option<String>),
+}
+
+impl Default for FunctionArgument {
+    fn default() -> Self {
+        FunctionArgument::Value(expressions::Expression::default())
+    }
+}
+
+impl From<expressions::Expression> for FunctionArgument {
+    fn from(expr: expressions::Expression) -> Self {
+        FunctionArgument::Value(expr)
+    }
+}
+
+impl Describe for FunctionArgument {
+    fn describe(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        limit: string_util::Limit,
+    ) -> std::fmt::Result {
+        match self {
+            FunctionArgument::Value(e) => e.describe(f, limit),
+            FunctionArgument::Type(e) => e.describe(f, limit),
+            FunctionArgument::Enum(Some(x)) => string_util::describe_identifier(f, x, limit),
+            FunctionArgument::Enum(None) => write!(f, "-"),
+        }
+    }
+}
+
+impl std::fmt::Display for FunctionArgument {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.display().fmt(f)
+    }
+}
+
+/// Parse an enum option argument type.
+fn parse_enum_type(
+    x: &substrait::function_argument::r#enum::EnumKind,
+    _y: &mut context::Context,
+) -> diagnostic::Result<Option<String>> {
+    match x {
+        substrait::function_argument::r#enum::EnumKind::Specified(x) => Ok(Some(x.clone())),
+        substrait::function_argument::r#enum::EnumKind::Unspecified(_) => Ok(None),
+    }
+}
+
+/// Parse an enum option argument.
+fn parse_enum(
+    x: &substrait::function_argument::Enum,
+    y: &mut context::Context,
+) -> diagnostic::Result<Option<String>> {
+    Ok(proto_required_field!(x, y, enum_kind, parse_enum_type)
+        .1
+        .flatten())
+}
+
+/// Parse a 0.3.0+ function argument type.
+fn parse_function_argument_type(
+    x: &substrait::function_argument::ArgType,
+    y: &mut context::Context,
+) -> diagnostic::Result<FunctionArgument> {
+    match x {
+        substrait::function_argument::ArgType::Enum(x) => {
+            Ok(FunctionArgument::Enum(parse_enum(x, y)?))
+        }
+        substrait::function_argument::ArgType::Type(x) => {
+            types::parse_type(x, y)?;
+            Ok(FunctionArgument::Type(y.data_type()))
+        }
+        substrait::function_argument::ArgType::Value(x) => Ok(FunctionArgument::Value(
+            expressions::parse_expression(x, y)?,
+        )),
+    }
+}
+
+/// Parse a 0.3.0+ function argument.
+fn parse_function_argument(
+    x: &substrait::FunctionArgument,
+    y: &mut context::Context,
+) -> diagnostic::Result<FunctionArgument> {
+    Ok(
+        proto_required_field!(x, y, arg_type, parse_function_argument_type)
+            .1
+            .unwrap_or_default(),
+    )
+}
+
+/// Parse a pre-0.3.0 function argument expression.
+fn parse_legacy_function_argument(
+    x: &substrait::Expression,
+    y: &mut context::Context,
+) -> diagnostic::Result<FunctionArgument> {
+    expressions::parse_legacy_function_argument(x, y).map(|x| match x {
+        expressions::ExpressionOrEnum::Value(x) => FunctionArgument::Value(x),
+        expressions::ExpressionOrEnum::Enum(x) => FunctionArgument::Enum(x),
+    })
+}
 
 /// Matches a function call with its YAML definition, yielding its return type.
 /// Yields an unresolved type if resolution fails.
@@ -41,7 +152,8 @@ pub fn check_function(
 fn parse_function(
     y: &mut context::Context,
     function: Option<Arc<extension::Reference<extension::Function>>>,
-    arguments: (Vec<Arc<tree::Node>>, Vec<Option<expressions::Expression>>),
+    arguments: (Vec<Arc<tree::Node>>, Vec<Option<FunctionArgument>>),
+    legacy_arguments: (Vec<Arc<tree::Node>>, Vec<Option<FunctionArgument>>),
     return_type: Arc<data_type::DataType>,
 ) -> (Arc<data_type::DataType>, expressions::Expression) {
     // Determine the name of the function.
@@ -49,6 +161,36 @@ fn parse_function(
         .as_ref()
         .map(|x| x.name.to_string())
         .unwrap_or_else(|| String::from("?"));
+
+    // Reconcile v3.0.0+ vs older function argument syntax.
+    let arguments = if legacy_arguments.1.is_empty() {
+        arguments
+    } else if arguments.1.is_empty() {
+        diagnostic!(
+            y,
+            Warning,
+            Deprecation,
+            "the args field for specifying function arguments was deprecated Substrait 0.3.0 (#161)"
+        );
+        legacy_arguments
+    } else {
+        if arguments != legacy_arguments {
+            diagnostic!(
+                y,
+                Error,
+                IllegalValue,
+                "mismatch between v0.3+ and legacy function argument specification"
+            );
+            comment!(
+                y,
+                "If both the v0.3+ and legacy syntax is used to specify function \
+                arguments, please make sure both map to the same arguments. If \
+                the argument pack is not representable using the legacy syntax, \
+                do not use it."
+            );
+        }
+        arguments
+    };
 
     // Unpack the arguments into the function's enum options and regular
     // arguments.
@@ -61,7 +203,7 @@ fn parse_function(
         .into_iter()
         .zip(arguments.1.into_iter().map(|x| x.unwrap_or_default()))
     {
-        if let expressions::Expression::EnumVariant(x) = &expr {
+        if let FunctionArgument::Enum(x) = &expr {
             if opt_exprs.is_empty() && !arg_exprs.is_empty() {
                 diagnostic!(
                     y,
@@ -122,13 +264,16 @@ pub fn parse_scalar_function(
         extensions::simple::parse_function_reference
     )
     .1;
-    let arguments = proto_repeated_field!(x, y, args, expressions::parse_function_argument);
+    #[allow(deprecated)]
+    let legacy_arguments = proto_repeated_field!(x, y, args, parse_legacy_function_argument);
+    let arguments = proto_repeated_field!(x, y, arguments, parse_function_argument);
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
 
     // Check function information.
-    let (return_type, expression) = parse_function(y, function, arguments, return_type);
+    let (return_type, expression) =
+        parse_function(y, function, arguments, legacy_arguments, return_type);
 
     // Describe node.
     y.set_data_type(return_type);
@@ -168,13 +313,16 @@ pub fn parse_window_function(
         extensions::simple::parse_function_reference
     )
     .1;
-    let arguments = proto_repeated_field!(x, y, args, expressions::parse_function_argument);
+    #[allow(deprecated)]
+    let legacy_arguments = proto_repeated_field!(x, y, args, parse_legacy_function_argument);
+    let arguments = proto_repeated_field!(x, y, arguments, parse_function_argument);
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
 
     // Check function information.
-    let (return_type, expression) = parse_function(y, function, arguments, return_type);
+    let (return_type, expression) =
+        parse_function(y, function, arguments, legacy_arguments, return_type);
 
     // Parse modifiers.
     proto_repeated_field!(x, y, partitions, expressions::parse_expression);
@@ -216,13 +364,16 @@ pub fn parse_aggregate_function(
         extensions::simple::parse_function_reference
     )
     .1;
-    let arguments = proto_repeated_field!(x, y, args, expressions::parse_function_argument);
+    #[allow(deprecated)]
+    let legacy_arguments = proto_repeated_field!(x, y, args, parse_legacy_function_argument);
+    let arguments = proto_repeated_field!(x, y, arguments, parse_function_argument);
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
 
     // Check function information.
-    let (return_type, expression) = parse_function(y, function, arguments, return_type);
+    let (return_type, expression) =
+        parse_function(y, function, arguments, legacy_arguments, return_type);
 
     // Parse modifiers.
     proto_repeated_field!(x, y, sorts, sorts::parse_sort_field);

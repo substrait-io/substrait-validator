@@ -171,6 +171,9 @@ pub enum Classification {
     #[strum(props(Description = "illegal glob"))]
     IllegalGlob = 5,
 
+    #[strum(props(Description = "deprecation"))]
+    Deprecation = 6,
+
     // Protobuf-related diagnostics (group 1).
     #[strum(props(HiddenDescription = "protobuf-related diagnostic"))]
     Proto = 1000,

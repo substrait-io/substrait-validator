@@ -14,7 +14,7 @@ use crate::string_util::Describe;
 use std::sync::Arc;
 
 /// The value of a literal, not including type information.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 enum LiteralValue {
     /// May be used for any nullable type.
     Null,
@@ -57,7 +57,7 @@ impl Default for LiteralValue {
 }
 
 /// A complete literal, including type information.
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Literal {
     /// The value of the literal.
     value: LiteralValue,
