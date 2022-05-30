@@ -19,8 +19,8 @@ private_docs = []
 [dependencies]
 
 # Prost is used to deal with protobuf serialization and deserialization.
-prost = "0.9"
-prost-types = "0.9"
+prost = "0.10"
+prost-types = "0.10"
 
 # Prost doesn't generate any introspection stuff, so we hack that stuff in with
 # our own procedural macros.
@@ -87,7 +87,7 @@ percent-encoding = "2.1"
 [build-dependencies]
 
 # Used for generating Rust structs from the protobuf definitions.
-prost-build = "0.9"
+prost-build = "0.10"
 
 # Used to automatically find all protobuf files.
 walkdir = "2"
