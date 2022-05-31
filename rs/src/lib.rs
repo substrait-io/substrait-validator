@@ -32,7 +32,7 @@ mod parse;
 pub mod export;
 pub mod input;
 
-mod string_util;
+mod util;
 
 use strum::IntoEnumIterator;
 

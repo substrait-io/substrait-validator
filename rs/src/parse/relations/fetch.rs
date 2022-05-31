@@ -10,7 +10,7 @@
 use crate::input::proto::substrait;
 use crate::output::diagnostic;
 use crate::parse::context;
-use crate::string_util;
+use crate::util;
 
 /// Parse fetch relation.
 pub fn parse_fetch_rel(
@@ -45,7 +45,7 @@ pub fn parse_fetch_rel(
             "Propagate only the {} row",
             (x.offset + 1)
                 .try_into()
-                .map(string_util::describe_nth)
+                .map(util::string::describe_nth)
                 .unwrap_or_else(|_| String::from("?"))
         );
     } else if x.count > 1 {
@@ -57,7 +57,7 @@ pub fn parse_fetch_rel(
                 x.count,
                 (x.offset + 1)
                     .try_into()
-                    .map(string_util::describe_nth)
+                    .map(util::string::describe_nth)
                     .unwrap_or_else(|_| String::from("?"))
             );
         } else {

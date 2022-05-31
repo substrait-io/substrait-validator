@@ -4,10 +4,16 @@
 
 use crate::output::diagnostic;
 
-/// Returns whether the given string is a valid identifier.
+/// Returns whether the given string is a valid identifier. Note: this should
+/// only be used for determining whether to print something that should be
+/// identifier-like with or without quotes and escape characters, as it is
+/// rather lax.
 pub fn is_identifier(s: &str) -> bool {
+    // Note:
+    //  - $ seems to be legal in type names;
+    //  - ! and : are used within function names/signatures.
     static IDENTIFIER_RE: once_cell::sync::Lazy<regex::Regex> =
-        once_cell::sync::Lazy::new(|| regex::Regex::new("[a-zA-Z_][a-zA-Z0-9_]*").unwrap());
+        once_cell::sync::Lazy::new(|| regex::Regex::new("[a-zA-Z_$][a-zA-Z0-9_$!:]*").unwrap());
     IDENTIFIER_RE.is_match(s)
 }
 
@@ -52,7 +58,7 @@ pub fn as_quoted_string<S: AsRef<str>>(s: S) -> String {
 }
 
 /// Returns the given string as-is if it's a valid identifier (i.e. if it
-/// matches `[a-zA-Z_][a-zA-Z0-9_]*`), or returns it as an escaped string
+/// matches `[a-zA-Z_$][a-zA-Z0-9_$!:]*`), or returns it as an escaped string
 /// otherwise, using (only) \" and \\ as escape sequences.
 pub fn as_ident_or_string<S: AsRef<str>>(s: S) -> String {
     let s = s.as_ref();

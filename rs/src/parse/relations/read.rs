@@ -18,7 +18,7 @@ use crate::parse::expressions::literals;
 use crate::parse::expressions::references::mask;
 use crate::parse::extensions;
 use crate::parse::types;
-use crate::string_util;
+use crate::util;
 
 /// Information about a data source.
 struct SourceInfo {
@@ -75,25 +75,25 @@ fn parse_path_type(
     use substrait::read_rel::local_files::file_or_files::PathType;
     match x {
         PathType::UriPath(x) => {
-            if let Err(e) = string_util::check_uri(x) {
+            if let Err(e) = util::string::check_uri(x) {
                 diagnostic!(y, Error, e);
             }
             Ok(false)
         }
         PathType::UriPathGlob(x) => {
-            if let Err(e) = string_util::check_uri_glob(x) {
+            if let Err(e) = util::string::check_uri_glob(x) {
                 diagnostic!(y, Error, e);
             }
             Ok(true)
         }
         PathType::UriFile(x) => {
-            if let Err(e) = string_util::check_uri(x) {
+            if let Err(e) = util::string::check_uri(x) {
                 diagnostic!(y, Error, e);
             }
             Ok(false)
         }
         PathType::UriFolder(x) => {
-            if let Err(e) = string_util::check_uri(x) {
+            if let Err(e) = util::string::check_uri(x) {
                 diagnostic!(y, Error, e);
             }
             Ok(true)
@@ -253,7 +253,7 @@ fn parse_named_table(
                 "named tables with multiple names"
             );
         }
-        string_util::as_ident_or_string(x.names.first().unwrap())
+        util::string::as_ident_or_string(x.names.first().unwrap())
     };
 
     // Describe the node.
@@ -261,7 +261,7 @@ fn parse_named_table(
         y,
         Misc,
         "Named table {}",
-        string_util::as_ident_or_string(&name)
+        util::string::as_ident_or_string(&name)
     );
     Ok(SourceInfo {
         name,

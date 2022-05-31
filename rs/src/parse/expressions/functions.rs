@@ -12,8 +12,8 @@ use crate::parse::expressions;
 use crate::parse::extensions;
 use crate::parse::sorts;
 use crate::parse::types;
-use crate::string_util;
-use crate::string_util::Describe;
+use crate::util;
+use crate::util::string::Describe;
 use std::sync::Arc;
 
 /// A function argument; either a value, a type, or an enum option.
@@ -45,12 +45,12 @@ impl Describe for FunctionArgument {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        limit: string_util::Limit,
+        limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
             FunctionArgument::Value(e) => e.describe(f, limit),
             FunctionArgument::Type(e) => e.describe(f, limit),
-            FunctionArgument::Enum(Some(x)) => string_util::describe_identifier(f, x, limit),
+            FunctionArgument::Enum(Some(x)) => util::string::describe_identifier(f, x, limit),
             FunctionArgument::Enum(None) => write!(f, "-"),
         }
     }
