@@ -65,6 +65,14 @@ fn parse_plan_rel(x: &substrait::PlanRel, y: &mut context::Context) -> diagnosti
 
 /// Toplevel parse function for a plan.
 pub fn parse_plan(x: &substrait::Plan, y: &mut context::Context) -> diagnostic::Result<()> {
+    diagnostic!(
+        y,
+        Info,
+        Experimental,
+        "this version of the validator is EXPERIMENTAL. Please report issues \
+        via https://github.com/substrait-io/substrait-validator/issues/new"
+    );
+
     // Handle extensions first, because we'll need their declarations to
     // correctly interpret the relations.
     extensions::parse_plan(x, y);
