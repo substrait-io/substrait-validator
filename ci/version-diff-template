@@ -1,0 +1,132 @@
+diff --git a/c/Cargo.toml b/c/Cargo.toml
+index 0e9b476..7165025 100644
+--- a/c/Cargo.toml
++++ b/c/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "substrait-validator-c"
+-version = "{frm}"
++version = "{to}"
+ edition = "2021"
+ license = "Apache-2.0"
+ 
+@@ -12,6 +12,6 @@ doc = false
+ cbindgen = "0.20.0"
+ 
+ [dependencies]
+-substrait-validator = {{ path = "../rs", version = "{frm}" }}
++substrait-validator = {{ path = "../rs", version = "{to}" }}
+ libc = "0.2"
+ thiserror = "1.0"
+diff --git a/derive/Cargo.toml b/derive/Cargo.toml
+index 7a8af00..539e170 100644
+--- a/derive/Cargo.toml
++++ b/derive/Cargo.toml
+@@ -4,7 +4,7 @@ description = "Procedural macros for substrait-validator"
+ homepage = "https://substrait.io/"
+ repository = "https://github.com/substrait-io/substrait"
+ readme = "README.md"
+-version = "{frm}"
++version = "{to}"
+ edition = "2021"
+ license = "Apache-2.0"
+ 
+diff --git a/py/Cargo.toml b/py/Cargo.toml
+index c095a2d..32108ad 100644
+--- a/py/Cargo.toml
++++ b/py/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "substrait-validator-py"
+-version = "{frm}"
++version = "{to}"
+ edition = "2018"
+ license = "Apache-2.0"
+ include = [
+@@ -29,7 +29,7 @@ name = "substrait_validator"
+ doc = false
+ 
+ [dependencies]
+-substrait-validator = {{ path = "../rs", version = "{frm}" }}
++substrait-validator = {{ path = "../rs", version = "{to}" }}
+ pyo3 = {{ version = "0.15.1", features = ["extension-module"] }}
+ 
+ [build-dependencies]
+diff --git a/py/pyproject.toml b/py/pyproject.toml
+index 8481d2c..60d0453 100644
+--- a/py/pyproject.toml
++++ b/py/pyproject.toml
+@@ -5,7 +5,7 @@ backend-path = ["."]
+ 
+ [project]
+ name = "substrait-validator"
+-version = "{frm}"
++version = "{to}"
+ description = "Validator for Substrait query plans"
+ readme = "README.md"
+ license = {{file = "LICENSE"}}
+diff --git a/rs/Cargo.toml b/rs/Cargo.toml
+index 6dbf6a8..d7e0c22 100644
+--- a/rs/Cargo.toml
++++ b/rs/Cargo.toml
+@@ -4,7 +4,7 @@ description = "Substrait validator"
+ homepage = "https://substrait.io/"
+ repository = "https://github.com/substrait-io/substrait"
+ readme = "README.md"
+-version = "{frm}"
++version = "{to}"
+ edition = "2021"
+ license = "Apache-2.0"
+ include = ["src", "build.rs", "README.md"]
+@@ -17,7 +17,7 @@ prost-types = "0.10"
+ 
+ # Prost doesn't generate any introspection stuff, so we hack that stuff in with
+ # our own procedural macros.
+-substrait-validator-derive = {{ path = "../derive", version = "{frm}" }}
++substrait-validator-derive = {{ path = "../derive", version = "{to}" }}
+ 
+ # Google/protobuf has a funny idea about case conventions (it converts them all
+ # over the place) and prost remaps to Rust's conventions to boot. So, to
+diff --git a/rs/README.md b/rs/README.md
+index 1ea785f..553fd82 100644
+--- a/rs/README.md
++++ b/rs/README.md
+@@ -6,7 +6,7 @@ plans.
+ 
+ ```
+ [dependencies]
+-substrait-validator = "{frm}"
++substrait-validator = "{to}"
+ ```
+ 
+ YAML file resolution
+@@ -20,7 +20,7 @@ dependency:
+ 
+ ```
+ [dependencies]
+-substrait-validator = {{ version = "{frm}", features = ["curl"] }}
++substrait-validator = {{ version = "{to}", features = ["curl"] }}
+ ```
+ 
+ This adds the `substrait_validator::Config::add_curl_yaml_uri_resolver()`
+diff --git a/tests/Cargo.toml b/tests/Cargo.toml
+index ae095fd..a341e1c 100644
+--- a/tests/Cargo.toml
++++ b/tests/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "test-runner"
+-version = "{frm}"
++version = "{to}"
+ edition = "2018"
+ license = "Apache-2.0"
+ default-run = "runner"
+@@ -14,7 +14,7 @@ name = "find_protoc"
+ path = "src/find_protoc.rs"
+ 
+ [dependencies]
+-substrait-validator = {{ path = "../rs", version = "{frm}" }}
++substrait-validator = {{ path = "../rs", version = "{to}" }}
+ serde = {{ version = "1.0", features = ["derive"] }}
+ serde_json = "1.0"
+ walkdir = "2"

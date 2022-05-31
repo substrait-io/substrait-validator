@@ -25,6 +25,11 @@ important:
    by corrosion, but good to synchronize with the version of the main crate.
  - `tests/Cargo.toml`: can be ignored.
 
+You (or CI) can use `ci/version.py` to update the version automatically, but
+this automation is based on a patchfile that may go out of date. You may have
+to regenerate it (using the same tool) if you change a file that includes the
+version number.
+
 Relation of `substrait-validator` crate version to the Substrait specification
 version is TBD.
 
