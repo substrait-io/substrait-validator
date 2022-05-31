@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [ main ]
+    tags: [ 'v*.*.*' ]
 
 jobs:
   check:
@@ -101,3 +102,34 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - name: Doc
         run: RUSTDOCFLAGS="-Dwarnings" cargo doc --workspace --all-features
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: "startsWith(github.ref, 'refs/tags/')"
+    needs: [ check, test ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Fetch Substrait submodule tags
+        working-directory: substrait
+        run: |
+          git fetch --recurse-submodules=no origin +refs/tags/*:refs/tags/*
+          git describe --dirty --tags
+      - name: Local build to populate resource files
+        working-directory: rs
+        run: cargo build
+      - name: Publish substrait-validator-derive
+        working-directory: derive
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --allow-dirty
+      - name: Wait for substrait-validator-derive to appear in the index
+        continue-on-error: true
+        run: python3 ci/crates-io-wait.py substrait-validator-derive `cat ci/version` 1800
+      - name: Publish substrait-validator
+        working-directory: rs
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --allow-dirty

@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [ main ]
+    tags: [ 'v*.*.*' ]
 
 jobs:
   build:
@@ -96,6 +97,12 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: wheels
+      - name: Publish to GitHub release page
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            *.whl
+            *.tar.gz
       - name: Publish to PyPI
         uses: messense/maturin-action@v1
         env:
