@@ -29,7 +29,7 @@ Code style is strictly enforced for all languages using CI and (to some extent) 
 Here's a (probably non-exhaustive) list of things you may want to have installed to develop for the validator.
 
  - [Rust stable](https://rustup.rs/)
- - VSCode with the Rust plugin (or some other IDE with Rust support)
+ - VSCode with [rust-analyzer](https://rust-analyzer.github.io/) (or some other IDE with Rust support)
  - Python 3.x (all non-EOL versions should be supported)
  - The toolchain should be able to compile libprotobuf for you if you don't already have it, but it's probably a good idea to have a reasonably recent version installed system-wide as well
  - [pre-commit](https://pre-commit.com/), so you don't have to rely on CI to catch all your errors, and to help format your code
