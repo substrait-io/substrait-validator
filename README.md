@@ -1,7 +1,7 @@
 Substrait validator
 ===================
 
-This repository contains a validator for
+This repository contains an EXPERIMENTAL validator for
 [Substrait](https://github.com/substrait-io/substrait) plans. It's written in
 Rust, but bindings are available for Python and C. Other languages may use the
 C API via their respective foreign function interface systems.

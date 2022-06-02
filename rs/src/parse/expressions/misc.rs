@@ -7,7 +7,7 @@ use crate::output::diagnostic;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::parse::types;
-use crate::string_util;
+use crate::util;
 
 /// Parse an enum expression. Returns a description of said expression.
 pub fn parse_enum(
@@ -35,7 +35,7 @@ pub fn parse_enum(
             y,
             Misc,
             "Function option variant {}",
-            string_util::as_ident_or_string(variant)
+            util::string::as_ident_or_string(variant)
         );
     } else {
         describe!(y, Misc, "Default function option variant");
