@@ -6,8 +6,8 @@ use crate::input::proto::substrait;
 use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::parse::context;
-use crate::string_util;
-use crate::string_util::Describe;
+use crate::util;
+use crate::util::string::Describe;
 use std::sync::Arc;
 
 pub mod conditionals;
@@ -72,7 +72,7 @@ impl Describe for Expression {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        limit: string_util::Limit,
+        limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
             Expression::Unresolved => write!(f, "?"),
@@ -80,17 +80,17 @@ impl Describe for Expression {
             Expression::Reference(x) => x.describe(f, limit),
             Expression::Function(name, args) => {
                 let (name_limit, args_limit) = limit.split(name.len());
-                string_util::describe_identifier(f, name, name_limit)?;
+                util::string::describe_identifier(f, name, name_limit)?;
                 write!(f, "(")?;
-                string_util::describe_sequence(f, args, args_limit, 20, |f, expr, _, limit| {
+                util::string::describe_sequence(f, args, args_limit, 20, |f, expr, _, limit| {
                     expr.describe(f, limit)
                 })?;
                 write!(f, ")")
             }
-            Expression::BigFunction(name) => string_util::describe_identifier(f, name, limit),
+            Expression::BigFunction(name) => util::string::describe_identifier(f, name, limit),
             Expression::Tuple(items) => {
                 write!(f, "(")?;
-                string_util::describe_sequence(f, items, limit, 20, |f, expr, _, limit| {
+                util::string::describe_sequence(f, items, limit, 20, |f, expr, _, limit| {
                     expr.describe(f, limit)
                 })?;
                 write!(f, ")")
@@ -103,7 +103,7 @@ impl Describe for Expression {
                 expression.describe(f, expr_limit)?;
                 write!(f, ")")
             }
-            Expression::EnumVariant(Some(x)) => string_util::describe_identifier(f, x, limit),
+            Expression::EnumVariant(Some(x)) => util::string::describe_identifier(f, x, limit),
             Expression::EnumVariant(None) => write!(f, "-"),
         }
     }

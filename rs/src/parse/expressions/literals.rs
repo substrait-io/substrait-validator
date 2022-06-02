@@ -7,8 +7,8 @@ use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::parse::context;
 use crate::parse::types;
-use crate::string_util;
-use crate::string_util::Describe;
+use crate::util;
+use crate::util::string::Describe;
 use std::sync::Arc;
 
 /// The value of a literal, not including type information.
@@ -136,7 +136,7 @@ impl Describe for Literal {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        limit: string_util::Limit,
+        limit: util::string::Limit,
     ) -> std::fmt::Result {
         match &self.value {
             LiteralValue::Null => {
@@ -197,7 +197,7 @@ impl Describe for Literal {
                         }
                         Ok(())
                     } else {
-                        string_util::describe_binary(f, &d.to_le_bytes(), limit)
+                        util::string::describe_binary(f, &d.to_le_bytes(), limit)
                     }
                 }
                 data_type::Class::Simple(data_type::Simple::Uuid) => {
@@ -208,10 +208,10 @@ impl Describe for Literal {
                         b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]
                     )
                 }
-                _ => string_util::describe_binary(f, &d.to_le_bytes(), limit),
+                _ => util::string::describe_binary(f, &d.to_le_bytes(), limit),
             },
-            LiteralValue::String(s) => string_util::describe_string(f, s, limit),
-            LiteralValue::Binary(b) => string_util::describe_binary(f, b, limit),
+            LiteralValue::String(s) => util::string::describe_string(f, s, limit),
+            LiteralValue::Binary(b) => util::string::describe_binary(f, b, limit),
             LiteralValue::Interval(a, b) => match self.data_type.class() {
                 data_type::Class::Simple(data_type::Simple::IntervalYear) => {
                     write!(f, "{a}y{b:+}m")
@@ -222,7 +222,7 @@ impl Describe for Literal {
             LiteralValue::Items(x) => match self.data_type.class() {
                 data_type::Class::Compound(data_type::Compound::Struct) => {
                     write!(f, "(")?;
-                    string_util::describe_sequence(f, x, limit, 20, |f, value, index, limit| {
+                    util::string::describe_sequence(f, x, limit, 20, |f, value, index, limit| {
                         write!(f, ".{index}: ")?;
                         value.describe(f, limit)
                     })?;
@@ -230,14 +230,14 @@ impl Describe for Literal {
                 }
                 data_type::Class::Compound(data_type::Compound::NamedStruct) => {
                     write!(f, "(")?;
-                    string_util::describe_sequence(f, x, limit, 20, |f, value, index, limit| {
+                    util::string::describe_sequence(f, x, limit, 20, |f, value, index, limit| {
                         if let Some(name) = self
                             .data_type
                             .parameters()
                             .get(index)
                             .and_then(|x| x.get_name())
                         {
-                            write!(f, ".{}: ", string_util::as_ident_or_string(name))?;
+                            write!(f, ".{}: ", util::string::as_ident_or_string(name))?;
                         } else {
                             write!(f, ".{index}: ")?;
                         }
@@ -247,14 +247,14 @@ impl Describe for Literal {
                 }
                 data_type::Class::Compound(data_type::Compound::List) => {
                     write!(f, "[")?;
-                    string_util::describe_sequence(f, x, limit, 20, |f, value, _, limit| {
+                    util::string::describe_sequence(f, x, limit, 20, |f, value, _, limit| {
                         value.describe(f, limit)
                     })?;
                     write!(f, "]")
                 }
                 _ => {
                     write!(f, "(")?;
-                    string_util::describe_sequence(f, x, limit, 20, |f, value, _, limit| {
+                    util::string::describe_sequence(f, x, limit, 20, |f, value, _, limit| {
                         value.describe(f, limit)
                     })?;
                     write!(f, ")")
@@ -263,7 +263,7 @@ impl Describe for Literal {
             LiteralValue::Pairs(x) => match self.data_type.class() {
                 data_type::Class::Compound(data_type::Compound::Map) => {
                     write!(f, "{{")?;
-                    string_util::describe_sequence(
+                    util::string::describe_sequence(
                         f,
                         x,
                         limit,
@@ -279,7 +279,7 @@ impl Describe for Literal {
                 }
                 _ => {
                     write!(f, "(")?;
-                    string_util::describe_sequence(
+                    util::string::describe_sequence(
                         f,
                         x,
                         limit,
