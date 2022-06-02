@@ -12,7 +12,7 @@ use crate::parse::extensions::simple::function_decls;
 use crate::parse::extensions::simple::type_decls;
 use crate::parse::extensions::simple::type_variation_decls;
 use crate::parse::traversal;
-use crate::string_util;
+use crate::util;
 use std::sync::Arc;
 
 /// Toplevel parse function for a simple extension YAML file.
@@ -46,7 +46,7 @@ pub fn parse_uri<S: AsRef<str>>(
 ) -> Result<Arc<extension::YamlInfo>> {
     // Check URI syntax.
     let x = x.as_ref();
-    if let Err(e) = string_util::check_uri(x) {
+    if let Err(e) = util::string::check_uri(x) {
         diagnostic!(y, Error, e);
     }
 
