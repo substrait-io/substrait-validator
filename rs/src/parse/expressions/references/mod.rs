@@ -8,8 +8,8 @@ use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::parse::context;
 use crate::parse::expressions;
-use crate::string_util;
-use crate::string_util::Describe;
+use crate::util;
+use crate::util::string::Describe;
 use std::sync::Arc;
 
 pub mod mask;
@@ -70,7 +70,7 @@ impl Describe for ReferencePath {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        limit: string_util::Limit,
+        limit: util::string::Limit,
     ) -> std::fmt::Result {
         let lens = self.segments.iter().map(String::len).collect::<Vec<_>>();
         let (n_left, n_right) = limit.split_ns(&lens);
@@ -113,7 +113,7 @@ impl Describe for Reference {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        limit: string_util::Limit,
+        limit: util::string::Limit,
     ) -> std::fmt::Result {
         let (path_limit, root_limit) = limit.split(self.path.len());
         match &self.root {
@@ -178,7 +178,7 @@ fn parse_root_type(
                 y,
                 Misc,
                 "Reference to field of {} outer query",
-                string_util::describe_nth(x.steps_out)
+                util::string::describe_nth(x.steps_out)
             );
             proto_primitive_field!(x, y, steps_out, |x, y| {
                 if *x < 1 {
@@ -254,7 +254,7 @@ pub fn parse_field_reference(
                 y,
                 "Here, <{depth}> is used to refer to the row being processed \
                 by the {} outer query.",
-                string_util::describe_nth(depth as u32)
+                util::string::describe_nth(depth as u32)
             );
         }
     }

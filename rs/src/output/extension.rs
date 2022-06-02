@@ -5,7 +5,7 @@
 use crate::output::data_type;
 use crate::output::path;
 use crate::output::tree;
-use crate::string_util;
+use crate::util;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -21,19 +21,23 @@ pub struct NamedReference {
 }
 
 impl PartialEq for NamedReference {
-    /// Named references are equal if both references have a known name and
-    /// those names are the same.
     fn eq(&self, other: &Self) -> bool {
-        self.name.is_some() && other.name.is_some() && self.name == other.name
+        self.name == other.name
     }
 }
 
 impl Eq for NamedReference {}
 
+impl std::hash::Hash for NamedReference {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+
 impl std::fmt::Display for NamedReference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(name) = &self.name {
-            write!(f, "{}", string_util::as_ident_or_string(name))
+            write!(f, "{}", util::string::as_ident_or_string(name))
         } else {
             write!(f, "?")
         }
@@ -92,7 +96,7 @@ pub struct Reference<T> {
 
 impl<T> PartialEq for Reference<T> {
     /// References are equal if they refer to the same thing, regardless of how
-    /// they refer to it. If we're not sure4 because either reference is
+    /// they refer to it. If we're not sure because either reference is
     /// (partially) unresolved, return false pessimistically.
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name && self.uri == other.uri
@@ -100,6 +104,13 @@ impl<T> PartialEq for Reference<T> {
 }
 
 impl<T> Eq for Reference<T> {}
+
+impl<T> std::hash::Hash for Reference<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.uri.hash(state);
+    }
+}
 
 impl<T> std::fmt::Display for Reference<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

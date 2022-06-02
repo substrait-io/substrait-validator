@@ -187,7 +187,7 @@ pub enum Classification {
     #[strum(props(Description = "missing protobuf \"any\" declaration"))]
     ProtoMissingAnyDeclaration = 1006,
 
-    // YAML-reated diagnostics (group 2).
+    // YAML-related diagnostics (group 2).
     #[strum(props(HiddenDescription = "YAML-related diagnostic"))]
     Yaml = 2000,
 

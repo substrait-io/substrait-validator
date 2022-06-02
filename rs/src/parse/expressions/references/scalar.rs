@@ -9,7 +9,7 @@ use crate::parse::context;
 use crate::parse::expressions::literals;
 use crate::parse::expressions::references;
 use crate::parse::types;
-use crate::string_util;
+use crate::util;
 use std::sync::Arc;
 
 /// Parse a struct field reference. Returns a description of the nested
@@ -93,7 +93,7 @@ fn parse_list_element(
             y,
             Misc,
             "Selects {} list element",
-            string_util::describe_index(*x)
+            util::string::describe_index(*x)
         );
         Ok(())
     });
