@@ -12,7 +12,7 @@ use crate::output::diagnostic;
 use crate::output::extension;
 use crate::parse::context;
 use crate::parse::extensions;
-use crate::string_util;
+use crate::util;
 
 /// Parses a required nullability enum.
 fn parse_required_nullability(
@@ -799,7 +799,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
                     } else {
                         y.push_summary(comment::Comment::new().li());
                     }
-                    summary!(y, "{}: {}", string_util::as_ident_or_string(name), class);
+                    summary!(y, "{}: {}", util::string::as_ident_or_string(name), class);
                 }
                 y.push_summary(comment::Comment::new().lc());
             }
@@ -1078,8 +1078,8 @@ fn assert_equal_internal(
                                 Warning,
                                 TypeMismatch,
                                 "{message}: field name {} vs. {}{path}",
-                                string_util::as_ident_or_string(&other_name),
-                                string_util::as_ident_or_string(&base_name)
+                                util::string::as_ident_or_string(&other_name),
+                                util::string::as_ident_or_string(&base_name)
                             );
                         }
                         data_type::Parameter::NamedType(

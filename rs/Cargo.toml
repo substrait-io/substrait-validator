@@ -9,6 +9,13 @@ edition = "2021"
 license = "Apache-2.0"
 include = ["src", "build.rs", "README.md"]
 
+[features]
+
+# Enable to get some extra developer documentation from cargo doc. Be sure to
+# use this with --document-private-items as well. Enabling this doesn't
+# functionally change anything.
+private_docs = []
+
 [dependencies]
 
 # Prost is used to deal with protobuf serialization and deserialization.

@@ -171,6 +171,9 @@ pub enum Classification {
     #[strum(props(Description = "illegal glob"))]
     IllegalGlob = 5,
 
+    #[strum(props(HiddenDescription = "experimental"))]
+    Experimental = 999,
+
     // Protobuf-related diagnostics (group 1).
     #[strum(props(HiddenDescription = "protobuf-related diagnostic"))]
     Proto = 1000,
@@ -187,7 +190,7 @@ pub enum Classification {
     #[strum(props(Description = "missing protobuf \"any\" declaration"))]
     ProtoMissingAnyDeclaration = 1006,
 
-    // YAML-reated diagnostics (group 2).
+    // YAML-related diagnostics (group 2).
     #[strum(props(HiddenDescription = "YAML-related diagnostic"))]
     Yaml = 2000,
 

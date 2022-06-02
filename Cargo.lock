@@ -802,42 +802,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
-dependencies = [
- "bytes",
- "prost-derive 0.9.0",
-]
-
-[[package]]
-name = "prost"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71adf41db68aa0daaefc69bb30bcd68ded9b9abaad5d1fbb6304c4fb390e083e"
 dependencies = [
  "bytes",
- "prost-derive 0.10.1",
-]
-
-[[package]]
-name = "prost-build"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62941722fb675d463659e49c4f3fe1fe792ff24fe5bbaa9c08cd3b98a1c354f5"
-dependencies = [
- "bytes",
- "heck 0.3.3",
- "itertools 0.10.3",
- "lazy_static",
- "log",
- "multimap",
- "petgraph",
- "prost 0.9.0",
- "prost-types 0.9.0",
- "regex",
- "tempfile",
- "which",
+ "prost-derive",
 ]
 
 [[package]]
@@ -855,24 +825,11 @@ dependencies = [
  "log",
  "multimap",
  "petgraph",
- "prost 0.10.4",
- "prost-types 0.10.1",
+ "prost",
+ "prost-types",
  "regex",
  "tempfile",
  "which",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
-dependencies = [
- "anyhow",
- "itertools 0.10.3",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -890,22 +847,12 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "534b7a0e836e3c482d2693070f982e39e7611da9695d4d1f5a4b186b51faef0a"
-dependencies = [
- "bytes",
- "prost 0.9.0",
-]
-
-[[package]]
-name = "prost-types"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d0a014229361011dc8e69c8a1ec6c2e8d0f2af7c91e3ea3f5b2170298461e68"
 dependencies = [
  "bytes",
- "prost 0.10.4",
+ "prost",
 ]
 
 [[package]]
@@ -1150,9 +1097,9 @@ dependencies = [
  "num-traits",
  "once_cell",
  "percent-encoding",
- "prost 0.10.4",
- "prost-build 0.10.4",
- "prost-types 0.10.1",
+ "prost",
+ "prost-build",
+ "prost-types",
  "regex",
  "serde_json",
  "strum",
@@ -1190,7 +1137,7 @@ name = "substrait-validator-py"
 version = "0.0.1"
 dependencies = [
  "dunce",
- "prost-build 0.9.0",
+ "prost-build",
  "pyo3",
  "substrait-validator",
  "walkdir",
@@ -1226,7 +1173,7 @@ name = "test-runner"
 version = "0.0.1"
 dependencies = [
  "glob",
- "prost-build 0.10.4",
+ "prost-build",
  "rayon",
  "serde",
  "serde_json",

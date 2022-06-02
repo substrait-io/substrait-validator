@@ -425,6 +425,9 @@ def cli(  # noqa: C901
     """Validate or convert the substrait.Plan represented by INFILE (or stdin
     using "-").
 
+    This version of the validator is EXPERIMENTAL. Please report issues via
+    https://github.com/substrait-io/substrait-validator/issues/new.
+
     The following formats are supported:
 
     \b
