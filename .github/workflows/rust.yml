@@ -108,6 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
     needs: [ check, test ]
+    environment: VALIDATOR_RELEASE
     steps:
       - uses: actions/checkout@v2
         with:
