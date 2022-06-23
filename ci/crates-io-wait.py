@@ -1,10 +1,17 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Waits for a crate to appear on crates.io, since cargo publish doesn't.
+See https://github.com/rust-lang/cargo/issues/9507
+"""
+
+
 import urllib.request
 import json
 import sys
 import time
+import argparse
 
 
 def crate_version_exists(crate, version):
@@ -41,33 +48,25 @@ def check(crate, version):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 4:
-        _, crate, version, wait = sys.argv
-        crate = crate.strip()
-        version = version.strip()
-        wait_remain = int(wait.strip())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("crate", type=str, help="the crate to wait for")
+    parser.add_argument("version", type=str, help="the version to wait for")
+    parser.add_argument("timeout", type=int, help="number of seconds to wait")
+    args = parser.parse_args()
 
-        print("Checking...")
-        check(crate, version)
+    print("Checking...")
+    check(args.crate, args.version)
 
-        period = 10
-        while wait_remain > 0:
-            print(f"Waiting {period}s...")
-            sys.stdout.flush()
-            time.sleep(period)
-            wait_remain -= period
-            period = int(period * 1.25)
+    wait_remain = args.timeout
+    period = 10
+    while wait_remain > 0:
+        print(f"Waiting {period}s...", flush=True)
+        time.sleep(period)
+        wait_remain -= period
+        period = int(period * 1.25)
 
-            print("Checking...")
-            sys.stdout.flush()
-            check(crate, version)
+        print("Checking...", flush=True)
+        check(args.crate, args.version)
 
-        print("Timeout expired!")
-        sys.exit(1)
-
-    # Arguments invalid, print usage.
-    me = sys.argv[0] if sys.argv else "version.py"
-    print("Waits for a crate to appear on crates.io, since cargo publish doesn't.")
-    print("See https://github.com/rust-lang/cargo/issues/9507")
-    print(f"Usage: {me} <crate> <version> <max-wait-seconds>")
-    sys.exit(2)
+    print("Timeout expired!")
+    sys.exit(1)
