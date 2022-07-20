@@ -171,6 +171,9 @@ pub enum Classification {
     #[strum(props(Description = "illegal glob"))]
     IllegalGlob = 5,
 
+    #[strum(props(Description = "deprecation"))]
+    Deprecation = 6,
+
     #[strum(props(HiddenDescription = "experimental"))]
     Experimental = 999,
 
@@ -230,6 +233,9 @@ pub enum Classification {
 
     #[strum(props(Description = "failed to resolve type variation name"))]
     LinkMissingTypeVariationName = 3004,
+
+    #[strum(props(HiddenDescription = "use of anchor zero"))]
+    LinkAnchorZero = 3005,
 
     // Type-related diagnostics (group 4).
     #[strum(props(HiddenDescription = "type-related diagnostics"))]

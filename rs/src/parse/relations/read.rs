@@ -39,7 +39,7 @@ fn parse_virtual_table(
 
     // Parse rows, ensuring that they all have the same type.
     proto_repeated_field!(x, y, values, |x, y| {
-        let result = literals::parse_struct(x, y, false);
+        let result = literals::parse_struct(x, y, false, None);
         data_type = types::assert_equal(
             y,
             &y.data_type(),

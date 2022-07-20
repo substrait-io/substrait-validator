@@ -68,8 +68,10 @@ fn parse_measure(
             "Applies aggregate function {expression:#} to all rows for \
             which {filter:#} returns true."
         );
-        let filtered_expression =
-            expressions::Expression::Function(String::from("filter"), vec![filter, expression]);
+        let filtered_expression = expressions::Expression::Function(
+            String::from("filter"),
+            vec![filter.into(), expression.into()],
+        );
         describe!(
             y,
             Expression,

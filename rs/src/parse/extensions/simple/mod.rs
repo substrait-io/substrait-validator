@@ -27,16 +27,18 @@ pub fn parse_name(x: &String, _y: &mut context::Context) -> Result<String> {
     }
 }
 
-/// "Parse" an anchor. This just reports an error if the anchor is 0.
-fn parse_anchor(x: &u32, _y: &mut context::Context) -> Result<u32> {
+/// "Parse" an anchor. This just reports a warning if the anchor is 0.
+fn parse_anchor(x: &u32, y: &mut context::Context) -> Result<u32> {
     if *x == 0 {
-        Err(cause!(
-            IllegalValue,
-            "anchor 0 is reserved to disambiguate unspecified optional references"
-        ))
-    } else {
-        Ok(*x)
+        diagnostic!(
+            y,
+            Warning,
+            LinkAnchorZero,
+            "use of anchor zero is discouraged, as references set to \
+            zero may be confused with \"unspecified\"."
+        );
     }
+    Ok(*x)
 }
 
 /// Parse a mapping from a URI anchor to a YAML extension.
@@ -91,19 +93,24 @@ fn describe_reference<T>(y: &mut context::Context, reference: &Arc<extension::Re
 pub fn parse_type_variation_reference(
     x: &u32,
     y: &mut context::Context,
-) -> Result<Arc<extension::Reference<extension::TypeVariation>>> {
+) -> Result<Option<Arc<extension::Reference<extension::TypeVariation>>>> {
     match y.tvars().resolve(x).cloned() {
         Some((variation, path)) => {
             describe_reference(y, &variation);
             link!(y, path, "Type variation anchor is defined here");
-            Ok(variation)
+            Ok(Some(variation))
         }
         None => {
-            describe!(y, Misc, "Unresolved type variation");
-            Err(cause!(
-                LinkMissingAnchor,
-                "Type variation anchor {x} does not exist"
-            ))
+            if x == &0 {
+                describe!(y, Misc, "Implicit default type variation");
+                Ok(None)
+            } else {
+                describe!(y, Misc, "Unresolved type variation");
+                Err(cause!(
+                    LinkMissingAnchor,
+                    "Type variation anchor {x} does not exist"
+                ))
+            }
         }
     }
 }

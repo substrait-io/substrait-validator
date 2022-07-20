@@ -54,8 +54,8 @@ pub fn parse_if_then(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(condition);
-        args.push(value);
+        args.push(condition.into());
+        args.push(value.into());
 
         Ok(())
     });
@@ -76,14 +76,14 @@ pub fn parse_if_then(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(value);
+        args.push(value.into());
     } else {
         // Allow missing else, making the type nullable.
         comment!(y, "Otherwise, yield null.");
         return_type = return_type.make_nullable();
 
         // Yield null for the else clause.
-        args.push(expressions::Expression::new_null(return_type.clone()));
+        args.push(expressions::Expression::new_null(return_type.clone()).into());
     }
 
     // Describe node.
@@ -110,7 +110,7 @@ pub fn parse_switch(
     // Parse value to match.
     let (n, e) = proto_boxed_required_field!(x, y, r#match, expressions::parse_expression);
     let mut match_type = n.data_type();
-    args.push(e.unwrap_or_default());
+    args.push(e.unwrap_or_default().into());
 
     // Handle branches.
     proto_required_repeated_field!(x, y, ifs, |x, y| {
@@ -143,8 +143,8 @@ pub fn parse_switch(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(match_value.into());
-        args.push(value);
+        args.push(expressions::Expression::from(match_value).into());
+        args.push(value.into());
 
         Ok(())
     });
@@ -165,14 +165,14 @@ pub fn parse_switch(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(value);
+        args.push(value.into());
     } else {
         // Allow missing else, making the type nullable.
         comment!(y, "Otherwise, yield null.");
         return_type = return_type.make_nullable();
 
         // Yield null for the else clause.
-        args.push(expressions::Expression::new_null(return_type.clone()));
+        args.push(expressions::Expression::new_null(return_type.clone()).into());
     }
 
     // Describe node.
@@ -200,13 +200,13 @@ pub fn parse_singular_or_list(
     // Parse value to match.
     let (n, e) = proto_boxed_required_field!(x, y, value, expressions::parse_expression);
     let match_type = n.data_type();
-    args.push(e.unwrap_or_default());
+    args.push(e.unwrap_or_default().into());
 
     // Handle allowed values.
     proto_required_repeated_field!(x, y, options, |x, y| {
         let expression = expressions::parse_expression(x, y)?;
         let value_type = y.data_type();
-        args.push(expression);
+        args.push(expression.into());
 
         // Check that the type is the same as the value.
         types::assert_equal(
@@ -249,17 +249,19 @@ pub fn parse_multi_or_list(
     // Parse value to match.
     let (ns, es) = proto_required_repeated_field!(x, y, value, expressions::parse_expression);
     let match_types = ns.iter().map(|x| x.data_type()).collect::<Vec<_>>();
-    args.push(expressions::Expression::Tuple(
-        es.into_iter().map(|x| x.unwrap_or_default()).collect(),
-    ));
+    args.push(
+        expressions::Expression::Tuple(es.into_iter().map(|x| x.unwrap_or_default()).collect())
+            .into(),
+    );
 
     // Handle allowed values.
     proto_required_repeated_field!(x, y, options, |x, y| {
         let (ns, es) = proto_required_repeated_field!(x, y, fields, expressions::parse_expression);
         let value_types = ns.iter().map(|x| x.data_type()).collect::<Vec<_>>();
-        args.push(expressions::Expression::Tuple(
-            es.into_iter().map(|x| x.unwrap_or_default()).collect(),
-        ));
+        args.push(
+            expressions::Expression::Tuple(es.into_iter().map(|x| x.unwrap_or_default()).collect())
+                .into(),
+        );
 
         // Check that the type is the same as the value.
         if match_types.len() != value_types.len() {

@@ -13,7 +13,7 @@ use crate::util;
 pub fn parse_enum(
     x: &substrait::expression::Enum,
     y: &mut context::Context,
-) -> diagnostic::Result<expressions::Expression> {
+) -> diagnostic::Result<expressions::ExpressionOrEnum> {
     // Parse variant.
     let variant = proto_required_field!(x, y, enum_kind, |x, y| {
         match x {
@@ -41,7 +41,7 @@ pub fn parse_enum(
         describe!(y, Misc, "Default function option variant");
     }
 
-    Ok(expressions::Expression::EnumVariant(variant))
+    Ok(expressions::ExpressionOrEnum::Enum(variant))
 }
 
 /// Parse a typecast expression. Returns a description of said expression.

@@ -127,6 +127,30 @@ impl<T: ProtoPrimitive> InputNode for T {
     }
 }
 
+impl InputNode for () {
+    fn type_to_node() -> tree::Node {
+        tree::NodeType::ProtoMessage("google.protobuf.Empty").into()
+    }
+
+    fn data_to_node(&self) -> tree::Node {
+        tree::NodeType::ProtoMessage("google.protobuf.Empty").into()
+    }
+
+    fn oneof_variant(&self) -> Option<&'static str> {
+        None
+    }
+
+    fn parse_unknown(&self, _context: &mut context::Context<'_>) -> bool {
+        false
+    }
+}
+
+impl ProtoMessage for () {
+    fn proto_message_type() -> &'static str {
+        "google.protobuf.Empty"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

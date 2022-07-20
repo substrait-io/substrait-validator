@@ -18,7 +18,7 @@ pub mod references;
 pub mod subqueries;
 
 /// Description of an expression.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
     /// Used for unknown expression types.
     Unresolved,
@@ -31,7 +31,7 @@ pub enum Expression {
 
     /// Used for function calls and conditionals (which, really, are just
     /// builtin function calls).
-    Function(String, Vec<Expression>),
+    Function(String, Vec<functions::FunctionArgument>),
 
     /// Used for subqueries, or anything else where the "arguments" are too
     /// extensive to be reasonably described; the argument list is always
@@ -43,11 +43,6 @@ pub enum Expression {
 
     /// Used for type casts.
     Cast(Arc<data_type::DataType>, Box<Expression>),
-
-    /// Used for function option enum variants. Note that these aren't normal
-    /// expressions, as they have no associated type. See FIXME at the bottom
-    /// of this file.
-    EnumVariant(Option<String>),
 }
 
 impl Default for Expression {
@@ -103,8 +98,6 @@ impl Describe for Expression {
                 expression.describe(f, expr_limit)?;
                 write!(f, ")")
             }
-            Expression::EnumVariant(Some(x)) => util::string::describe_identifier(f, x, limit),
-            Expression::EnumVariant(None) => write!(f, "-"),
         }
     }
 }
@@ -122,29 +115,82 @@ impl Expression {
     }
 }
 
+/// Expressions may include enums to support the legacy function argument
+/// specification method.
+#[derive(Clone, Debug)]
+pub enum ExpressionOrEnum {
+    /// Used for value arguments or normal expressions.
+    Value(Expression),
+
+    /// Used for enum function arguments.
+    Enum(Option<String>),
+}
+
+impl Default for ExpressionOrEnum {
+    fn default() -> Self {
+        ExpressionOrEnum::Value(Expression::Unresolved)
+    }
+}
+
+impl From<Expression> for ExpressionOrEnum {
+    fn from(e: Expression) -> Self {
+        ExpressionOrEnum::Value(e)
+    }
+}
+
+impl Describe for ExpressionOrEnum {
+    fn describe(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        limit: util::string::Limit,
+    ) -> std::fmt::Result {
+        match self {
+            ExpressionOrEnum::Value(e) => e.describe(f, limit),
+            ExpressionOrEnum::Enum(Some(x)) => util::string::describe_identifier(f, x, limit),
+            ExpressionOrEnum::Enum(None) => write!(f, "-"),
+        }
+    }
+}
+
+impl std::fmt::Display for ExpressionOrEnum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.display().fmt(f)
+    }
+}
+
 /// Parse an expression type. Returns a description of said expression.
 fn parse_expression_type(
     x: &substrait::expression::RexType,
     y: &mut context::Context,
     enum_allowed: bool,
-) -> diagnostic::Result<Expression> {
-    match x {
+) -> diagnostic::Result<ExpressionOrEnum> {
+    Ok(match x {
         substrait::expression::RexType::Literal(x) => {
-            literals::parse_literal(x, y).map(Expression::from)
+            literals::parse_literal(x, y).map(Expression::from)?.into()
         }
         substrait::expression::RexType::Selection(x) => {
-            references::parse_field_reference(x.as_ref(), y).map(Expression::from)
+            references::parse_field_reference(x.as_ref(), y)
+                .map(Expression::from)?
+                .into()
         }
-        substrait::expression::RexType::ScalarFunction(x) => functions::parse_scalar_function(x, y),
-        substrait::expression::RexType::WindowFunction(x) => functions::parse_window_function(x, y),
-        substrait::expression::RexType::IfThen(x) => conditionals::parse_if_then(x.as_ref(), y),
+        substrait::expression::RexType::ScalarFunction(x) => {
+            functions::parse_scalar_function(x, y)?.into()
+        }
+        substrait::expression::RexType::WindowFunction(x) => {
+            functions::parse_window_function(x, y)?.into()
+        }
+        substrait::expression::RexType::IfThen(x) => {
+            conditionals::parse_if_then(x.as_ref(), y)?.into()
+        }
         substrait::expression::RexType::SwitchExpression(x) => {
-            conditionals::parse_switch(x.as_ref(), y)
+            conditionals::parse_switch(x.as_ref(), y)?.into()
         }
         substrait::expression::RexType::SingularOrList(x) => {
-            conditionals::parse_singular_or_list(x.as_ref(), y)
+            conditionals::parse_singular_or_list(x.as_ref(), y)?.into()
         }
-        substrait::expression::RexType::MultiOrList(x) => conditionals::parse_multi_or_list(x, y),
+        substrait::expression::RexType::MultiOrList(x) => {
+            conditionals::parse_multi_or_list(x, y)?.into()
+        }
         substrait::expression::RexType::Enum(x) => {
             if !enum_allowed {
                 diagnostic!(
@@ -154,11 +200,13 @@ fn parse_expression_type(
                     "function option enum variants are not allowed here"
                 );
             }
-            misc::parse_enum(x, y)
+            misc::parse_enum(x, y)?
         }
-        substrait::expression::RexType::Cast(x) => misc::parse_cast(x.as_ref(), y),
-        substrait::expression::RexType::Subquery(x) => subqueries::parse_subquery(x.as_ref(), y),
-    }
+        substrait::expression::RexType::Cast(x) => misc::parse_cast(x.as_ref(), y)?.into(),
+        substrait::expression::RexType::Subquery(x) => {
+            subqueries::parse_subquery(x.as_ref(), y)?.into()
+        }
+    })
 }
 
 /// Parse an expression. Returns a description of said expression.
@@ -166,7 +214,7 @@ fn parse_expression_internal(
     x: &substrait::Expression,
     y: &mut context::Context,
     enum_allowed: bool,
-) -> diagnostic::Result<Expression> {
+) -> diagnostic::Result<ExpressionOrEnum> {
     // Parse the expression.
     let (n, e) = proto_required_field!(x, y, rex_type, parse_expression_type, enum_allowed);
     let expression = e.unwrap_or_default();
@@ -185,7 +233,10 @@ pub fn parse_expression(
     x: &substrait::Expression,
     y: &mut context::Context,
 ) -> diagnostic::Result<Expression> {
-    parse_expression_internal(x, y, false)
+    match parse_expression_internal(x, y, false)? {
+        ExpressionOrEnum::Value(x) => Ok(x),
+        ExpressionOrEnum::Enum(_) => Err(cause!(IllegalValue, "enums are not allowed here")),
+    }
 }
 
 /// Parse a predicate expression (a normal expression that yields a boolean).
@@ -194,7 +245,7 @@ pub fn parse_predicate(
     x: &substrait::Expression,
     y: &mut context::Context,
 ) -> diagnostic::Result<Expression> {
-    let expression = parse_expression_internal(x, y, false)?;
+    let expression = parse_expression(x, y)?;
     let data_type = y.data_type();
     if !matches!(
         data_type.class(),
@@ -211,13 +262,11 @@ pub fn parse_predicate(
     Ok(expression)
 }
 
-/// Parse a function argument, which can be an expression or an enum option.
-fn parse_function_argument(
+/// Parse a legacy function argument, which can be an expression or an enum
+/// option.
+fn parse_legacy_function_argument(
     x: &substrait::Expression,
     y: &mut context::Context,
-) -> diagnostic::Result<Expression> {
+) -> diagnostic::Result<ExpressionOrEnum> {
     parse_expression_internal(x, y, true)
 }
-
-// FIXME: above should really be solved with a oneof, or better yet, by
-// separating the options passed to a function from its arguments.
