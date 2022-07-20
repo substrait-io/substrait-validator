@@ -251,6 +251,13 @@ fn substrait_validator(_py: Python, m: &PyModule) -> PyResult<()> {
         Ok(dict.into())
     }
 
+    /// Returns the version of Substrait that the validator was built against.
+    #[pyfn(m)]
+    #[pyo3(name = "get_substrait_version")]
+    fn get_substrait_version_py(py: Python) -> PyResult<PyObject> {
+        Ok(substrait_validator::substrait_version().to_object(py))
+    }
+
     m.add_class::<Config>()?;
     m.add_class::<ResultHandle>()?;
     Ok(())

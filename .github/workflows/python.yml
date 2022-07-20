@@ -22,6 +22,11 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
+    - name: Fetch Substrait submodule tags
+      working-directory: substrait
+      run: |
+        git fetch --recurse-submodules=no origin +refs/tags/*:refs/tags/*
+        git describe --dirty --tags
     - name: Install latest protoc
       uses: arduino/setup-protoc@v1
       with:
@@ -40,7 +45,7 @@ jobs:
       # ^ this ensures that its build.rs is run, which is all we need. Sadly
       # there doesn't seem to be a way to do this that doesn't pull in all
       # normal dependencies: https://github.com/rust-lang/cargo/issues/7178
-    - name: Install build dependencies
+    - name: Install Python build dependencies
       run: python3 -m pip install --upgrade pip maturin
     - name: Prepare build environment
       working-directory: py

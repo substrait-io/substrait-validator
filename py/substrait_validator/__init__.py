@@ -10,7 +10,12 @@ from io import BytesIO
 from typing import Iterable
 from google.protobuf import json_format
 from google.protobuf.message import DecodeError as ProtoDecodeError
-from .substrait_validator import ResultHandle, Config as _Config, get_diagnostic_codes
+from .substrait_validator import (
+    ResultHandle,
+    Config as _Config,
+    get_diagnostic_codes,
+    get_substrait_version as _get_substrait_version,
+)
 from .substrait.plan_pb2 import Plan
 from .substrait.validator.validator_pb2 import ParseResult, Diagnostic, Path
 
@@ -284,6 +289,12 @@ def path_to_string(path: Path) -> str:
     return "".join(elements)
 
 
+def substrait_version() -> str:
+    """Returns the version of Substrait that the validator was built
+    against."""
+    return _get_substrait_version()
+
+
 @click.command()
 @click.argument("infile", required=False)
 @click.option(
@@ -390,6 +401,12 @@ def path_to_string(path: Path) -> str:
     is_flag=True,
     help=("Show a list of all known diagnostic codes and exit."),
 )
+@click.option(
+    "--substrait-version",
+    "print_substrait_version",
+    is_flag=True,
+    help=("Print the version(s) of Substrait that the validator " "supports and exit."),
+)
 def cli(  # noqa: C901
     infile,
     in_type,
@@ -403,6 +420,7 @@ def cli(  # noqa: C901
     override_uri,
     use_urllib,
     help_diagnostics,
+    print_substrait_version,
 ):
     """Validate or convert the substrait.Plan represented by INFILE (or stdin
     using "-").
@@ -578,6 +596,11 @@ def cli(  # noqa: C901
                 print_diag(children[-1], f"{next_prefix} '- ", f"{next_prefix}    ")
 
         print_diag(diags[0])
+        sys.exit(0)
+
+    # Print Substrait version if requested.
+    if print_substrait_version:
+        click.echo(substrait_version())
         sys.exit(0)
 
     # Parse verbosity level.
