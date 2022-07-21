@@ -188,7 +188,7 @@ impl Describe for Literal {
                         if d < &0 {
                             write!(f, "-")?;
                         }
-                        let d = d.abs() as u128;
+                        let d = d.unsigned_abs();
                         let s = 10u128.pow(scale as u32);
                         if self
                             .data_type
