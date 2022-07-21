@@ -78,9 +78,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          # Clippy 1.60 crashes on the codebase, see
-          # https://github.com/rust-lang/rust-clippy/issues/8527
-          toolchain: "1.59.0"
+          toolchain: stable
           override: true
           components: clippy
       - uses: Swatinem/rust-cache@v1
