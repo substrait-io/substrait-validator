@@ -1083,7 +1083,7 @@ dependencies = [
 
 [[package]]
 name = "substrait-validator"
-version = "0.0.1"
+version = "0.0.5"
 dependencies = [
  "base64",
  "chrono",
@@ -1114,7 +1114,7 @@ dependencies = [
 
 [[package]]
 name = "substrait-validator-c"
-version = "0.0.1"
+version = "0.0.5"
 dependencies = [
  "cbindgen",
  "libc",
@@ -1125,7 +1125,7 @@ dependencies = [
 
 [[package]]
 name = "substrait-validator-derive"
-version = "0.0.1"
+version = "0.0.5"
 dependencies = [
  "heck 0.4.0",
  "quote",
@@ -1134,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "substrait-validator-py"
-version = "0.0.1"
+version = "0.0.5"
 dependencies = [
  "dunce",
  "prost-build",
@@ -1170,7 +1170,7 @@ dependencies = [
 
 [[package]]
 name = "test-runner"
-version = "0.0.1"
+version = "0.0.5"
 dependencies = [
  "glob",
  "prost-build",
