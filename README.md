@@ -6,6 +6,25 @@ This repository contains an EXPERIMENTAL validator for
 Rust, but bindings are available for Python and C. Other languages may use the
 C API via their respective foreign function interface systems.
 
+Substrait version support
+-------------------------
+
+Currently, each version of the validator only targets a subset of the available
+Substrait versions. Whenever Substrait makes a breaking change that affects
+validation, the validator will be updated accordingly and drop support for the
+older version. Refer to the table below for the version compatibility matrix.
+
+| Substrait...  | ... is supported by validator ...    |
+| ------------- | ------------------------------------ |
+| 0.7.x and up  | not yet supported                    |
+| 0.5.x - 0.6.x | current version                      |
+| 0.3.x - 0.4.x | 0.0.4 - 0.0.5                        |
+| older         | try 0.0.1, but your mileage may vary |
+
+As Substrait and the validator stabilize and breaking changes become less
+frequent, the intention is to support more versions within a single validator
+version.
+
 Command-line interface
 ----------------------
 
