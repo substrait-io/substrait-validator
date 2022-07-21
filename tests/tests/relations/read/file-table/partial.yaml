@@ -13,17 +13,17 @@ plan:
         localFiles:
           items:
           - uriFile: "a/b/c"
-            format: FILE_FORMAT_PARQUET
+            parquet: {}
             partitionIndex: 3
           - uriFolder: "a/b/c"
-            format: FILE_FORMAT_PARQUET
+            parquet: {}
             partitionIndex: 3
           - uriFile: "a/b/c"
-            format: FILE_FORMAT_PARQUET
+            parquet: {}
             start: 10
             length: 20
           - uriFolder: "a/b/c"
-            format: FILE_FORMAT_PARQUET
+            parquet: {}
             start: 10
             length: 20
             __test:
