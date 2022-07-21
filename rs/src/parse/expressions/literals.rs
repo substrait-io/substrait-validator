@@ -670,7 +670,7 @@ fn parse_fixed_char(
         data_type::Compound::FixedChar,
         nullable,
         variation,
-        vec![x.len() as u64],
+        vec![x.len() as i64],
     )
 }
 
@@ -698,7 +698,7 @@ fn parse_var_char(
         data_type::Compound::VarChar,
         nullable,
         variation,
-        vec![len as u64],
+        vec![len as i64],
     )
 }
 
@@ -714,7 +714,7 @@ fn parse_fixed_binary(
         data_type::Compound::FixedBinary,
         nullable,
         variation,
-        vec![x.len() as u64],
+        vec![x.len() as i64],
     )
 }
 
@@ -748,8 +748,8 @@ fn parse_decimal(
         }
     })
     .1;
-    let precision = u64::try_from(x.precision).unwrap_or_default();
-    let scale = u64::try_from(x.scale).unwrap_or_default();
+    let precision = x.precision as i64;
+    let scale = x.scale as i64;
 
     if let Some(val) = val {
         let range = 10i128.saturating_pow(precision.try_into().unwrap_or_default());

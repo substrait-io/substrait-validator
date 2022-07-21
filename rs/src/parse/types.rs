@@ -30,13 +30,11 @@ fn parse_required_nullability(
 }
 
 /// Parses an unsigned integer type parameter.
-fn parse_integral_type_parameter(
+fn parse_integer_type_parameter(
     x: &i32,
     _: &mut context::Context,
 ) -> diagnostic::Result<data_type::Parameter> {
-    Ok(u64::try_from(*x)
-        .map_err(|_| cause!(IllegalValue, "integral type parameters cannot be negative"))?
-        .into())
+    Ok(data_type::Parameter::from(*x as i64))
 }
 
 /// Macro for simple types, since they're all the same.
@@ -186,7 +184,7 @@ macro_rules! parse_compound_type_with_length {
     ($input:expr, $context:expr, $typ:ident) => {{
         // Parse fields.
         let length =
-            proto_primitive_field!($input, $context, length, parse_integral_type_parameter).1;
+            proto_primitive_field!($input, $context, length, parse_integer_type_parameter).1;
         let nullable = proto_enum_field!(
             $input,
             $context,
@@ -256,8 +254,8 @@ pub fn parse_decimal(
     y: &mut context::Context,
 ) -> diagnostic::Result<()> {
     // Parse fields.
-    let precision = proto_primitive_field!(x, y, precision, parse_integral_type_parameter).1;
-    let scale = proto_primitive_field!(x, y, scale, parse_integral_type_parameter).1;
+    let precision = proto_primitive_field!(x, y, precision, parse_integer_type_parameter).1;
+    let scale = proto_primitive_field!(x, y, scale, parse_integer_type_parameter).1;
     let nullable = proto_enum_field!(
         x,
         y,

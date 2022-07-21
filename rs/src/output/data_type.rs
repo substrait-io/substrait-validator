@@ -196,10 +196,37 @@ impl DataType {
         &self.parameters
     }
 
-    /// Returns the value of the given integer parameter.
-    pub fn int_parameter(&self, index: usize) -> Option<u64> {
-        if let Some(Parameter::Unsigned(value)) = self.parameters.get(index) {
+    /// Returns the value of the given boolean parameter.
+    pub fn bool_parameter(&self, index: usize) -> Option<bool> {
+        if let Some(Parameter::Boolean(value)) = self.parameters.get(index) {
             Some(*value)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the value of the given integer parameter.
+    pub fn int_parameter(&self, index: usize) -> Option<i64> {
+        if let Some(Parameter::Integer(value)) = self.parameters.get(index) {
+            Some(*value)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the value of the given enum parameter.
+    pub fn enum_parameter(&self, index: usize) -> Option<&str> {
+        if let Some(Parameter::Enum(value)) = self.parameters.get(index) {
+            Some(value)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the value of the given string parameter.
+    pub fn string_parameter(&self, index: usize) -> Option<&str> {
+        if let Some(Parameter::String(value)) = self.parameters.get(index) {
+            Some(value)
         } else {
             None
         }
@@ -602,13 +629,13 @@ impl ParameterInfo for Compound {
                         "{self} expects a single parameter (length)"
                     ));
                 }
-                if let Parameter::Unsigned(length) = params[0] {
+                if let Parameter::Integer(length) = params[0] {
                     // Note: 2147483647 = 2^31-1 = maximum value for signed
                     // 32-bit integer. However, the significance of the number
                     // is just that the Substrait specification says this is
                     // the limit.
-                    const MIN_LENGTH: u64 = 1;
-                    const MAX_LENGTH: u64 = 2147483647;
+                    const MIN_LENGTH: i64 = 1;
+                    const MAX_LENGTH: i64 = 2147483647;
                     if !(MIN_LENGTH..=MAX_LENGTH).contains(&length) {
                         return Err(cause!(
                             TypeMismatchedParameters,
@@ -629,17 +656,17 @@ impl ParameterInfo for Compound {
                         "{self} expects two parameters (precision and scale)"
                     ));
                 }
-                if let Parameter::Unsigned(precision) = params[0] {
-                    const MIN_PRECISION: u64 = 1;
-                    const MAX_PRECISION: u64 = 38;
+                if let Parameter::Integer(precision) = params[0] {
+                    const MIN_PRECISION: i64 = 1;
+                    const MAX_PRECISION: i64 = 38;
                     if !(MIN_PRECISION..=MAX_PRECISION).contains(&precision) {
                         return Err(cause!(
                             TypeMismatchedParameters,
                             "{self} precision {precision} is out of range {MIN_PRECISION}..{MAX_PRECISION}"
                         ));
                     }
-                    if let Parameter::Unsigned(scale) = params[1] {
-                        if scale > precision {
+                    if let Parameter::Integer(scale) = params[1] {
+                        if scale < 0 || scale > precision {
                             return Err(cause!(
                                 TypeMismatchedParameters,
                                 "{self} scale {scale} is out of range 0..{precision}"
@@ -748,14 +775,26 @@ impl ParameterInfo for Compound {
 /// Parameter for parameterized types.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Parameter {
+    /// Null, to skip optional parameters.
+    Null,
+
+    /// Boolean type parameter (only used by extensions).
+    Boolean(bool),
+
+    /// Integer type parameter (varchar length, etc.).
+    Integer(i64),
+
+    /// Enumeration type parameter (only used by extensions).
+    Enum(String),
+
+    /// String type parameter (only used by extensions).
+    String(String),
+
     /// Type parameter (list element type, struct element types, etc).
     Type(Arc<DataType>),
 
     /// Named type parameter (named struct/schema pseudotype elements).
     NamedType(String, Arc<DataType>),
-
-    /// Integral type parameter (varchar length, etc.).
-    Unsigned(u64),
 }
 
 impl Describe for Parameter {
@@ -765,6 +804,11 @@ impl Describe for Parameter {
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
+            Parameter::Null => write!(f, "null"),
+            Parameter::Boolean(value) => write!(f, "{value}"),
+            Parameter::Integer(value) => write!(f, "{value}"),
+            Parameter::Enum(variant) => util::string::describe_identifier(f, variant, limit),
+            Parameter::String(value) => util::string::describe_string(f, value, limit),
             Parameter::Type(data_type) => data_type.describe(f, limit),
             Parameter::NamedType(name, data_type) => {
                 let (name_limit, type_limit) = limit.split(name.len());
@@ -772,7 +816,6 @@ impl Describe for Parameter {
                 write!(f, ": ")?;
                 data_type.describe(f, type_limit)
             }
-            Parameter::Unsigned(value) => write!(f, "{value}"),
         }
     }
 }
@@ -857,8 +900,20 @@ impl From<Arc<DataType>> for Parameter {
     }
 }
 
-impl From<u64> for Parameter {
-    fn from(x: u64) -> Self {
-        Parameter::Unsigned(x)
+impl From<i64> for Parameter {
+    fn from(x: i64) -> Self {
+        Parameter::Integer(x)
+    }
+}
+
+impl From<bool> for Parameter {
+    fn from(x: bool) -> Self {
+        Parameter::Boolean(x)
+    }
+}
+
+impl From<String> for Parameter {
+    fn from(x: String) -> Self {
+        Parameter::String(x)
     }
 }

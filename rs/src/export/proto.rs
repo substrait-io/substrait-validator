@@ -133,18 +133,10 @@ impl From<&comment::Element> for validator::comment::Element {
                 comment::Element::Span(span) => {
                     validator::comment::element::Kind::Span(span.into())
                 }
-                comment::Element::NewLine => {
-                    validator::comment::element::Kind::NewLine(validator::Empty {})
-                }
-                comment::Element::ListOpen => {
-                    validator::comment::element::Kind::ListOpen(validator::Empty {})
-                }
-                comment::Element::ListNext => {
-                    validator::comment::element::Kind::ListNext(validator::Empty {})
-                }
-                comment::Element::ListClose => {
-                    validator::comment::element::Kind::ListClose(validator::Empty {})
-                }
+                comment::Element::NewLine => validator::comment::element::Kind::NewLine(()),
+                comment::Element::ListOpen => validator::comment::element::Kind::ListOpen(()),
+                comment::Element::ListNext => validator::comment::element::Kind::ListNext(()),
+                comment::Element::ListClose => validator::comment::element::Kind::ListClose(()),
             }),
         }
     }
@@ -182,9 +174,7 @@ impl From<&tree::NodeType> for validator::node::NodeType {
                     data: Some(data.into()),
                 })
             }
-            tree::NodeType::ProtoMissingOneOf => {
-                validator::node::NodeType::ProtoMissingOneof(validator::Empty::default())
-            }
+            tree::NodeType::ProtoMissingOneOf => validator::node::NodeType::ProtoMissingOneof(()),
             tree::NodeType::NodeReference(anchor, node) => {
                 validator::node::NodeType::NodeReference(validator::node::NodeReference {
                     value: *anchor,
@@ -196,12 +186,8 @@ impl From<&tree::NodeType> for validator::node::NodeType {
                     uri: info.uri.name().unwrap_or_default().to_string(),
                 })
             }
-            tree::NodeType::YamlMap => {
-                validator::node::NodeType::YamlMap(validator::Empty::default())
-            }
-            tree::NodeType::YamlArray => {
-                validator::node::NodeType::YamlArray(validator::Empty::default())
-            }
+            tree::NodeType::YamlMap => validator::node::NodeType::YamlMap(()),
+            tree::NodeType::YamlArray => validator::node::NodeType::YamlArray(()),
             tree::NodeType::YamlPrimitive(data) => {
                 validator::node::NodeType::YamlPrimitive(data.into())
             }
@@ -308,7 +294,7 @@ impl From<&data_type::Class> for validator::data_type::Class {
                     validator::data_type::class::Kind::UserDefinedType(user_defined.as_ref().into())
                 }
                 data_type::Class::Unresolved => {
-                    validator::data_type::class::Kind::UnresolvedType(validator::Empty {})
+                    validator::data_type::class::Kind::UnresolvedType(())
                 }
             }),
         }
@@ -393,7 +379,7 @@ impl From<&extension::Reference<extension::TypeVariation>> for validator::data_t
                 },
             )
         } else {
-            validator::data_type::Variation::UnresolvedVariation(validator::Empty {})
+            validator::data_type::Variation::UnresolvedVariation(())
         }
     }
 }
@@ -425,6 +411,19 @@ impl From<&data_type::Parameter> for validator::data_type::Parameter {
     fn from(node: &data_type::Parameter) -> Self {
         Self {
             kind: Some(match node {
+                data_type::Parameter::Null => validator::data_type::parameter::Kind::Null(()),
+                data_type::Parameter::Boolean(x) => {
+                    validator::data_type::parameter::Kind::Boolean(*x)
+                }
+                data_type::Parameter::Integer(x) => {
+                    validator::data_type::parameter::Kind::Integer(*x)
+                }
+                data_type::Parameter::Enum(x) => {
+                    validator::data_type::parameter::Kind::Enumeration(x.clone())
+                }
+                data_type::Parameter::String(x) => {
+                    validator::data_type::parameter::Kind::String(x.clone())
+                }
                 data_type::Parameter::Type(data_type) => {
                     validator::data_type::parameter::Kind::DataType(data_type.as_ref().into())
                 }
@@ -433,9 +432,6 @@ impl From<&data_type::Parameter> for validator::data_type::Parameter {
                         name: name.to_string(),
                         data_type: Some(data_type.as_ref().into()),
                     })
-                }
-                data_type::Parameter::Unsigned(unsigned) => {
-                    validator::data_type::parameter::Kind::Unsigned(*unsigned)
                 }
             }),
         }
