@@ -436,10 +436,15 @@ pub fn parse_map(x: &substrait::r#type::Map, y: &mut context::Context) -> diagno
     Ok(())
 }
 
-/// Parses a user-defined type.
-pub fn parse_user_defined(x: &u32, y: &mut context::Context) -> diagnostic::Result<()> {
-    // FIXME: why can't user-defined types also have type variations associated
-    // with them?
+/// Parses a pre-0.5.0 user-defined type.
+pub fn parse_legacy_user_defined(x: &u32, y: &mut context::Context) -> diagnostic::Result<()> {
+    // Signal the deprecation.
+    diagnostic!(
+        y,
+        Warning,
+        Deprecation,
+        "this field was deprecated in favor of user_defined in Substrait 0.5.0"
+    );
 
     // Parse fields.
     let user_type = extensions::simple::parse_type_reference(x, y)
@@ -452,6 +457,57 @@ pub fn parse_user_defined(x: &u32, y: &mut context::Context) -> diagnostic::Resu
             data_type::Class::UserDefined(user_type),
             false,
             None,
+            vec![],
+        )
+        .map_err(|e| diagnostic!(y, Error, e))
+        .unwrap_or_default()
+    } else {
+        Arc::default()
+    };
+
+    // Attach the type to the node.
+    y.set_data_type(data_type);
+
+    Ok(())
+}
+
+/// Parses a 0.6.0+ user-defined type.
+pub fn parse_user_defined(
+    x: &substrait::r#type::UserDefined,
+    y: &mut context::Context,
+) -> diagnostic::Result<()> {
+    // Parse fields.
+    let user_type = proto_primitive_field!(
+        x,
+        y,
+        type_reference,
+        extensions::simple::parse_type_reference
+    )
+    .1;
+    let nullable = proto_enum_field!(
+        x,
+        y,
+        nullability,
+        substrait::r#type::Nullability,
+        parse_required_nullability
+    )
+    .1;
+    let variation = proto_primitive_field!(
+        x,
+        y,
+        type_variation_reference,
+        extensions::simple::parse_type_variation_reference
+    )
+    .1;
+
+    // Convert to internal type object.
+    let data_type = if let (Some(user_type), Some(nullable), Some(variation)) =
+        (user_type, nullable, variation)
+    {
+        data_type::DataType::new(
+            data_type::Class::UserDefined(user_type),
+            nullable,
+            variation,
             vec![],
         )
         .map_err(|e| diagnostic!(y, Error, e))
@@ -495,7 +551,8 @@ pub fn parse_type_kind(
         substrait::r#type::Kind::Struct(x) => parse_struct(x, y),
         substrait::r#type::Kind::List(x) => parse_list(x, y),
         substrait::r#type::Kind::Map(x) => parse_map(x, y),
-        substrait::r#type::Kind::UserDefinedTypeReference(x) => parse_user_defined(x, y),
+        substrait::r#type::Kind::UserDefinedTypeReference(x) => parse_legacy_user_defined(x, y),
+        substrait::r#type::Kind::UserDefined(x) => parse_user_defined(x, y),
     }
 }
 

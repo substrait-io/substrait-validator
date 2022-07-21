@@ -13,8 +13,7 @@ plan:
         localFiles:
           items:
           - uriPath: "1/2/3"
-          advancedExtension:
-            enhancement:
+            extension:
               "@type": substrait.Plan
   expectedTypeUrls:
   - substrait.Plan

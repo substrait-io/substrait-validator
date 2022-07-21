@@ -1,4 +1,4 @@
-name: read-files-basic
+name: read-files-arrow
 plan:
   __test: [ level: i ]
   relations:
@@ -13,4 +13,4 @@ plan:
         localFiles:
           items:
           - uriPath: "1/2/3"
-            format: FILE_FORMAT_PARQUET
+            arrow: {}

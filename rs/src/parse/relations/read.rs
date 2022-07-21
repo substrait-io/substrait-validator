@@ -101,11 +101,32 @@ fn parse_path_type(
     }
 }
 
+/// Parse file format, yielding a string description of the format if known.
+fn parse_file_format(
+    x: &substrait::read_rel::local_files::file_or_files::FileFormat,
+    y: &mut context::Context,
+) -> diagnostic::Result<Option<String>> {
+    Ok(match x {
+        substrait::read_rel::local_files::file_or_files::FileFormat::Parquet(_) => {
+            Some(String::from("Parquet"))
+        }
+        substrait::read_rel::local_files::file_or_files::FileFormat::Arrow(_) => {
+            Some(String::from("Arrow IPC"))
+        }
+        substrait::read_rel::local_files::file_or_files::FileFormat::Orc(_) => {
+            Some(String::from("Orc"))
+        }
+        substrait::read_rel::local_files::file_or_files::FileFormat::Extension(x) => {
+            extensions::advanced::parse_functional_any(x, y)?;
+            None
+        }
+    })
+}
+
 /// Parse file entry.
 fn parse_file_or_files(
     x: &substrait::read_rel::local_files::FileOrFiles,
     y: &mut context::Context,
-    extension_present: bool,
 ) -> diagnostic::Result<()> {
     // Parse path.
     let multiple = proto_required_field!(x, y, path_type, parse_path_type)
@@ -113,30 +134,9 @@ fn parse_file_or_files(
         .unwrap_or_default();
 
     // Parse read configuration.
-    let format = proto_enum_field!(
-        x,
-        y,
-        format,
-        substrait::read_rel::local_files::file_or_files::FileFormat,
-        |x, y| {
-            if !extension_present
-                && matches!(
-                    x,
-                    substrait::read_rel::local_files::file_or_files::FileFormat::Unspecified
-                )
-            {
-                diagnostic!(
-                    y,
-                    Error,
-                    IllegalValue,
-                    "file format must be specified when no enhancement extension is present"
-                );
-            }
-            Ok(*x)
-        }
-    )
-    .1
-    .unwrap_or_default();
+    let format = proto_required_field!(x, y, file_format, parse_file_format)
+        .1
+        .flatten();
     proto_primitive_field!(x, y, partition_index);
     proto_primitive_field!(x, y, start);
     proto_primitive_field!(x, y, length);
@@ -177,11 +177,8 @@ fn parse_file_or_files(
         }
         summary!(y, "a single");
     }
-    match format {
-        substrait::read_rel::local_files::file_or_files::FileFormat::Unspecified => {}
-        substrait::read_rel::local_files::file_or_files::FileFormat::Parquet => {
-            summary!(y, "Parquet");
-        }
+    if let Some(format) = format {
+        summary!(y, "{}", format);
     }
     if multiple {
         summary!(y, "files");
@@ -198,19 +195,7 @@ fn parse_local_files(
     y: &mut context::Context,
 ) -> diagnostic::Result<SourceInfo> {
     // Parse fields.
-    let extension_present = x
-        .advanced_extension
-        .as_ref()
-        .and_then(|x| x.enhancement.as_ref())
-        .is_some();
-    proto_required_repeated_field!(
-        x,
-        y,
-        items,
-        parse_file_or_files,
-        |_, _, _, _, _| (),
-        extension_present
-    );
+    proto_required_repeated_field!(x, y, items, parse_file_or_files, |_, _, _, _, _| (),);
     proto_field!(
         x,
         y,
