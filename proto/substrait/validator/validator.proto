@@ -4,6 +4,7 @@ syntax = "proto3";
 package substrait.validator;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
 
 option csharp_namespace = "Substrait.Validator.Protobuf";
 option java_multiple_files = true;
@@ -50,7 +51,7 @@ message Node {
 
     // This node is inserted as a placeholder when a required oneof field was
     // not populated in the input.
-    Empty proto_missing_oneof = 3;
+    google.protobuf.Empty proto_missing_oneof = 3;
 
     // Special case of proto_primitive for references to anchors defined
     // elsewhere in the plan.
@@ -63,11 +64,11 @@ message Node {
 
     // This node represents a YAML map/object. The keys are represented using
     // Field messages in data.
-    Empty yaml_map = 6;
+    google.protobuf.Empty yaml_map = 6;
 
     // This node represents a YAML array. The elements are represented using
     // ArrayElement messages in data.
-    Empty yaml_array = 7;
+    google.protobuf.Empty yaml_array = 7;
 
     // This node represents a YAML primitive.
     PrimitiveData yaml_primitive = 8;
@@ -299,20 +300,20 @@ message Comment {
       Span span = 1;
 
       // A newline, i.e. the next span should start on the next line.
-      Empty new_line = 2;
+      google.protobuf.Empty new_line = 2;
 
       // Opens a new unordered list. The next span is the start of the text for
       // the next item. list_next elements are used to advance to the next list
       // item; newlines can be used to add paragraphs without bullet points.
       // Each list_open should be matched with a list_close. Lists may be
       // nested.
-      Empty list_open = 3;
+      google.protobuf.Empty list_open = 3;
 
       // Advances to the next list item.
-      Empty list_next = 4;
+      google.protobuf.Empty list_next = 4;
 
       // Closes the current list.
-      Empty list_close = 5;
+      google.protobuf.Empty list_close = 5;
     }
   }
 
@@ -343,7 +344,7 @@ message DataType {
   // Type variation, if any.
   oneof variation {
     UserDefinedVariation user_defined_variation = 9;
-    Empty unresolved_variation = 15;
+    google.protobuf.Empty unresolved_variation = 15;
   }
 
   // Type parameters for non-simple types.
@@ -355,7 +356,7 @@ message DataType {
       Simple simple = 1;
       Compound compound = 2;
       UserDefinedType user_defined_type = 3;
-      Empty unresolved_type = 7;
+      google.protobuf.Empty unresolved_type = 7;
     }
   }
 
@@ -445,7 +446,7 @@ message DataType {
       oneof base_type {
         Class physical = 1;
         UserDefinedVariation logical = 2;
-        Empty unresolved = 7;
+        google.protobuf.Empty unresolved = 7;
       }
 
       // Function behavior for this type variation.
@@ -470,8 +471,26 @@ message DataType {
       // Named data type parameter, for example N:T in NSTRUCT<N:T>.
       Named named_type = 2;
 
-      // Unsigned integer parameter, for example the L in VARCHAR<L>.
-      uint64 unsigned = 3;
+      // Boolean paramater, used only for extension types.
+      bool boolean = 4;
+
+      // Integer parameter, for example the L in VARCHAR<L>.
+      int64 integer = 5;
+
+      // Enumeration parameter, used only for extension types.
+      string enumeration = 6;
+
+      // String parameter, used only for extension types.
+      string string = 7;
+
+      // Used to skip optional parameters.
+      google.protobuf.Empty null = 8;
+
+      // Used when the value of a parameter could not be resolved.
+      google.protobuf.Empty unresolved = 9;
+
+      // Replaced by `integer`.
+      uint64 unsigned = 3 [deprecated = true];
     }
   }
 
@@ -484,6 +503,3 @@ message DataType {
     DataType data_type = 2;
   }
 }
-
-// Used for oneof field variants that have no data associated with them.
-message Empty {}

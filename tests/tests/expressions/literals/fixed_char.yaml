@@ -41,8 +41,8 @@ plan:
             - "null":
                 fixed_char:
                   length: -2147483648 # i32 minimum
-                  length__test: [ diag: { level: e, code: 2, msg: "*parameters cannot be negative*" } ]
                   nullability: NULLABILITY_NULLABLE
+                  __test: [ diag: { level: e, code: 4002, msg: "*out of range*" } ]
             - "null":
                 fixed_char:
                   length: 0 # size 0 not allowed

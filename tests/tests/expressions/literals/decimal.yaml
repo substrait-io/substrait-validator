@@ -113,16 +113,30 @@ plan:
             - "null":
                 decimal:
                   scale: -2147483648 # i32 minimum
-                  scale__test: [ diag: { level: e, code: 2, msg: "*parameters cannot be negative*" } ]
-                  precision: -2147483648 # i32 minimum
-                  precision__test: [ diag: { level: e, code: 2, msg: "*parameters cannot be negative*" } ]
+                  precision: 38
                   nullability: NULLABILITY_NULLABLE
+                  __test: [ diag: { level: e, code: 4002, msg: "*-2147483648 is out of range*" } ]
+            - "null":
+                decimal:
+                  scale: 0
+                  precision: -2147483648 # i32 minimum
+                  nullability: NULLABILITY_NULLABLE
+                  __test: [ diag: { level: e, code: 4002, msg: "*-2147483648 is out of range*" } ]
+          - fields:
             - "null":
                 decimal:
                   scale: 0
                   precision: 0 # 0 digits doesn't make sense
                   nullability: NULLABILITY_NULLABLE
                   __test: [ diag: { level: e, code: 4002, msg: "*out of range*" } ]
+            - "null":
+                decimal:
+                  scale: 0
+                  precision: 15
+                  nullability: NULLABILITY_NULLABLE
+            __test:
+            - diag: { level: e, code: 4005 }
+            - diag: { level: e, code: 4005 }
           - fields:
             - "null":
                 decimal:

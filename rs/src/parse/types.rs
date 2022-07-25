@@ -30,13 +30,11 @@ fn parse_required_nullability(
 }
 
 /// Parses an unsigned integer type parameter.
-fn parse_integral_type_parameter(
+fn parse_integer_type_parameter(
     x: &i32,
     _: &mut context::Context,
 ) -> diagnostic::Result<data_type::Parameter> {
-    Ok(u64::try_from(*x)
-        .map_err(|_| cause!(IllegalValue, "integral type parameters cannot be negative"))?
-        .into())
+    Ok(data_type::Parameter::from(*x as i64))
 }
 
 /// Macro for simple types, since they're all the same.
@@ -186,7 +184,7 @@ macro_rules! parse_compound_type_with_length {
     ($input:expr, $context:expr, $typ:ident) => {{
         // Parse fields.
         let length =
-            proto_primitive_field!($input, $context, length, parse_integral_type_parameter).1;
+            proto_primitive_field!($input, $context, length, parse_integer_type_parameter).1;
         let nullable = proto_enum_field!(
             $input,
             $context,
@@ -256,8 +254,8 @@ pub fn parse_decimal(
     y: &mut context::Context,
 ) -> diagnostic::Result<()> {
     // Parse fields.
-    let precision = proto_primitive_field!(x, y, precision, parse_integral_type_parameter).1;
-    let scale = proto_primitive_field!(x, y, scale, parse_integral_type_parameter).1;
+    let precision = proto_primitive_field!(x, y, precision, parse_integer_type_parameter).1;
+    let scale = proto_primitive_field!(x, y, scale, parse_integer_type_parameter).1;
     let nullable = proto_enum_field!(
         x,
         y,
@@ -471,6 +469,38 @@ pub fn parse_legacy_user_defined(x: &u32, y: &mut context::Context) -> diagnosti
     Ok(())
 }
 
+/// Parses a parameter for a user-defined type class.
+pub fn parse_type_parameter_variant(
+    x: &substrait::r#type::parameter::Parameter,
+    y: &mut context::Context,
+) -> diagnostic::Result<data_type::Parameter> {
+    Ok(match x {
+        substrait::r#type::parameter::Parameter::Null(_) => data_type::Parameter::Null,
+        substrait::r#type::parameter::Parameter::DataType(x) => {
+            parse_type(x, y)?;
+            data_type::Parameter::Type(y.data_type())
+        }
+        substrait::r#type::parameter::Parameter::Boolean(x) => data_type::Parameter::Boolean(*x),
+        substrait::r#type::parameter::Parameter::Integer(x) => data_type::Parameter::Integer(*x),
+        substrait::r#type::parameter::Parameter::Enum(x) => data_type::Parameter::Enum(x.clone()),
+        substrait::r#type::parameter::Parameter::String(x) => {
+            data_type::Parameter::String(x.clone())
+        }
+    })
+}
+
+/// Parses a parameter for a user-defined type class.
+pub fn parse_type_parameter(
+    x: &substrait::r#type::Parameter,
+    y: &mut context::Context,
+) -> diagnostic::Result<data_type::Parameter> {
+    Ok(
+        proto_required_field!(x, y, parameter, parse_type_parameter_variant)
+            .1
+            .unwrap_or_default(),
+    )
+}
+
 /// Parses a 0.6.0+ user-defined type.
 pub fn parse_user_defined(
     x: &substrait::r#type::UserDefined,
@@ -499,6 +529,11 @@ pub fn parse_user_defined(
         extensions::simple::parse_type_variation_reference
     )
     .1;
+    let parameters = proto_repeated_field!(x, y, type_parameters, parse_type_parameter)
+        .1
+        .into_iter()
+        .map(|x| x.unwrap_or_default())
+        .collect();
 
     // Convert to internal type object.
     let data_type = if let (Some(user_type), Some(nullable), Some(variation)) =
@@ -508,7 +543,7 @@ pub fn parse_user_defined(
             data_type::Class::UserDefined(user_type),
             nullable,
             variation,
-            vec![],
+            parameters,
         )
         .map_err(|e| diagnostic!(y, Error, e))
         .unwrap_or_default()
