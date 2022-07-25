@@ -486,6 +486,9 @@ message DataType {
       // Used to skip optional parameters.
       google.protobuf.Empty null = 8;
 
+      // Used when the value of a parameter could not be resolved.
+      google.protobuf.Empty unresolved = 9;
+
       // Replaced by `integer`.
       uint64 unsigned = 3 [deprecated = true];
     }

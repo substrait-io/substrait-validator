@@ -464,6 +464,9 @@ fn format_data_type(prefix: &str, data_type: &Arc<data_type::DataType>) -> Vec<S
                 .parameter_name(index)
                 .unwrap_or_else(|| "?".to_string());
             match parameter {
+                data_type::Parameter::Unresolved => {
+                    html.push(format_data_type_card(&format!(".{name}: !")))
+                }
                 data_type::Parameter::Null => {
                     html.push(format_data_type_card(&format!(".{name}: null")))
                 }

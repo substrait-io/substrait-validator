@@ -469,6 +469,38 @@ pub fn parse_legacy_user_defined(x: &u32, y: &mut context::Context) -> diagnosti
     Ok(())
 }
 
+/// Parses a parameter for a user-defined type class.
+pub fn parse_type_parameter_variant(
+    x: &substrait::r#type::parameter::Parameter,
+    y: &mut context::Context,
+) -> diagnostic::Result<data_type::Parameter> {
+    Ok(match x {
+        substrait::r#type::parameter::Parameter::Null(_) => data_type::Parameter::Null,
+        substrait::r#type::parameter::Parameter::DataType(x) => {
+            parse_type(x, y)?;
+            data_type::Parameter::Type(y.data_type())
+        }
+        substrait::r#type::parameter::Parameter::Boolean(x) => data_type::Parameter::Boolean(*x),
+        substrait::r#type::parameter::Parameter::Integer(x) => data_type::Parameter::Integer(*x),
+        substrait::r#type::parameter::Parameter::Enum(x) => data_type::Parameter::Enum(x.clone()),
+        substrait::r#type::parameter::Parameter::String(x) => {
+            data_type::Parameter::String(x.clone())
+        }
+    })
+}
+
+/// Parses a parameter for a user-defined type class.
+pub fn parse_type_parameter(
+    x: &substrait::r#type::Parameter,
+    y: &mut context::Context,
+) -> diagnostic::Result<data_type::Parameter> {
+    Ok(
+        proto_required_field!(x, y, parameter, parse_type_parameter_variant)
+            .1
+            .unwrap_or_default(),
+    )
+}
+
 /// Parses a 0.6.0+ user-defined type.
 pub fn parse_user_defined(
     x: &substrait::r#type::UserDefined,
@@ -497,6 +529,11 @@ pub fn parse_user_defined(
         extensions::simple::parse_type_variation_reference
     )
     .1;
+    let parameters = proto_repeated_field!(x, y, type_parameters, parse_type_parameter)
+        .1
+        .into_iter()
+        .map(|x| x.unwrap_or_default())
+        .collect();
 
     // Convert to internal type object.
     let data_type = if let (Some(user_type), Some(nullable), Some(variation)) =
@@ -506,7 +543,7 @@ pub fn parse_user_defined(
             data_type::Class::UserDefined(user_type),
             nullable,
             variation,
-            vec![],
+            parameters,
         )
         .map_err(|e| diagnostic!(y, Error, e))
         .unwrap_or_default()

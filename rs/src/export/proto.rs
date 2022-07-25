@@ -411,6 +411,9 @@ impl From<&data_type::Parameter> for validator::data_type::Parameter {
     fn from(node: &data_type::Parameter) -> Self {
         Self {
             kind: Some(match node {
+                data_type::Parameter::Unresolved => {
+                    validator::data_type::parameter::Kind::Unresolved(())
+                }
                 data_type::Parameter::Null => validator::data_type::parameter::Kind::Null(()),
                 data_type::Parameter::Boolean(x) => {
                     validator::data_type::parameter::Kind::Boolean(*x)

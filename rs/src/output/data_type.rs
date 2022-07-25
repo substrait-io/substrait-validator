@@ -838,6 +838,7 @@ impl ParameterInfo for extension::DataType {
             // Check the provided parameter against the information contained
             // in the slot.
             match param {
+                Parameter::Unresolved => (),
                 Parameter::Null => {
                     if !slot.optional {
                         return Err(cause!(
@@ -944,6 +945,9 @@ impl ParameterInfo for extension::DataType {
 /// Parameter for parameterized types.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Parameter {
+    /// Unresolved. Used when the parameter could not be parsed.
+    Unresolved,
+
     /// Null, to skip optional parameters.
     Null,
 
@@ -973,6 +977,7 @@ impl Describe for Parameter {
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
+            Parameter::Unresolved => write!(f, "!"),
             Parameter::Null => write!(f, "null"),
             Parameter::Boolean(value) => write!(f, "{value}"),
             Parameter::Integer(value) => write!(f, "{value}"),
@@ -986,6 +991,12 @@ impl Describe for Parameter {
                 data_type.describe(f, type_limit)
             }
         }
+    }
+}
+
+impl Default for Parameter {
+    fn default() -> Self {
+        Parameter::Unresolved
     }
 }
 
