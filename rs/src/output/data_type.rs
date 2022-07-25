@@ -489,13 +489,22 @@ pub trait ParameterInfo {
     /// Checks whether the given parameter set is valid for this base type.
     fn check_parameters(&self, params: &[Parameter]) -> diagnostic::Result<()>;
 
-    /// Returns the logical name of the given parameter.
+    /// Returns the logical name of the given parameter. If the index is out of
+    /// range or the name is unknown, yield None.
     fn parameter_name(&self, index: usize) -> Option<String>;
+
+    /// Returns the logical name of the given parameter, returning its index
+    /// if the name is not known.
+    fn parameter_name_or_index(&self, index: usize) -> String {
+        self.parameter_name(index)
+            .unwrap_or_else(|| format!("{}", index))
+    }
 
     /// Whether this type supports parameters. This is used to determine
     /// whether to print <> when the parameter list is empty. This is used to
     /// distinguish a concrete empty struct from a struct with unspecified
-    /// fields.
+    /// fields. If it's unknown whether a type has parameters, false is to be
+    /// returned.
     fn has_parameters(&self) -> bool;
 }
 
@@ -540,33 +549,24 @@ impl ParameterInfo for Class {
                 }
             }
             Class::Compound(compound) => compound.check_parameters(params),
-            Class::UserDefined(_) => {
-                if params.is_empty() {
-                    Ok(())
-                } else {
-                    Err(cause!(
-                        TypeMismatchedParameters,
-                        "user-defined types cannot currently be parameterized"
-                    ))
-                }
-            }
+            Class::UserDefined(user_defined) => user_defined.check_parameters(params),
             Class::Unresolved => Ok(()),
         }
     }
 
     fn parameter_name(&self, index: usize) -> Option<String> {
-        if let Class::Compound(compound) = self {
-            compound.parameter_name(index)
-        } else {
-            None
+        match self {
+            Class::Compound(compound) => compound.parameter_name(index),
+            Class::UserDefined(user_defined) => user_defined.parameter_name(index),
+            _ => None,
         }
     }
 
     fn has_parameters(&self) -> bool {
-        if let Class::Compound(compound) = self {
-            compound.has_parameters()
-        } else {
-            false
+        match self {
+            Class::Compound(compound) => compound.has_parameters(),
+            Class::UserDefined(user_defined) => user_defined.has_parameters(),
+            _ => false,
         }
     }
 }
@@ -769,6 +769,175 @@ impl ParameterInfo for Compound {
 
     fn has_parameters(&self) -> bool {
         true
+    }
+}
+
+impl ParameterInfo for extension::Reference<extension::DataType> {
+    fn check_parameters(&self, params: &[Parameter]) -> diagnostic::Result<()> {
+        self.definition
+            .as_ref()
+            .map(|d| d.check_parameters(params))
+            .unwrap_or(Ok(()))
+    }
+
+    fn parameter_name(&self, index: usize) -> Option<String> {
+        self.definition
+            .as_ref()
+            .map(|d| d.parameter_name(index))
+            .unwrap_or_default()
+    }
+
+    fn has_parameters(&self) -> bool {
+        self.definition
+            .as_ref()
+            .map(|d| d.has_parameters())
+            .unwrap_or_default()
+    }
+}
+
+impl ParameterInfo for extension::DataType {
+    fn check_parameters(&self, params: &[Parameter]) -> diagnostic::Result<()> {
+        // Determine the minimum number of parameters and check whether we have
+        // enough.
+        let min_parameters = self
+            .parameter_slots
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, slot)| if slot.optional { None } else { Some(index + 1) })
+            .unwrap_or_default();
+        if params.len() < min_parameters {
+            return Err(cause!(
+                TypeMismatchedParameters,
+                "need at least {min_parameters} parameter(s), but only {} was/were provided",
+                params.len()
+            ));
+        }
+
+        // Match parameters to slots positionally.
+        for (index, param) in params.iter().enumerate() {
+            // Determine the slot that corresponds to this parameter.
+            let slot = self
+                .parameter_slots
+                .get(index)
+                .or_else(|| {
+                    if self.parameters_variadic {
+                        self.parameter_slots.last()
+                    } else {
+                        None
+                    }
+                })
+                .ok_or_else(|| {
+                    cause!(
+                        TypeMismatchedParameters,
+                        "type expects at most {index} parameters, but {} were provided",
+                        params.len()
+                    )
+                })?;
+
+            // Check the provided parameter against the information contained
+            // in the slot.
+            match param {
+                Parameter::Null => {
+                    if !slot.optional {
+                        return Err(cause!(
+                            TypeMismatchedParameters,
+                            "parameter {} is not optional and can thus not be skipped with null",
+                            self.parameter_name_or_index(index)
+                        ));
+                    }
+                }
+                Parameter::Boolean(_) => {
+                    if !matches!(slot.bounds, extension::DataTypeParameterBounds::Boolean) {
+                        return Err(cause!(
+                            TypeMismatchedParameters,
+                            "parameter {} must be bound to a boolean",
+                            self.parameter_name_or_index(index)
+                        ));
+                    }
+                }
+                Parameter::Integer(value) => {
+                    if let extension::DataTypeParameterBounds::Integer(min, max) = &slot.bounds {
+                        if value < min || value > max {
+                            return Err(cause!(
+                                TypeMismatchedParameters,
+                                "parameter {} is out of range {min}..{max}",
+                                self.parameter_name_or_index(index)
+                            ));
+                        }
+                    } else {
+                        return Err(cause!(
+                            TypeMismatchedParameters,
+                            "parameter {} must be bound to an integer",
+                            self.parameter_name_or_index(index)
+                        ));
+                    }
+                }
+                Parameter::Enum(value) => {
+                    if let extension::DataTypeParameterBounds::Enum(options) = &slot.bounds {
+                        if !options
+                            .iter()
+                            .any(|option| option.eq_ignore_ascii_case(value))
+                        {
+                            return Err(cause!(
+                                TypeMismatchedParameters,
+                                "parameter {} must be set to one of {:?}",
+                                self.parameter_name_or_index(index),
+                                options
+                            ));
+                        }
+                    } else {
+                        return Err(cause!(
+                            TypeMismatchedParameters,
+                            "parameter {} must be bound to an enum option",
+                            self.parameter_name_or_index(index)
+                        ));
+                    }
+                }
+                Parameter::String(_) => {
+                    if !matches!(slot.bounds, extension::DataTypeParameterBounds::String) {
+                        return Err(cause!(
+                            TypeMismatchedParameters,
+                            "parameter {} must be bound to a string",
+                            self.parameter_name_or_index(index)
+                        ));
+                    }
+                }
+                Parameter::Type(_) | Parameter::NamedType(_, _) => {
+                    if !matches!(slot.bounds, extension::DataTypeParameterBounds::DataType) {
+                        return Err(cause!(
+                            TypeMismatchedParameters,
+                            "parameter {} must be bound to a data type",
+                            self.parameter_name_or_index(index)
+                        ));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn parameter_name(&self, index: usize) -> Option<String> {
+        if self.parameters_variadic && index + 1 >= self.parameter_slots.len() {
+            if let Some(slot) = self.parameter_slots.last() {
+                return Some(if slot.name.is_empty() {
+                    format!("{}", index)
+                } else {
+                    format!("{}.{}", slot.name, index + 1 - self.parameter_slots.len())
+                });
+            }
+        }
+        self.parameter_slots.get(index).map(|slot| {
+            if slot.name.is_empty() {
+                format!("{}", index)
+            } else {
+                slot.name.clone()
+            }
+        })
+    }
+
+    fn has_parameters(&self) -> bool {
+        !self.parameter_slots.is_empty()
     }
 }
 

@@ -118,11 +118,54 @@ impl<T> std::fmt::Display for Reference<T> {
     }
 }
 
-/// User-defined base data type.
+/// User-defined type class.
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct DataType {
     /// The underlying structure of the type.
     pub structure: Vec<(String, data_type::Simple)>,
+
+    /// The parameters expected by the data type.
+    pub parameter_slots: Vec<DataTypeParameterSlot>,
+
+    /// Whether or not the last parameter slot is variadic.
+    pub parameters_variadic: bool,
+}
+
+/// A parameter slot for a user-defined data type.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DataTypeParameterSlot {
+    /// YAML-provided name of the parameter.
+    pub name: String,
+
+    /// YAML-provided human-readable description of the parameter.
+    pub description: String,
+
+    /// Information about what types and values of parameters are supported.
+    pub bounds: DataTypeParameterBounds,
+
+    /// Whether this parameter is optional. If optional, it may be skipped
+    /// using null or omitted entirely if at the end of the list.
+    pub optional: bool,
+}
+
+/// Expected metatype and bounds for a type parameter.
+#[derive(Clone, Debug, PartialEq)]
+pub enum DataTypeParameterBounds {
+    /// The parameter must be bound to a (nested) data type.
+    DataType,
+
+    /// The parameter must be bound to a boolean.
+    Boolean,
+
+    /// The parameter must be bound to an integer within the specified
+    /// inclusive range.
+    Integer(i64, i64),
+
+    /// The parameter must be bound to one of the specified enum variants.
+    Enum(Vec<String>),
+
+    /// The parameter must be bound to a string.
+    String,
 }
 
 /// The base type of a type variation.
