@@ -670,7 +670,7 @@ fn parse_fixed_char(
         data_type::Compound::FixedChar,
         nullable,
         variation,
-        vec![x.len() as i64],
+        vec![i64::try_from(x.len()).unwrap()],
     )
 }
 
@@ -682,9 +682,9 @@ fn parse_var_char(
     variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
 ) -> diagnostic::Result<Literal> {
     proto_primitive_field!(x, y, length);
-    let len = x.length as usize;
+    let len: u32 = x.length;
     proto_primitive_field!(x, y, value, |x, _| {
-        if x.len() > len {
+        if x.len() > len as usize {
             Err(cause!(
                 ExpressionIllegalLiteralValue,
                 "varchar literal value is longer than specified length"
@@ -714,7 +714,7 @@ fn parse_fixed_binary(
         data_type::Compound::FixedBinary,
         nullable,
         variation,
-        vec![x.len() as i64],
+        vec![i64::try_from(x.len()).unwrap()],
     )
 }
 
