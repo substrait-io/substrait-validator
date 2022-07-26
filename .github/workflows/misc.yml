@@ -20,7 +20,7 @@ jobs:
     name: Check editorconfig
     runs-on: ubuntu-latest
     steps:
-      - uses: editorconfig-checker/action-editorconfig-checker@v1
+    - uses: editorconfig-checker/action-editorconfig-checker@v1
 
   check-version-patch:
     name: Check version update patch file
@@ -29,3 +29,15 @@ jobs:
     - uses: actions/checkout@v2
     - name: Check version update patch file
       run: python3 ci/version.py check
+
+  commitlint:
+    name: Lint commits for semantic-release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-node@v2
+      with:
+        node-version: "14"
+    - run: npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
