@@ -1,6 +1,17 @@
 Substrait validator
 ===================
 
+[![Build status]][actions] [![Docs]][docs.rs] [![Latest crate]][crates.io] [![Latest wheels]][pypi.org]
+
+[Build status]: https://img.shields.io/github/workflow/status/substrait-io/substrait-validator/Rust
+[actions]: https://github.com/substrait-io/substrait-validator/actions?query=branch%3Amain
+[Docs]: https://img.shields.io/docsrs/substrait-validator
+[docs.rs]: https://docs.rs/substrait-validator/latest/substrait_validator/
+[Latest crate]: https://img.shields.io/crates/v/substrait-validator.svg
+[crates.io]: https://crates.io/crates/substrait-validator
+[Latest wheels]: https://img.shields.io/pypi/v/substrait-validator.svg
+[pypi.org]: https://pypi.org/project/substrait-validator
+
 This repository contains an EXPERIMENTAL validator for
 [Substrait](https://github.com/substrait-io/substrait) plans. It's written in
 Rust, but bindings are available for Python and C. Other languages may use the
