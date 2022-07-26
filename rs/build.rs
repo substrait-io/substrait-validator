@@ -114,7 +114,9 @@ fn main() -> Result<()> {
                 let substrait_version = String::from_utf8_lossy(&substrait_version.stdout)
                     .trim()
                     .to_string();
-                let substrait_version: &str = &substrait_version;
+                let substrait_version = substrait_version
+                    .strip_prefix('v')
+                    .unwrap_or(&substrait_version);
                 fs::write(resource_dir.join("substrait-version"), substrait_version)
                     .expect("failed to write substrait submodule version file");
             }

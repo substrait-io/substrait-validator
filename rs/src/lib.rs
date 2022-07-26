@@ -190,6 +190,11 @@ pub fn iter_diagnostics() -> impl Iterator<Item = Classification> {
     Classification::iter()
 }
 
+/// Returns the version of the validator.
+pub fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
 /// Returns the version of Substrait that this version of the validator was
 /// built against.
 pub fn substrait_version() -> &'static str {
