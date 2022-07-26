@@ -184,7 +184,7 @@ impl Describe for Literal {
             }
             LiteralValue::Data16(d) => match self.data_type.class() {
                 data_type::Class::Compound(data_type::Compound::Decimal) => {
-                    if let Some(scale) = self.data_type.int_parameter(1) {
+                    if let Some(scale) = self.data_type.integer_parameter(1) {
                         if d < &0 {
                             write!(f, "-")?;
                         }
@@ -192,7 +192,7 @@ impl Describe for Literal {
                         let s = 10u128.pow(scale as u32);
                         if self
                             .data_type
-                            .int_parameter(0)
+                            .integer_parameter(0)
                             .map(|precision| scale < precision)
                             .unwrap_or(true)
                         {

@@ -11,6 +11,7 @@ pub mod diagnostic;
 pub mod comment;
 pub mod data_type;
 pub mod extension;
+pub mod meta_type;
 pub mod parse_result;
 pub mod path;
 pub mod primitive_data;

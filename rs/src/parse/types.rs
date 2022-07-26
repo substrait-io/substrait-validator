@@ -10,6 +10,7 @@ use crate::output::data_type;
 use crate::output::data_type::ParameterInfo;
 use crate::output::diagnostic;
 use crate::output::extension;
+use crate::output::meta_type;
 use crate::parse::context;
 use crate::parse::extensions;
 use crate::util;
@@ -478,14 +479,12 @@ pub fn parse_type_parameter_variant(
         substrait::r#type::parameter::Parameter::Null(_) => data_type::Parameter::Null,
         substrait::r#type::parameter::Parameter::DataType(x) => {
             parse_type(x, y)?;
-            data_type::Parameter::Type(y.data_type())
+            y.data_type().into()
         }
-        substrait::r#type::parameter::Parameter::Boolean(x) => data_type::Parameter::Boolean(*x),
-        substrait::r#type::parameter::Parameter::Integer(x) => data_type::Parameter::Integer(*x),
-        substrait::r#type::parameter::Parameter::Enum(x) => data_type::Parameter::Enum(x.clone()),
-        substrait::r#type::parameter::Parameter::String(x) => {
-            data_type::Parameter::String(x.clone())
-        }
+        substrait::r#type::parameter::Parameter::Boolean(x) => (*x).into(),
+        substrait::r#type::parameter::Parameter::Integer(x) => (*x).into(),
+        substrait::r#type::parameter::Parameter::Enum(x) => data_type::Parameter::enum_variant(x),
+        substrait::r#type::parameter::Parameter::String(x) => x.clone().into(),
     })
 }
 
@@ -800,8 +799,8 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             format!("Fixed-length ({length}) binary string type")
         }
         data_type::Class::Compound(data_type::Compound::Decimal) => {
-            let precision = data_type.int_parameter(0);
-            let scale = data_type.int_parameter(1);
+            let precision = data_type.integer_parameter(0);
+            let scale = data_type.integer_parameter(1);
             let (p, i, s) = if let (Some(precision), Some(scale)) = (precision, scale) {
                 (
                     precision.to_string(),
@@ -832,7 +831,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
         }
         data_type::Class::Compound(data_type::Compound::List) => {
             let e = data_type
-                .type_parameter(0)
+                .data_type_parameter(0)
                 .map(|t| t.to_string())
                 .unwrap_or_else(|| String::from("?"));
             summary!(
@@ -850,11 +849,11 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             // limit here. Assuming the other size limits are 2^31-1 for
             // Java compatibility, the same would need to apply here.
             let k = data_type
-                .type_parameter(0)
+                .data_type_parameter(0)
                 .map(|t| t.to_string())
                 .unwrap_or_else(|| String::from("?"));
             let v = data_type
-                .type_parameter(1)
+                .data_type_parameter(1)
                 .map(|t| t.to_string())
                 .unwrap_or_else(|| String::from("?"));
             summary!(
@@ -1110,72 +1109,49 @@ fn assert_equal_internal(
                     format!("{path}.{path_element}")
                 };
                 match (other_param, base_param) {
-                    (data_type::Parameter::Type(other), data_type::Parameter::Type(base)) => {
-                        data_type::Parameter::Type(assert_equal_internal(
-                            context,
-                            other,
-                            promote_other,
-                            base,
-                            promote_base,
-                            message,
-                            &path,
-                        ))
-                    }
                     (
-                        data_type::Parameter::Type(other),
-                        data_type::Parameter::NamedType(name, base),
-                    ) => data_type::Parameter::NamedType(
-                        name.clone(),
-                        assert_equal_internal(
-                            context,
-                            other,
-                            promote_other,
-                            base,
-                            promote_base,
-                            message,
-                            &path,
-                        ),
-                    ),
-                    (
-                        data_type::Parameter::NamedType(name, other),
-                        data_type::Parameter::Type(base),
-                    ) => data_type::Parameter::NamedType(
-                        name.clone(),
-                        assert_equal_internal(
-                            context,
-                            other,
-                            promote_other,
-                            base,
-                            promote_base,
-                            message,
-                            &path,
-                        ),
-                    ),
-                    (
-                        data_type::Parameter::NamedType(other_name, other),
-                        data_type::Parameter::NamedType(base_name, base),
+                        data_type::Parameter::Some(other_name, other),
+                        data_type::Parameter::Some(base_name, base),
                     ) => {
-                        if other_name != base_name {
-                            diagnostic!(
-                                context,
-                                Warning,
-                                TypeMismatch,
-                                "{message}: field name {} vs. {}{path}",
-                                util::string::as_ident_or_string(&other_name),
-                                util::string::as_ident_or_string(&base_name)
-                            );
+                        if let (Some(other_name), Some(base_name)) = (other_name, base_name) {
+                            if other_name != base_name {
+                                diagnostic!(
+                                    context,
+                                    Warning,
+                                    TypeMismatch,
+                                    "{message}: field name {} vs. {}{path}",
+                                    util::string::as_ident_or_string(&other_name),
+                                    util::string::as_ident_or_string(&base_name)
+                                );
+                            }
                         }
-                        data_type::Parameter::NamedType(
-                            base_name.clone(),
-                            assert_equal_internal(
-                                context,
-                                other,
-                                promote_other,
-                                base,
-                                promote_base,
-                                message,
-                                &path,
-                            ),
+                        data_type::Parameter::Some(
+                            base_name.clone().or_else(|| other_name.clone()),
+                            if let (
+                                meta_type::MetaValue::DataType(ref other),
+                                meta_type::MetaValue::DataType(ref base),
+                            ) = (other, base)
+                            {
+                                meta_type::MetaValue::DataType(assert_equal_internal(
+                                    context,
+                                    other,
+                                    promote_other,
+                                    base,
+                                    promote_base,
+                                    message,
+                                    &path,
+                                ))
+                            } else {
+                                if other != base {
+                                    diagnostic!(
+                                        context,
+                                        Error,
+                                        TypeMismatch,
+                                        "{message}: {other} vs. {base}{path}"
+                                    );
+                                }
+                                base.clone()
+                            },
                         )
                     }
                     (other, base) => {

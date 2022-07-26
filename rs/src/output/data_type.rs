@@ -6,6 +6,7 @@
 
 use crate::output::diagnostic;
 use crate::output::extension;
+use crate::output::meta_type;
 use crate::util;
 use crate::util::string::Describe;
 use std::collections::HashSet;
@@ -18,7 +19,7 @@ pub type Variation = Option<Arc<extension::Reference<extension::TypeVariation>>>
 
 /// A Substrait data type. Includes facilities for storing unresolved or
 /// partially-resolved types.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DataType {
     /// Type class (simple, compound, or user-defined).
     class: Class,
@@ -85,11 +86,11 @@ impl DataType {
         // type.
         if let Some(variation) = &variation {
             if let Some(definition) = &variation.definition {
-                let base = definition.get_base_class();
-                if !base.weak_equals(&class) {
+                if !definition.base.weak_equals(&class) {
                     return Err(cause!(
                         TypeMismatchedVariation,
-                        "variation {variation} is derived from {base}, not {class}"
+                        "variation {variation} is derived from {}, not {class}",
+                        definition.base
                     ));
                 }
             }
@@ -122,7 +123,7 @@ impl DataType {
             class: Class::Compound(Compound::Struct),
             nullable,
             variation: None,
-            parameters: fields.into_iter().map(Parameter::Type).collect(),
+            parameters: fields.into_iter().map(Parameter::from).collect(),
         })
     }
 
@@ -132,7 +133,7 @@ impl DataType {
             class: Class::Compound(Compound::List),
             nullable,
             variation: None,
-            parameters: vec![Parameter::Type(element)],
+            parameters: vec![Parameter::from(element)],
         })
     }
 
@@ -142,7 +143,7 @@ impl DataType {
             class: Class::Compound(Compound::List),
             nullable,
             variation: None,
-            parameters: vec![Parameter::Type(key), Parameter::Type(value)],
+            parameters: vec![Parameter::from(key), Parameter::from(value)],
         })
     }
 
@@ -197,48 +198,28 @@ impl DataType {
     }
 
     /// Returns the value of the given boolean parameter.
-    pub fn bool_parameter(&self, index: usize) -> Option<bool> {
-        if let Some(Parameter::Boolean(value)) = self.parameters.get(index) {
-            Some(*value)
-        } else {
-            None
-        }
+    pub fn boolean_parameter(&self, index: usize) -> Option<bool> {
+        self.parameters.get(index).and_then(|x| x.get_boolean())
     }
 
     /// Returns the value of the given integer parameter.
-    pub fn int_parameter(&self, index: usize) -> Option<i64> {
-        if let Some(Parameter::Integer(value)) = self.parameters.get(index) {
-            Some(*value)
-        } else {
-            None
-        }
+    pub fn integer_parameter(&self, index: usize) -> Option<i64> {
+        self.parameters.get(index).and_then(|x| x.get_integer())
     }
 
     /// Returns the value of the given enum parameter.
     pub fn enum_parameter(&self, index: usize) -> Option<&str> {
-        if let Some(Parameter::Enum(value)) = self.parameters.get(index) {
-            Some(value)
-        } else {
-            None
-        }
+        self.parameters.get(index).and_then(|x| x.get_enum())
     }
 
     /// Returns the value of the given string parameter.
     pub fn string_parameter(&self, index: usize) -> Option<&str> {
-        if let Some(Parameter::String(value)) = self.parameters.get(index) {
-            Some(value)
-        } else {
-            None
-        }
+        self.parameters.get(index).and_then(|x| x.get_string())
     }
 
     /// Returns the value of the given type parameter.
-    pub fn type_parameter(&self, index: usize) -> Option<Arc<DataType>> {
-        match self.parameters.get(index) {
-            Some(Parameter::Type(t)) => Some(t.clone()),
-            Some(Parameter::NamedType(_, t)) => Some(t.clone()),
-            _ => None,
-        }
+    pub fn data_type_parameter(&self, index: usize) -> Option<Arc<DataType>> {
+        self.parameters.get(index).and_then(|x| x.get_data_type())
     }
 
     /// Returns whether this is an unresolved type.
@@ -250,8 +231,8 @@ impl DataType {
     pub fn is_unresolved_deep(&self) -> bool {
         self.is_unresolved()
             || self.parameters.iter().any(|p| match p {
-                Parameter::Type(t) => t.is_unresolved_deep(),
-                Parameter::NamedType(_, t) => t.is_unresolved_deep(),
+                Parameter::Some(_, meta_type::MetaValue::Unresolved) => true,
+                Parameter::Some(_, meta_type::MetaValue::DataType(t)) => t.is_unresolved_deep(),
                 _ => false,
             })
     }
@@ -271,7 +252,7 @@ impl DataType {
             Some(
                 self.parameters
                     .iter()
-                    .map(|x| x.get_type().cloned().unwrap_or_default())
+                    .map(|x| x.get_data_type().unwrap_or_default())
                     .collect(),
             )
         } else {
@@ -283,7 +264,7 @@ impl DataType {
     /// single element of type T, or None otherwise.
     pub fn unwrap_singular_struct(&self) -> Option<Arc<DataType>> {
         if self.is_struct() && self.parameters.len() == 1 {
-            self.type_parameter(0)
+            self.data_type_parameter(0)
         } else {
             None
         }
@@ -298,7 +279,7 @@ impl DataType {
     /// otherwise.
     pub fn unwrap_list(&self) -> Option<Arc<DataType>> {
         if self.is_list() {
-            self.type_parameter(0)
+            self.data_type_parameter(0)
         } else {
             None
         }
@@ -313,7 +294,7 @@ impl DataType {
     /// otherwise.
     pub fn unwrap_map(&self) -> Option<Arc<DataType>> {
         if self.is_map() {
-            self.type_parameter(1)
+            self.data_type_parameter(1)
         } else {
             None
         }
@@ -323,7 +304,7 @@ impl DataType {
     /// otherwise.
     pub fn unwrap_map_key(&self) -> Option<Arc<DataType>> {
         if self.is_map() {
-            self.type_parameter(0)
+            self.data_type_parameter(0)
         } else {
             None
         }
@@ -341,11 +322,7 @@ impl DataType {
         if self.is_unresolved() {
             Some(DataType::new_unresolved())
         } else if self.is_struct() {
-            match self.parameters.get(index) {
-                Some(Parameter::Type(t)) => Some(t.clone()),
-                Some(Parameter::NamedType(_, t)) => Some(t.clone()),
-                _ => None,
-            }
+            self.data_type_parameter(index)
         } else {
             None
         }
@@ -367,7 +344,7 @@ impl DataType {
                 } else {
                     p
                 };
-                p.map_type(|t| t.split_field_names_internal(namer))
+                p.map(|v| v.map_data_type(|t| t.split_field_names_internal(namer)))
             })
             .collect();
         let class = if self.class == Class::Compound(Compound::NamedStruct) {
@@ -410,8 +387,9 @@ impl DataType {
                 .iter()
                 .cloned()
                 .map(|p| {
-                    p.with_name(&mut namer)?
-                        .map_type_result(|t| t.apply_field_names_internal(namer))
+                    p.with_name(&mut namer)?.map_result(|v| {
+                        v.map_data_type_result(|t| t.apply_field_names_internal(namer))
+                    })
                 })
                 .collect();
 
@@ -428,7 +406,11 @@ impl DataType {
                 .parameters
                 .iter()
                 .cloned()
-                .map(|p| p.map_type_result(|t| t.apply_field_names_internal(namer)))
+                .map(|p| {
+                    p.map_result(|v| {
+                        v.map_data_type_result(|t| t.apply_field_names_internal(namer))
+                    })
+                })
                 .collect();
 
             // Data types generated this way can never become invalid, so we
@@ -511,6 +493,9 @@ pub trait ParameterInfo {
 /// Type class.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Class {
+    /// Unresolved type. Used for error recovery.
+    Unresolved,
+
     /// Well-known simple type.
     Simple(Simple),
 
@@ -519,9 +504,12 @@ pub enum Class {
 
     /// User-defined type.
     UserDefined(Arc<extension::Reference<extension::DataType>>),
+}
 
-    /// Unresolved type. Used for error recovery.
-    Unresolved,
+impl Default for Class {
+    fn default() -> Self {
+        Class::Unresolved
+    }
 }
 
 impl std::fmt::Display for Class {
@@ -629,7 +617,7 @@ impl ParameterInfo for Compound {
                         "{self} expects a single parameter (length)"
                     ));
                 }
-                if let Parameter::Integer(length) = params[0] {
+                if let Parameter::Some(None, meta_type::MetaValue::Integer(length)) = params[0] {
                     // Note: 2147483647 = 2^31-1 = maximum value for signed
                     // 32-bit integer. However, the significance of the number
                     // is just that the Substrait specification says this is
@@ -656,7 +644,7 @@ impl ParameterInfo for Compound {
                         "{self} expects two parameters (precision and scale)"
                     ));
                 }
-                if let Parameter::Integer(precision) = params[0] {
+                if let Parameter::Some(None, meta_type::MetaValue::Integer(precision)) = params[0] {
                     const MIN_PRECISION: i64 = 1;
                     const MAX_PRECISION: i64 = 38;
                     if !(MIN_PRECISION..=MAX_PRECISION).contains(&precision) {
@@ -665,7 +653,7 @@ impl ParameterInfo for Compound {
                             "{self} precision {precision} is out of range {MIN_PRECISION}..{MAX_PRECISION}"
                         ));
                     }
-                    if let Parameter::Integer(scale) = params[1] {
+                    if let Parameter::Some(None, meta_type::MetaValue::Integer(scale)) = params[1] {
                         if scale < 0 || scale > precision {
                             return Err(cause!(
                                 TypeMismatchedParameters,
@@ -687,7 +675,10 @@ impl ParameterInfo for Compound {
             }
             Compound::Struct => {
                 for param in params.iter() {
-                    if !matches!(param, Parameter::Type(_)) {
+                    if !matches!(
+                        param,
+                        Parameter::Some(None, meta_type::MetaValue::DataType(_))
+                    ) {
                         return Err(cause!(
                             TypeMismatchedParameters,
                             "{self} parameters must be types"
@@ -698,7 +689,7 @@ impl ParameterInfo for Compound {
             Compound::NamedStruct => {
                 let mut names = HashSet::with_capacity(params.len());
                 for param in params.iter() {
-                    if let Parameter::NamedType(name, _) = &param {
+                    if let Parameter::Some(Some(name), meta_type::MetaValue::DataType(_)) = &param {
                         if !names.insert(name) {
                             return Err(cause!(
                                 TypeMismatchedParameters,
@@ -720,7 +711,10 @@ impl ParameterInfo for Compound {
                         "{self} expects a single parameter (element type)"
                     ));
                 }
-                if !matches!(params[0], Parameter::Type(_)) {
+                if !matches!(
+                    params[0],
+                    Parameter::Some(None, meta_type::MetaValue::DataType(_))
+                ) {
                     return Err(cause!(
                         TypeMismatchedParameters,
                         "{self} element type parameter must be a type"
@@ -734,13 +728,19 @@ impl ParameterInfo for Compound {
                         "{self} expects two parameters (key type and value type)"
                     ));
                 }
-                if !matches!(params[0], Parameter::Type(_)) {
+                if !matches!(
+                    params[0],
+                    Parameter::Some(None, meta_type::MetaValue::DataType(_))
+                ) {
                     return Err(cause!(
                         TypeMismatchedParameters,
                         "{self} key type parameter must be a type"
                     ));
                 }
-                if !matches!(params[1], Parameter::Type(_)) {
+                if !matches!(
+                    params[1],
+                    Parameter::Some(None, meta_type::MetaValue::DataType(_))
+                ) {
                     return Err(cause!(
                         TypeMismatchedParameters,
                         "{self} value type parameter must be a type"
@@ -838,7 +838,6 @@ impl ParameterInfo for extension::DataType {
             // Check the provided parameter against the information contained
             // in the slot.
             match param {
-                Parameter::Unresolved => (),
                 Parameter::Null => {
                     if !slot.optional {
                         return Err(cause!(
@@ -848,68 +847,13 @@ impl ParameterInfo for extension::DataType {
                         ));
                     }
                 }
-                Parameter::Boolean(_) => {
-                    if !matches!(slot.bounds, extension::DataTypeParameterBounds::Boolean) {
+                Parameter::Some(_, value) => {
+                    if !slot.pattern.match_pattern(value) {
                         return Err(cause!(
                             TypeMismatchedParameters,
-                            "parameter {} must be bound to a boolean",
-                            self.parameter_name_or_index(index)
-                        ));
-                    }
-                }
-                Parameter::Integer(value) => {
-                    if let extension::DataTypeParameterBounds::Integer(min, max) = &slot.bounds {
-                        if value < min || value > max {
-                            return Err(cause!(
-                                TypeMismatchedParameters,
-                                "parameter {} is out of range {min}..{max}",
-                                self.parameter_name_or_index(index)
-                            ));
-                        }
-                    } else {
-                        return Err(cause!(
-                            TypeMismatchedParameters,
-                            "parameter {} must be bound to an integer",
-                            self.parameter_name_or_index(index)
-                        ));
-                    }
-                }
-                Parameter::Enum(value) => {
-                    if let extension::DataTypeParameterBounds::Enum(options) = &slot.bounds {
-                        if !options
-                            .iter()
-                            .any(|option| option.eq_ignore_ascii_case(value))
-                        {
-                            return Err(cause!(
-                                TypeMismatchedParameters,
-                                "parameter {} must be set to one of {:?}",
-                                self.parameter_name_or_index(index),
-                                options
-                            ));
-                        }
-                    } else {
-                        return Err(cause!(
-                            TypeMismatchedParameters,
-                            "parameter {} must be bound to an enum option",
-                            self.parameter_name_or_index(index)
-                        ));
-                    }
-                }
-                Parameter::String(_) => {
-                    if !matches!(slot.bounds, extension::DataTypeParameterBounds::String) {
-                        return Err(cause!(
-                            TypeMismatchedParameters,
-                            "parameter {} must be bound to a string",
-                            self.parameter_name_or_index(index)
-                        ));
-                    }
-                }
-                Parameter::Type(_) | Parameter::NamedType(_, _) => {
-                    if !matches!(slot.bounds, extension::DataTypeParameterBounds::DataType) {
-                        return Err(cause!(
-                            TypeMismatchedParameters,
-                            "parameter {} must be bound to a data type",
-                            self.parameter_name_or_index(index)
+                            "parameter {} does not match pattern {}",
+                            self.parameter_name_or_index(index),
+                            slot.pattern
                         ));
                     }
                 }
@@ -943,31 +887,14 @@ impl ParameterInfo for extension::DataType {
 }
 
 /// Parameter for parameterized types.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Parameter {
-    /// Unresolved. Used when the parameter could not be parsed.
-    Unresolved,
-
     /// Null, to skip optional parameters.
     Null,
 
-    /// Boolean type parameter (only used by extensions).
-    Boolean(bool),
-
-    /// Integer type parameter (varchar length, etc.).
-    Integer(i64),
-
-    /// Enumeration type parameter (only used by extensions).
-    Enum(String),
-
-    /// String type parameter (only used by extensions).
-    String(String),
-
-    /// Type parameter (list element type, struct element types, etc).
-    Type(Arc<DataType>),
-
-    /// Named type parameter (named struct/schema pseudotype elements).
-    NamedType(String, Arc<DataType>),
+    /// Assigned parameter with an optional name attached. The name is used for
+    /// named struct/schema pseudotype elements.
+    Some(Option<String>, meta_type::MetaValue),
 }
 
 impl Describe for Parameter {
@@ -977,26 +904,15 @@ impl Describe for Parameter {
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
-            Parameter::Unresolved => write!(f, "!"),
             Parameter::Null => write!(f, "null"),
-            Parameter::Boolean(value) => write!(f, "{value}"),
-            Parameter::Integer(value) => write!(f, "{value}"),
-            Parameter::Enum(variant) => util::string::describe_identifier(f, variant, limit),
-            Parameter::String(value) => util::string::describe_string(f, value, limit),
-            Parameter::Type(data_type) => data_type.describe(f, limit),
-            Parameter::NamedType(name, data_type) => {
+            Parameter::Some(None, dt) => dt.describe(f, limit),
+            Parameter::Some(Some(name), dt) => {
                 let (name_limit, type_limit) = limit.split(name.len());
                 util::string::describe_identifier(f, name, name_limit)?;
                 write!(f, ": ")?;
-                data_type.describe(f, type_limit)
+                dt.describe(f, type_limit)
             }
         }
-    }
-}
-
-impl Default for Parameter {
-    fn default() -> Self {
-        Parameter::Unresolved
     }
 }
 
@@ -1006,29 +922,32 @@ impl std::fmt::Display for Parameter {
     }
 }
 
+impl Default for Parameter {
+    fn default() -> Self {
+        Parameter::Some(None, meta_type::MetaValue::Unresolved)
+    }
+}
+
 impl Parameter {
-    /// Splits the name annotation off from a named type parameter.
-    pub fn split_name(self) -> (Parameter, Option<String>) {
-        match self {
-            Parameter::NamedType(n, t) => (Parameter::Type(t), Some(n)),
-            p => (p, None),
-        }
+    /// Constructor for enum parameters. Note that the other types can be
+    /// easily constructed using From/Into.
+    pub fn enum_variant<S: ToString>(variant: S) -> Self {
+        Parameter::Some(None, meta_type::MetaValue::String(variant.to_string()))
     }
 
     /// Returns the name of a named type parameter.
     pub fn get_name(&self) -> Option<&str> {
         match self {
-            Parameter::NamedType(n, _) => Some(n),
+            Parameter::Some(Some(n), _) => Some(n),
             _ => None,
         }
     }
 
-    /// Returns the type of a type parameter.
-    pub fn get_type(&self) -> Option<&Arc<DataType>> {
+    /// Splits the name annotation off from a named type parameter.
+    pub fn split_name(self) -> (Parameter, Option<String>) {
         match self {
-            Parameter::Type(t) => Some(t),
-            Parameter::NamedType(_, t) => Some(t),
-            _ => None,
+            Parameter::Some(Some(n), t) => (Parameter::Some(None, t), Some(n)),
+            p => (p, None),
         }
     }
 
@@ -1038,62 +957,101 @@ impl Parameter {
     /// called and returned None.
     pub fn with_name<E, F: FnOnce() -> Result<String, E>>(self, f: F) -> Result<Parameter, E> {
         Ok(match self {
-            Parameter::Type(t) => Parameter::NamedType(f()?, t),
-            Parameter::NamedType(_, t) => Parameter::NamedType(f()?, t),
+            Parameter::Some(_, meta_type::MetaValue::DataType(t)) => {
+                Parameter::Some(Some(f()?), meta_type::MetaValue::DataType(t))
+            }
             p => p,
         })
     }
 
-    /// Modifies the contained type using the given function, if applicable. If
-    /// this is not a type parameter, the function is not called.
-    pub fn map_type_result<E, F: FnOnce(Arc<DataType>) -> Result<Arc<DataType>, E>>(
-        self,
-        f: F,
-    ) -> Result<Parameter, E> {
-        Ok(match self {
-            Parameter::Type(t) => Parameter::Type(f(t)?),
-            Parameter::NamedType(n, t) => Parameter::NamedType(n, f(t)?),
-            p => p,
-        })
-    }
-
-    /// Modifies the contained type using the given function, if applicable. If
-    /// this is not a type parameter, the function is not called.
-    pub fn map_type<F: FnOnce(Arc<DataType>) -> Arc<DataType>>(self, f: F) -> Parameter {
-        match self {
-            Parameter::Type(t) => Parameter::Type(f(t)),
-            Parameter::NamedType(n, t) => Parameter::NamedType(n, f(t)),
-            p => p,
+    /// If this parameter is a boolean, returns the boolean.
+    pub fn get_boolean(&self) -> Option<bool> {
+        if let Parameter::Some(_, x) = self {
+            x.get_boolean()
+        } else {
+            None
         }
     }
-}
 
-impl From<DataType> for Parameter {
-    fn from(t: DataType) -> Self {
-        Parameter::Type(Arc::new(t))
+    /// If this parameter is an integer, returns the integer.
+    pub fn get_integer(&self) -> Option<i64> {
+        if let Parameter::Some(_, x) = self {
+            x.get_integer()
+        } else {
+            None
+        }
     }
-}
 
-impl From<Arc<DataType>> for Parameter {
-    fn from(t: Arc<DataType>) -> Self {
-        Parameter::Type(t)
+    /// If this parameter is an enum, returns the enum variant.
+    pub fn get_enum(&self) -> Option<&str> {
+        if let Parameter::Some(_, x) = self {
+            x.get_enum()
+        } else {
+            None
+        }
     }
-}
 
-impl From<i64> for Parameter {
-    fn from(x: i64) -> Self {
-        Parameter::Integer(x)
+    /// If this parameter is a string, returns the string.
+    pub fn get_string(&self) -> Option<&str> {
+        if let Parameter::Some(_, x) = self {
+            x.get_string()
+        } else {
+            None
+        }
+    }
+
+    /// If this parameter is a data type, returns the data type.
+    pub fn get_data_type(&self) -> Option<Arc<DataType>> {
+        if let Parameter::Some(_, x) = self {
+            x.get_data_type()
+        } else {
+            None
+        }
+    }
+
+    /// Maps the value, if any.
+    pub fn map<F>(self, f: F) -> Self
+    where
+        F: FnOnce(meta_type::MetaValue) -> meta_type::MetaValue,
+    {
+        match self {
+            Parameter::Some(n, v) => Parameter::Some(n, f(v)),
+            x => x,
+        }
+    }
+
+    /// Maps the value, if any, passing through results.
+    pub fn map_result<F, E>(self, f: F) -> Result<Self, E>
+    where
+        F: FnOnce(meta_type::MetaValue) -> Result<meta_type::MetaValue, E>,
+    {
+        Ok(match self {
+            Parameter::Some(n, v) => Parameter::Some(n, f(v)?),
+            x => x,
+        })
     }
 }
 
 impl From<bool> for Parameter {
     fn from(x: bool) -> Self {
-        Parameter::Boolean(x)
+        Parameter::Some(None, x.into())
+    }
+}
+
+impl From<i64> for Parameter {
+    fn from(x: i64) -> Self {
+        Parameter::Some(None, x.into())
     }
 }
 
 impl From<String> for Parameter {
     fn from(x: String) -> Self {
-        Parameter::String(x)
+        Parameter::Some(None, x.into())
+    }
+}
+
+impl From<Arc<DataType>> for Parameter {
+    fn from(x: Arc<DataType>) -> Self {
+        Parameter::Some(None, x.into())
     }
 }

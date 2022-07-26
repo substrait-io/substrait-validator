@@ -9,7 +9,6 @@ use crate::output::diagnostic;
 use crate::output::parse_result;
 use crate::output::path;
 use crate::output::tree;
-use crate::util;
 use std::sync::Arc;
 
 const HEADER1: &str = concat!(
@@ -464,32 +463,13 @@ fn format_data_type(prefix: &str, data_type: &Arc<data_type::DataType>) -> Vec<S
                 .parameter_name(index)
                 .unwrap_or_else(|| "?".to_string());
             match parameter {
-                data_type::Parameter::Unresolved => {
-                    html.push(format_data_type_card(&format!(".{name}: !")))
-                }
                 data_type::Parameter::Null => {
                     html.push(format_data_type_card(&format!(".{name}: null")))
                 }
-                data_type::Parameter::Boolean(b) => {
-                    html.push(format_data_type_card(&format!(".{name}: {b}")))
-                }
-                data_type::Parameter::Integer(i) => {
-                    html.push(format_data_type_card(&format!(".{name}: {i}")))
-                }
-                data_type::Parameter::Enum(e) => html.push(format_data_type_card(&format!(
-                    ".{name}: {}",
-                    util::string::as_ident_or_string(e)
+                data_type::Parameter::Some(n, x) => html.push(format_data_type_card(&format!(
+                    ".{}: {x}",
+                    n.as_ref().unwrap_or(&name)
                 ))),
-                data_type::Parameter::String(s) => html.push(format_data_type_card(&format!(
-                    ".{name}: {}",
-                    util::string::as_quoted_string(s)
-                ))),
-                data_type::Parameter::Type(t) => {
-                    html.extend(format_data_type(&format!(".{name}"), t))
-                }
-                data_type::Parameter::NamedType(n, t) => {
-                    html.extend(format_data_type(&format!(".{n}"), t))
-                }
             }
         }
         html.push("</details>".to_string());

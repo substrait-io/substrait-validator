@@ -9,6 +9,8 @@ use crate::util;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use super::meta_type;
+
 /// Represents a named reference to something.
 #[derive(Clone, Debug, Default)]
 pub struct NamedReference {
@@ -140,72 +142,22 @@ pub struct DataTypeParameterSlot {
     /// YAML-provided human-readable description of the parameter.
     pub description: String,
 
-    /// Information about what types and values of parameters are supported.
-    pub bounds: DataTypeParameterBounds,
+    /// Pattern for type- and bounds-checking parameters bound to this slot.
+    pub pattern: meta_type::MetaPattern,
 
     /// Whether this parameter is optional. If optional, it may be skipped
     /// using null or omitted entirely if at the end of the list.
     pub optional: bool,
 }
 
-/// Expected metatype and bounds for a type parameter.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum DataTypeParameterBounds {
-    /// The parameter must be bound to a (nested) data type.
-    DataType,
-
-    /// The parameter must be bound to a boolean.
-    Boolean,
-
-    /// The parameter must be bound to an integer within the specified
-    /// inclusive range.
-    Integer(i64, i64),
-
-    /// The parameter must be bound to one of the specified enum variants.
-    Enum(Vec<String>),
-
-    /// The parameter must be bound to a string.
-    String,
-}
-
-/// The base type of a type variation.
-#[derive(Clone, Debug, PartialEq)]
-pub enum TypeVariationBase {
-    /// The type variation is immediately based in a physical type.
-    Physical(data_type::Class),
-
-    /// The type variation is based in another logical type variation.
-    Logical(Arc<TypeVariation>),
-
-    /// The base type is unknown.
-    Unresolved,
-}
-
-impl Default for TypeVariationBase {
-    fn default() -> Self {
-        TypeVariationBase::Unresolved
-    }
-}
-
 /// Type variation extension.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct TypeVariation {
     /// The base type for this variation.
-    pub base: TypeVariationBase,
+    pub base: data_type::Class,
 
     /// Function behavior for this variation.
     pub function_behavior: FunctionBehavior,
-}
-
-impl TypeVariation {
-    /// Return the base class for this type variation, if known.
-    pub fn get_base_class(&self) -> data_type::Class {
-        match &self.base {
-            TypeVariationBase::Physical(x) => x.clone(),
-            TypeVariationBase::Logical(x) => x.get_base_class(),
-            TypeVariationBase::Unresolved => data_type::Class::Unresolved,
-        }
-    }
 }
 
 /// Type variation function behavior.
@@ -281,6 +233,8 @@ pub struct YamlData {
 
     /// Type variations defined in this YAML file. Names are stored in lower
     /// case (Substrait's name resolution is case-insensitive).
+    /// FIXME: this declaration to definition map is insufficient. See
+    /// https://github.com/substrait-io/substrait/issues/268
     pub type_variations: HashMap<String, Arc<TypeVariation>>,
 }
 

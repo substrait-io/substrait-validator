@@ -13,6 +13,7 @@ use crate::output::comment;
 use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::output::extension;
+use crate::output::meta_type;
 use crate::output::parse_result;
 use crate::output::path;
 use crate::output::primitive_data;
@@ -411,26 +412,29 @@ impl From<&data_type::Parameter> for validator::data_type::Parameter {
     fn from(node: &data_type::Parameter) -> Self {
         Self {
             kind: Some(match node {
-                data_type::Parameter::Unresolved => {
+                data_type::Parameter::Null => validator::data_type::parameter::Kind::Null(()),
+                data_type::Parameter::Some(_, meta_type::MetaValue::Unresolved) => {
                     validator::data_type::parameter::Kind::Unresolved(())
                 }
-                data_type::Parameter::Null => validator::data_type::parameter::Kind::Null(()),
-                data_type::Parameter::Boolean(x) => {
+                data_type::Parameter::Some(_, meta_type::MetaValue::Boolean(x)) => {
                     validator::data_type::parameter::Kind::Boolean(*x)
                 }
-                data_type::Parameter::Integer(x) => {
+                data_type::Parameter::Some(_, meta_type::MetaValue::Integer(x)) => {
                     validator::data_type::parameter::Kind::Integer(*x)
                 }
-                data_type::Parameter::Enum(x) => {
+                data_type::Parameter::Some(_, meta_type::MetaValue::Enum(x)) => {
                     validator::data_type::parameter::Kind::Enumeration(x.clone())
                 }
-                data_type::Parameter::String(x) => {
+                data_type::Parameter::Some(_, meta_type::MetaValue::String(x)) => {
                     validator::data_type::parameter::Kind::String(x.clone())
                 }
-                data_type::Parameter::Type(data_type) => {
+                data_type::Parameter::Some(None, meta_type::MetaValue::DataType(data_type)) => {
                     validator::data_type::parameter::Kind::DataType(data_type.as_ref().into())
                 }
-                data_type::Parameter::NamedType(name, data_type) => {
+                data_type::Parameter::Some(
+                    Some(name),
+                    meta_type::MetaValue::DataType(data_type),
+                ) => {
                     validator::data_type::parameter::Kind::NamedType(validator::data_type::Named {
                         name: name.to_string(),
                         data_type: Some(data_type.as_ref().into()),

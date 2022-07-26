@@ -152,7 +152,7 @@ fn parse_struct_field_index(
     let index: usize = index.try_into().unwrap();
     if root.is_struct() {
         let size = root.parameters().len();
-        root.type_parameter(index)
+        root.data_type_parameter(index)
             .ok_or_else(|| cause!(IllegalValue, "struct index out of range (size = {size})"))
     } else {
         Ok(Arc::default())
