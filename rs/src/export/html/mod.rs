@@ -645,6 +645,21 @@ pub fn export<T: std::io::Write>(
     let font_awesome_b64 = base64::encode(FONT_AWESOME);
     write!(out, "{HEADER1}{}{HEADER2}", font_awesome_b64)?;
 
+    // Emit metadata.
+    writeln!(out, "<details class=\"relation_tree\" open=\"true\">")?;
+    writeln!(out, "<summary>Metadata</summary>")?;
+    writeln!(
+        out,
+        "<p>Checked using validator version {}</p>",
+        crate::version()
+    )?;
+    writeln!(
+        out,
+        "<p>Checked against Substrait version {}</p>",
+        crate::substrait_version()
+    )?;
+    writeln!(out, "</details>")?;
+
     // Emit the node graph.
     writeln!(out, "<details class=\"relation_tree\" open=\"true\">")?;
     writeln!(out, "<summary>Relation graphs</summary>")?;

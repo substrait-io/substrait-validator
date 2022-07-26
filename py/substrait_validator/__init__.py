@@ -14,10 +14,14 @@ from .substrait_validator import (
     ResultHandle,
     Config as _Config,
     get_diagnostic_codes,
+    get_version as _get_version,
     get_substrait_version as _get_substrait_version,
 )
 from .substrait.plan_pb2 import Plan
 from .substrait.validator.validator_pb2 import ParseResult, Diagnostic, Path
+
+
+__VERSION__ = _get_version()
 
 
 _JDOT_MACROS = """@macros
@@ -289,6 +293,11 @@ def path_to_string(path: Path) -> str:
     return "".join(elements)
 
 
+def version() -> str:
+    """Returns the version of the validator."""
+    return __VERSION__
+
+
 def substrait_version() -> str:
     """Returns the version of Substrait that the validator was built
     against."""
@@ -402,10 +411,19 @@ def substrait_version() -> str:
     help=("Show a list of all known diagnostic codes and exit."),
 )
 @click.option(
+    "--version",
+    "print_version",
+    is_flag=True,
+    help=("Print the version of the validator and exit."),
+)
+@click.option(
     "--substrait-version",
     "print_substrait_version",
     is_flag=True,
-    help=("Print the version(s) of Substrait that the validator " "supports and exit."),
+    help=(
+        "Print the version of Substrait that the validator was "
+        "built against and exit."
+    ),
 )
 def cli(  # noqa: C901
     infile,
@@ -420,6 +438,7 @@ def cli(  # noqa: C901
     override_uri,
     use_urllib,
     help_diagnostics,
+    print_version,
     print_substrait_version,
 ):
     """Validate or convert the substrait.Plan represented by INFILE (or stdin
@@ -601,6 +620,11 @@ def cli(  # noqa: C901
     # Print Substrait version if requested.
     if print_substrait_version:
         click.echo(substrait_version())
+        sys.exit(0)
+
+    # Print validator version if requested.
+    if print_version:
+        click.echo(version())
         sys.exit(0)
 
     # Parse verbosity level.

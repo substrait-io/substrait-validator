@@ -4,6 +4,7 @@ import substrait_validator as sv
 import pytest
 import subprocess
 import os
+import toml
 from data import BASIC_PLAN, BASIC_YAML
 
 
@@ -159,9 +160,8 @@ def test_resolver_callback():
 
 
 def test_version():
-    """Tests whether Substrait version retrieval works and returns the right
-    version."""
-    version = (
+    """Tests whether version retrieval works and returns the right versions."""
+    substrait_version = (
         subprocess.run(
             ["git", "describe", "--dirty", "--tags"],
             check=True,
@@ -173,4 +173,14 @@ def test_version():
         .stdout.decode("utf-8")
         .strip()
     )
-    assert sv.substrait_version() == version
+    if substrait_version.startswith("v"):
+        substrait_version = substrait_version[1:]
+    assert sv.substrait_version() == substrait_version
+
+    with open(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), "../pyproject.toml"),
+        "r",
+    ) as f:
+        version = toml.loads(f.read())["project"]["version"]
+    assert sv.version() == version
+    assert sv.__VERSION__ == version

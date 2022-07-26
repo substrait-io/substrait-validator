@@ -795,6 +795,16 @@ pub extern "C" fn substrait_validator_export_proto(
     export(substrait_validator::export::Format::Proto, handle, size)
 }
 
+/// Returns the version of the validator.
+#[no_mangle]
+pub extern "C" fn substrait_validator_version() -> *const libc::c_char {
+    static VERSION: once_cell::sync::OnceCell<std::ffi::CString> = once_cell::sync::OnceCell::new();
+    VERSION
+        .get_or_init(|| std::ffi::CString::new(substrait_validator::version()).unwrap())
+        .as_bytes_with_nul()
+        .as_ptr() as *const libc::c_char
+}
+
 /// Returns the version of Substrait that the validator was built against.
 #[no_mangle]
 pub extern "C" fn substrait_validator_substrait_version() -> *const libc::c_char {
