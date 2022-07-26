@@ -13,17 +13,6 @@ Contributions are welcome! Here are some ways you can help:
 
 All contributions should be licensed under Apache 2.0. We use SPDX license headers to minimize clutter. CI will ensure that all files have such a header.
 
-## Code style
-
-Code style is strictly enforced for all languages using CI and (to some extent) [pre-commit](https://pre-commit.com/) via:
-
- - Rust: [rustfmt](https://github.com/rust-lang/rustfmt) and [clippy](https://github.com/rust-lang/rust-clippy).
-    - At the time of writing, stable clippy (1.60 and 1.61) panics on the codebase; hopefully this will be fixed soon. In CI the toolchain for linting is pinned to 1.59 for this reason. You can use Rust 1.59 to run clippy locally as well (`rustup install 1.59.0`, `cargo +1.59.0 clippy`) or you can leave it to CI, but either way you'll have to silence pre-commit (run it, see if there are no violations other than the clippy panic, then commit using `--no-verify`).
- - Python: [black](https://github.com/psf/black) and [flake8](https://flake8.pycqa.org/en/4.0.1/).
- - C: [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
- - protobuf: [buf format](https://buf.build/blog/introducing-buf-format).
- - YAML: [yamllint](https://github.com/adrienverge/yamllint).
-
 ## Development dependencies
 
 Here's a (probably non-exhaustive) list of things you may want to have installed to develop for the validator.
@@ -37,6 +26,23 @@ Here's a (probably non-exhaustive) list of things you may want to have installed
  - for the C bindings: [CMake](https://cmake.org/) and a C compiler (gcc, clang, and MSVC should all work; the bindings are very lightweight)
 
 Note: this list is probably non-exhaustive; if you find something missing from this list, please add it!
+
+## Code style
+
+Code style is strictly enforced for all languages using CI and (to some extent) [pre-commit](https://pre-commit.com/) via:
+
+ - Rust: [rustfmt](https://github.com/rust-lang/rustfmt) and [clippy](https://github.com/rust-lang/rust-clippy).
+    - At the time of writing, stable clippy (1.60 and 1.61) panics on the codebase; hopefully this will be fixed soon. In CI the toolchain for linting is pinned to 1.59 for this reason. You can use Rust 1.59 to run clippy locally as well (`rustup install 1.59.0`, `cargo +1.59.0 clippy`) or you can leave it to CI, but either way you'll have to silence pre-commit (run it, see if there are no violations other than the clippy panic, then commit using `--no-verify`).
+ - Python: [black](https://github.com/psf/black) and [flake8](https://flake8.pycqa.org/en/4.0.1/).
+ - C: [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
+ - protobuf: [buf format](https://buf.build/blog/introducing-buf-format).
+ - YAML: [yamllint](https://github.com/adrienverge/yamllint).
+
+## Commit conventions
+
+Like the main Substrait repository, substrait-validator follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit message structure. You can use [`pre-commit`](https://pre-commit.com/) to check your messages for you, but note that you must install pre-commit using `pre-commit install --hook-type commit-msg` for this to work. CI will also lint your commit messages. Please also ensure that your PR title and initial comment together form a valid commit message; that will save us some work formatting the merge commit message when we merge your PR.
+
+Examples of commit messages can be seen [here](https://www.conventionalcommits.org/en/v1.0.0/#examples).
 
 ## Contributor FAQ
 
