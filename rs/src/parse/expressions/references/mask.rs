@@ -3,17 +3,16 @@
 //! Module for parsing/validation mask expressions.
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::util;
-use std::sync::Arc;
 
 /// Parse a struct item.
 fn parse_struct_item(
     x: &substrait::expression::mask_expression::StructItem,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<()> {
     // Handle the struct index field.
     let data_type = proto_primitive_field!(x, y, field, super::parse_struct_field_index, root)
@@ -46,7 +45,7 @@ fn parse_struct_item(
 fn parse_struct_select(
     x: &substrait::expression::mask_expression::StructSelect,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<()> {
     // Struct selections can only be applied to structs.
     if !root.is_unresolved() && !root.is_struct() {
@@ -74,7 +73,7 @@ fn parse_struct_select(
     .collect::<Vec<_>>();
 
     // Create struct.
-    y.set_data_type(data_type::DataType::new_struct(fields, root.nullable()));
+    y.set_data_type(data::new_struct(fields, root.nullable()));
 
     // Describe node.
     describe!(y, Expression, "Struct selection");
@@ -165,7 +164,7 @@ fn parse_list_select_item(
 fn parse_list_select(
     x: &substrait::expression::mask_expression::ListSelect,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<()> {
     // List selections can only be applied to lists.
     if !root.is_unresolved() && !root.is_list() {
@@ -196,7 +195,7 @@ fn parse_list_select(
             .data_type();
 
         // Create the new type.
-        y.set_data_type(data_type::DataType::new_list(data_type, root.nullable()));
+        y.set_data_type(data::new_list(data_type, root.nullable()));
 
         // Describe node.
         describe!(y, Expression, "List selection and sub-selection");
@@ -211,7 +210,7 @@ fn parse_list_select(
 fn parse_map_select_key(
     _x: &substrait::expression::mask_expression::map_select::MapKey,
     y: &mut context::Context,
-    _key_type: &Arc<data_type::DataType>,
+    _key_type: &data::Type,
 ) -> diagnostic::Result<()> {
     // FIXME: map keys are not necessarily strings. Why is this not a
     // primitive?
@@ -229,7 +228,7 @@ fn parse_map_select_key(
 fn parse_map_select_expression(
     _x: &substrait::expression::mask_expression::map_select::MapKeyExpression,
     y: &mut context::Context,
-    _key_type: &Arc<data_type::DataType>,
+    _key_type: &data::Type,
 ) -> diagnostic::Result<()> {
     // FIXME: in Rust vernacular, need an Fn(K) -> Option<K> here. I suppose
     // there is no structure for that yet? Or are these the regex-type things
@@ -248,7 +247,7 @@ fn parse_map_select_expression(
 fn parse_map_select_type(
     x: &substrait::expression::mask_expression::map_select::Select,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<()> {
     match x {
         substrait::expression::mask_expression::map_select::Select::Key(x) => {
@@ -264,7 +263,7 @@ fn parse_map_select_type(
 fn parse_map_select(
     x: &substrait::expression::mask_expression::MapSelect,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<()> {
     // Map selections can only be applied to maps.
     if !root.is_unresolved() && !root.is_map() {
@@ -306,11 +305,7 @@ fn parse_map_select(
             .data_type();
 
         // Create the new type.
-        y.set_data_type(data_type::DataType::new_map(
-            key_type,
-            value_type,
-            root.nullable(),
-        ));
+        y.set_data_type(data::new_map(key_type, value_type, root.nullable()));
 
         // Describe node.
         describe!(y, Expression, "Map selection and sub-selection");
@@ -325,7 +320,7 @@ fn parse_map_select(
 fn parse_select_type(
     x: &substrait::expression::mask_expression::select::Type,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<()> {
     match x {
         substrait::expression::mask_expression::select::Type::Struct(x) => {
@@ -343,7 +338,7 @@ fn parse_select_type(
 fn parse_select(
     x: &substrait::expression::mask_expression::Select,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<()> {
     let data_type = proto_required_field!(x, y, r#type, parse_select_type, root)
         .0
@@ -429,7 +424,7 @@ fn parse_maintain_singular_struct(
 pub fn parse_mask_expression(
     x: &substrait::expression::MaskExpression,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
     struct_required: bool,
 ) -> diagnostic::Result<()> {
     // Parse the struct selection and get its data type.

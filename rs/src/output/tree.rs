@@ -52,11 +52,11 @@
 //! that are not specific to the Substrait validator.
 
 use crate::output::comment;
-use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::path;
 use crate::output::primitive_data;
+use crate::output::type_system::data;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -94,7 +94,7 @@ pub struct Node {
     /// The type of data returned by this node, if any. Depending on the
     /// message and context, this may represent a table schema or scalar
     /// data.
-    pub data_type: Option<Arc<data_type::DataType>>,
+    pub data_type: Option<data::Type>,
 
     /// The information gathered about the message.
     ///
@@ -170,7 +170,7 @@ impl Node {
     /// Returns a reference to the data type that this node returns at runtime
     /// or (for type nodes) represents. If no type information is attached, a
     /// reference to a default-generated unresolved type is returned.
-    pub fn data_type(&self) -> Arc<data_type::DataType> {
+    pub fn data_type(&self) -> data::Type {
         self.data_type.clone().unwrap_or_default()
     }
 }
@@ -252,7 +252,7 @@ pub enum NodeData {
     /// emit). The TypeInfo and operation description *Field nodes are then
     /// ordered by data flow. In particular, the last TypeInfo node always
     /// represents the type of the final result of a node.
-    DataType(Arc<data_type::DataType>),
+    DataType(data::Type),
 
     /// Used for adding unstructured additional information to a message,
     /// wherever this may aid human understanding of a message.

@@ -341,8 +341,9 @@ message DataType {
   // Nullability.
   bool nullable = 8;
 
-  // Type variation, if any.
+  // Type variation.
   oneof variation {
+    google.protobuf.Empty system_preferred_variation = 10;
     UserDefinedVariation user_defined_variation = 9;
     google.protobuf.Empty unresolved_variation = 15;
   }

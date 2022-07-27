@@ -8,11 +8,11 @@
 
 use crate::input::config;
 use crate::output::comment;
-use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::path;
 use crate::output::tree;
+use crate::output::type_system::data;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -98,7 +98,7 @@ impl<'a> Context<'a> {
     /// Returns the data type currently associated with the current node. If no
     /// data type was associated yet, this silently returns a reference to an
     /// unresolved type object.
-    pub fn data_type(&self) -> Arc<data_type::DataType> {
+    pub fn data_type(&self) -> data::Type {
         self.output.data_type.clone().unwrap_or_default()
     }
 
@@ -180,7 +180,7 @@ impl<'a> Context<'a> {
     /// Can be called multiple times; only the data type specified for the
     /// final call attached to the node's "return type", but each time a
     /// NodeData::DataType is pushed into the node data as well.
-    pub fn set_data_type(&mut self, data_type: Arc<data_type::DataType>) {
+    pub fn set_data_type(&mut self, data_type: data::Type) {
         if !data_type.is_unresolved() {
             self.push(tree::NodeData::DataType(data_type.clone()));
         }
@@ -192,7 +192,7 @@ impl<'a> Context<'a> {
     /// inputs, but before they start to parse any expressions based on that
     /// schema; after all, the schema defines how (column) references behave.
     /// If the schema isn't known, it may be set to an unresolved type.
-    pub fn set_schema(&mut self, schema: Arc<data_type::DataType>) {
+    pub fn set_schema(&mut self, schema: data::Type) {
         *self
             .state
             .schema_stack
@@ -216,7 +216,7 @@ impl<'a> Context<'a> {
     /// be its parent query, 2 would be its grandparent, etc. Returns Err when
     /// the referenced schema semantically doesn't exist; returns Ok(unresolved
     /// type) when it does but the actual type isn't known.
-    pub fn schema(&self, depth: usize) -> diagnostic::Result<Arc<data_type::DataType>> {
+    pub fn schema(&self, depth: usize) -> diagnostic::Result<data::Type> {
         let len = self.state.schema_stack.len();
         if depth >= len {
             Err(cause!(
@@ -287,7 +287,7 @@ impl<'a> Context<'a> {
     pub fn define_fn(
         &mut self,
         anchor: u32,
-        uri: Arc<extension::Reference<extension::Function>>,
+        function: Arc<extension::Reference<extension::Function>>,
     ) -> Result<
         (),
         (
@@ -297,11 +297,11 @@ impl<'a> Context<'a> {
     > {
         self.state
             .functions
-            .define(anchor, uri, self.breadcrumb.path.to_path_buf())
+            .define(anchor, function, self.breadcrumb.path.to_path_buf())
     }
 
     /// Returns the resolver for type anchors and references.
-    pub fn types(&mut self) -> &mut Resolver<u32, Arc<extension::Reference<extension::DataType>>> {
+    pub fn types(&mut self) -> &mut Resolver<u32, data::class::UserDefined> {
         &mut self.state.types
     }
 
@@ -310,23 +310,15 @@ impl<'a> Context<'a> {
     pub fn define_type(
         &mut self,
         anchor: u32,
-        uri: Arc<extension::Reference<extension::DataType>>,
-    ) -> Result<
-        (),
-        (
-            Arc<extension::Reference<extension::DataType>>,
-            path::PathBuf,
-        ),
-    > {
+        class: data::class::UserDefined,
+    ) -> Result<(), (data::class::UserDefined, path::PathBuf)> {
         self.state
             .types
-            .define(anchor, uri, self.breadcrumb.path.to_path_buf())
+            .define(anchor, class, self.breadcrumb.path.to_path_buf())
     }
 
     /// Returns the resolver for type variation anchors and references.
-    pub fn tvars(
-        &mut self,
-    ) -> &mut Resolver<u32, Arc<extension::Reference<extension::TypeVariation>>> {
+    pub fn tvars(&mut self) -> &mut Resolver<u32, data::variation::UserDefined> {
         &mut self.state.type_variations
     }
 
@@ -335,17 +327,11 @@ impl<'a> Context<'a> {
     pub fn define_tvar(
         &mut self,
         anchor: u32,
-        uri: Arc<extension::Reference<extension::TypeVariation>>,
-    ) -> Result<
-        (),
-        (
-            Arc<extension::Reference<extension::TypeVariation>>,
-            path::PathBuf,
-        ),
-    > {
+        variation: data::variation::UserDefined,
+    ) -> Result<(), (data::variation::UserDefined, path::PathBuf)> {
         self.state
             .type_variations
-            .define(anchor, uri, self.breadcrumb.path.to_path_buf())
+            .define(anchor, variation, self.breadcrumb.path.to_path_buf())
     }
 
     /// Returns the resolver for protobuf Any types present in the
@@ -504,10 +490,10 @@ pub struct State {
     pub functions: Resolver<u32, Arc<extension::Reference<extension::Function>>>,
 
     /// YAML-defined data type anchor resolver.
-    pub types: Resolver<u32, Arc<extension::Reference<extension::DataType>>>,
+    pub types: Resolver<u32, data::class::UserDefined>,
 
     /// YAML-defined type variation anchor resolver.
-    pub type_variations: Resolver<u32, Arc<extension::Reference<extension::TypeVariation>>>,
+    pub type_variations: Resolver<u32, data::variation::UserDefined>,
 
     /// Protobuf Any type URL resolver.
     pub proto_any_types: Resolver<String, ()>,
@@ -520,7 +506,7 @@ pub struct State {
     /// a relation tree, but no schema is known yet (in terms of dataflow,
     /// we're still in the time before the input relation has created a
     /// stream).
-    pub schema_stack: Vec<Option<Arc<data_type::DataType>>>,
+    pub schema_stack: Vec<Option<data::Type>>,
 
     /// The YAML data object under construction, if any.
     pub yaml_data: Option<extension::YamlData>,

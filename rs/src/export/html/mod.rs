@@ -3,13 +3,12 @@
 //! This module provides a human-readable export format based on HTML.
 
 use crate::output::comment;
-use crate::output::data_type;
-use crate::output::data_type::ParameterInfo;
 use crate::output::diagnostic;
 use crate::output::parse_result;
 use crate::output::path;
 use crate::output::tree;
-use std::sync::Arc;
+use crate::output::type_system::data;
+use crate::output::type_system::data::class::ParameterInfo;
 
 const HEADER1: &str = concat!(
     r#"
@@ -448,7 +447,7 @@ fn format_data_type_card(content: &str) -> String {
 }
 
 // Format a data type.
-fn format_data_type(prefix: &str, data_type: &Arc<data_type::DataType>) -> Vec<String> {
+fn format_data_type(prefix: &str, data_type: &data::Type) -> Vec<String> {
     let mut html = vec![];
 
     if data_type.parameters().is_empty() {
@@ -463,10 +462,10 @@ fn format_data_type(prefix: &str, data_type: &Arc<data_type::DataType>) -> Vec<S
                 .parameter_name(index)
                 .unwrap_or_else(|| "?".to_string());
             match parameter {
-                data_type::Parameter::Null => {
+                data::Parameter::Null => {
                     html.push(format_data_type_card(&format!(".{name}: null")))
                 }
-                data_type::Parameter::Some(n, x) => html.push(format_data_type_card(&format!(
+                data::Parameter::Some(n, x) => html.push(format_data_type_card(&format!(
                     ".{}: {x}",
                     n.as_ref().unwrap_or(&name)
                 ))),

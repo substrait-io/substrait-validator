@@ -10,8 +10,8 @@
 use std::sync::Arc;
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::parse::expressions::literals;
@@ -27,7 +27,7 @@ struct SourceInfo {
     pub name: String,
 
     /// The schema of the data, if not context-sensitive.
-    pub data_type: Option<Arc<data_type::DataType>>,
+    pub data_type: Option<data::Type>,
 }
 
 /// Parse virtual table.
@@ -35,11 +35,11 @@ fn parse_virtual_table(
     x: &substrait::read_rel::VirtualTable,
     y: &mut context::Context,
 ) -> diagnostic::Result<SourceInfo> {
-    let mut data_type: Arc<data_type::DataType> = Arc::default();
+    let mut data_type: data::Type = Arc::default();
 
     // Parse rows, ensuring that they all have the same type.
     proto_repeated_field!(x, y, values, |x, y| {
-        let result = literals::parse_struct(x, y, false, None);
+        let result = literals::parse_struct(x, y, false, data::Variation::SystemPreferred);
         data_type = types::assert_equal(
             y,
             &y.data_type(),

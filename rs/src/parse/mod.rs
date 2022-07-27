@@ -95,9 +95,7 @@
 //! all of the parsers for the above node types should call
 //! [`set_data_type()`](context::Context::set_data_type()) at
 //! least once, even if they're unable to determine what the actual type is;
-//! in the latter case they can just push an unresolved type (for example
-//! using `Default`, but additional information can be attached using
-//! [`new_unresolved()`](crate::output::data_type::DataType::new_unresolved()).
+//! in the latter case they can just push an unresolved type.
 //!
 //! [`set_data_type()`](context::Context::set_data_type()) may be called more
 //! than once for a single node. The data type of the node will simply be the

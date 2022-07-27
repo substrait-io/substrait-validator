@@ -2,14 +2,12 @@
 
 //! Module for dealing with YAML-based Substrait extensions.
 
-use crate::output::data_type;
 use crate::output::path;
 use crate::output::tree;
+use crate::output::type_system::data;
 use crate::util;
 use std::collections::HashMap;
 use std::sync::Arc;
-
-use super::meta_type;
 
 /// Represents a named reference to something.
 #[derive(Clone, Debug, Default)]
@@ -120,59 +118,6 @@ impl<T> std::fmt::Display for Reference<T> {
     }
 }
 
-/// User-defined type class.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct DataType {
-    /// The underlying structure of the type.
-    pub structure: Vec<(String, data_type::Simple)>,
-
-    /// The parameters expected by the data type.
-    pub parameter_slots: Vec<DataTypeParameterSlot>,
-
-    /// Whether or not the last parameter slot is variadic.
-    pub parameters_variadic: bool,
-}
-
-/// A parameter slot for a user-defined data type.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct DataTypeParameterSlot {
-    /// YAML-provided name of the parameter.
-    pub name: String,
-
-    /// YAML-provided human-readable description of the parameter.
-    pub description: String,
-
-    /// Pattern for type- and bounds-checking parameters bound to this slot.
-    pub pattern: meta_type::MetaPattern,
-
-    /// Whether this parameter is optional. If optional, it may be skipped
-    /// using null or omitted entirely if at the end of the list.
-    pub optional: bool,
-}
-
-/// Type variation extension.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct TypeVariation {
-    /// The base type for this variation.
-    pub base: data_type::Class,
-
-    /// Function behavior for this variation.
-    pub function_behavior: FunctionBehavior,
-}
-
-/// Type variation function behavior.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum FunctionBehavior {
-    Inherits,
-    Separate,
-}
-
-impl Default for FunctionBehavior {
-    fn default() -> Self {
-        FunctionBehavior::Inherits
-    }
-}
-
 /// Function extension.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Function {
@@ -229,13 +174,13 @@ pub struct YamlData {
 
     /// Types defined in this YAML file. Names are stored in lower case
     /// (Substrait's name resolution is case-insensitive).
-    pub types: HashMap<String, Arc<DataType>>,
+    pub types: HashMap<String, Arc<data::class::UserDefinedDefinition>>,
 
     /// Type variations defined in this YAML file. Names are stored in lower
     /// case (Substrait's name resolution is case-insensitive).
     /// FIXME: this declaration to definition map is insufficient. See
-    /// https://github.com/substrait-io/substrait/issues/268
-    pub type_variations: HashMap<String, Arc<TypeVariation>>,
+    /// <https://github.com/substrait-io/substrait/issues/268>
+    pub type_variations: HashMap<String, Arc<data::variation::UserDefinedDefinition>>,
 }
 
 impl YamlData {
@@ -278,7 +223,7 @@ impl YamlData {
 
     /// Resolves a type defined in this YAML data block by name. Returns an
     /// unresolved reference if it does not exist.
-    pub fn resolve_type<S: ToString>(&self, name: S) -> Arc<Reference<DataType>> {
+    pub fn resolve_type<S: ToString>(&self, name: S) -> data::class::UserDefined {
         let name = name.to_string();
         let maybe_def = self.types.get(&name).cloned();
         self.local_reference(name, maybe_def)
@@ -286,7 +231,7 @@ impl YamlData {
 
     /// Resolves a type variation defined in this YAML data block by name.
     /// Returns an unresolved reference if it does not exist.
-    pub fn resolve_type_variation<S: ToString>(&self, name: S) -> Arc<Reference<TypeVariation>> {
+    pub fn resolve_type_variation<S: ToString>(&self, name: S) -> data::variation::UserDefined {
         let name = name.to_string();
         let maybe_def = self.type_variations.get(&name).cloned();
         self.local_reference(name, maybe_def)

@@ -7,16 +7,14 @@
 //!
 //! See <https://substrait.io/relations/logical_relations/#aggregate-operation>
 
-use std::collections::HashSet;
-use std::sync::Arc;
-
 use crate::input::proto::substrait;
 use crate::output::comment;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::parse::expressions::functions;
+use std::collections::HashSet;
 
 /// Type of output field.
 enum FieldType {
@@ -41,7 +39,7 @@ struct Field {
     expression: expressions::Expression,
 
     /// Data type returned by the expression.
-    data_type: Arc<data_type::DataType>,
+    data_type: data::Type,
 
     /// The type of field.
     field_type: FieldType,
@@ -186,14 +184,14 @@ pub fn parse_aggregate_rel(
     if sets.len() > 1 {
         fields.push(Field {
             expression: expressions::Expression::Function(String::from("group_index"), vec![]),
-            data_type: data_type::DataType::new_integer(false),
+            data_type: data::new_integer(),
             field_type: FieldType::GroupingSetIndex,
         });
     }
     let fields = fields;
 
     // Derive schema.
-    y.set_schema(data_type::DataType::new_struct(
+    y.set_schema(data::new_struct(
         fields.iter().map(|x| {
             if matches!(x.field_type, FieldType::NullableGroupedField) {
                 x.data_type.make_nullable()

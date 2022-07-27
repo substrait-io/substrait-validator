@@ -2,20 +2,19 @@
 
 //! Module for parsing/validating expressions.
 
-use crate::input::proto::substrait;
-use crate::output::data_type;
-use crate::output::diagnostic;
-use crate::parse::context;
-use crate::util;
-use crate::util::string::Describe;
-use std::sync::Arc;
-
 pub mod conditionals;
 pub mod functions;
 pub mod literals;
 pub mod misc;
 pub mod references;
 pub mod subqueries;
+
+use crate::input::proto::substrait;
+use crate::output::diagnostic;
+use crate::output::type_system::data;
+use crate::parse::context;
+use crate::util;
+use crate::util::string::Describe;
 
 /// Description of an expression.
 #[derive(Clone, Debug, PartialEq)]
@@ -42,7 +41,7 @@ pub enum Expression {
     Tuple(Vec<Expression>),
 
     /// Used for type casts.
-    Cast(Arc<data_type::DataType>, Box<Expression>),
+    Cast(data::Type, Box<Expression>),
 }
 
 impl Default for Expression {
@@ -110,7 +109,7 @@ impl std::fmt::Display for Expression {
 
 impl Expression {
     /// Shorthand for a new null literal.
-    pub fn new_null(data_type: Arc<data_type::DataType>) -> Expression {
+    pub fn new_null(data_type: data::Type) -> Expression {
         literals::Literal::new_null(data_type).into()
     }
 }
@@ -249,7 +248,7 @@ pub fn parse_predicate(
     let data_type = y.data_type();
     if !matches!(
         data_type.class(),
-        data_type::Class::Simple(data_type::Simple::Boolean) | data_type::Class::Unresolved
+        data::Class::Simple(data::class::Simple::Boolean) | data::Class::Unresolved
     ) {
         diagnostic!(
             y,

@@ -6,11 +6,10 @@ use std::sync::Arc;
 
 use crate::input::proto::substrait;
 use crate::output::comment;
-use crate::output::data_type;
-use crate::output::data_type::ParameterInfo;
 use crate::output::diagnostic;
-use crate::output::extension;
-use crate::output::meta_type;
+use crate::output::type_system::data;
+use crate::output::type_system::data::class::ParameterInfo;
+use crate::output::type_system::meta;
 use crate::parse::context;
 use crate::parse::extensions;
 use crate::util;
@@ -34,8 +33,8 @@ fn parse_required_nullability(
 fn parse_integer_type_parameter(
     x: &i32,
     _: &mut context::Context,
-) -> diagnostic::Result<data_type::Parameter> {
-    Ok(data_type::Parameter::from(*x as i64))
+) -> diagnostic::Result<data::Parameter> {
+    Ok(data::Parameter::from(*x as i64))
 }
 
 /// Macro for simple types, since they're all the same.
@@ -60,8 +59,8 @@ macro_rules! parse_simple_type {
 
         // Convert to internal type object.
         let data_type = if let (Some(nullable), Some(variation)) = (nullable, variation) {
-            data_type::DataType::new(
-                data_type::Class::Simple(data_type::Simple::$typ),
+            data::new_type(
+                data::Class::Simple(data::class::Simple::$typ),
                 nullable,
                 variation,
                 vec![],
@@ -206,8 +205,8 @@ macro_rules! parse_compound_type_with_length {
         let data_type = if let (Some(length), Some(nullable), Some(variation)) =
             (length, nullable, variation)
         {
-            data_type::DataType::new(
-                data_type::Class::Compound(data_type::Compound::$typ),
+            data::new_type(
+                data::Class::Compound(data::class::Compound::$typ),
                 nullable,
                 variation,
                 vec![length],
@@ -277,8 +276,8 @@ pub fn parse_decimal(
     let data_type = if let (Some(precision), Some(scale), Some(nullable), Some(variation)) =
         (precision, scale, nullable, variation)
     {
-        data_type::DataType::new(
-            data_type::Class::Compound(data_type::Compound::Decimal),
+        data::new_type(
+            data::Class::Compound(data::class::Compound::Decimal),
             nullable,
             variation,
             vec![precision, scale],
@@ -324,8 +323,8 @@ pub fn parse_struct(
 
     // Convert to internal type object.
     let data_type = if let (Some(nullable), Some(variation)) = (nullable, variation) {
-        data_type::DataType::new(
-            data_type::Class::Compound(data_type::Compound::Struct),
+        data::new_type(
+            data::Class::Compound(data::class::Compound::Struct),
             nullable,
             variation,
             types,
@@ -368,8 +367,8 @@ pub fn parse_list(x: &substrait::r#type::List, y: &mut context::Context) -> diag
 
     // Convert to internal type object.
     let data_type = if let (Some(nullable), Some(variation)) = (nullable, variation) {
-        data_type::DataType::new(
-            data_type::Class::Compound(data_type::Compound::List),
+        data::new_type(
+            data::Class::Compound(data::class::Compound::List),
             nullable,
             variation,
             vec![element_type.into()],
@@ -417,8 +416,8 @@ pub fn parse_map(x: &substrait::r#type::Map, y: &mut context::Context) -> diagno
 
     // Convert to internal type object.
     let data_type = if let (Some(nullable), Some(variation)) = (nullable, variation) {
-        data_type::DataType::new(
-            data_type::Class::Compound(data_type::Compound::Map),
+        data::new_type(
+            data::Class::Compound(data::class::Compound::Map),
             nullable,
             variation,
             vec![key_type.into(), value_type.into()],
@@ -452,10 +451,10 @@ pub fn parse_legacy_user_defined(x: &u32, y: &mut context::Context) -> diagnosti
 
     // Convert to internal type object.
     let data_type = if let Some(user_type) = user_type {
-        data_type::DataType::new(
-            data_type::Class::UserDefined(user_type),
+        data::new_type(
+            data::Class::UserDefined(user_type),
             false,
-            None,
+            data::Variation::SystemPreferred,
             vec![],
         )
         .map_err(|e| diagnostic!(y, Error, e))
@@ -474,16 +473,16 @@ pub fn parse_legacy_user_defined(x: &u32, y: &mut context::Context) -> diagnosti
 pub fn parse_type_parameter_variant(
     x: &substrait::r#type::parameter::Parameter,
     y: &mut context::Context,
-) -> diagnostic::Result<data_type::Parameter> {
+) -> diagnostic::Result<data::Parameter> {
     Ok(match x {
-        substrait::r#type::parameter::Parameter::Null(_) => data_type::Parameter::Null,
+        substrait::r#type::parameter::Parameter::Null(_) => data::Parameter::Null,
         substrait::r#type::parameter::Parameter::DataType(x) => {
             parse_type(x, y)?;
             y.data_type().into()
         }
         substrait::r#type::parameter::Parameter::Boolean(x) => (*x).into(),
         substrait::r#type::parameter::Parameter::Integer(x) => (*x).into(),
-        substrait::r#type::parameter::Parameter::Enum(x) => data_type::Parameter::enum_variant(x),
+        substrait::r#type::parameter::Parameter::Enum(x) => data::Parameter::enum_variant(x),
         substrait::r#type::parameter::Parameter::String(x) => x.clone().into(),
     })
 }
@@ -492,7 +491,7 @@ pub fn parse_type_parameter_variant(
 pub fn parse_type_parameter(
     x: &substrait::r#type::Parameter,
     y: &mut context::Context,
-) -> diagnostic::Result<data_type::Parameter> {
+) -> diagnostic::Result<data::Parameter> {
     Ok(
         proto_required_field!(x, y, parameter, parse_type_parameter_variant)
             .1
@@ -538,8 +537,8 @@ pub fn parse_user_defined(
     let data_type = if let (Some(user_type), Some(nullable), Some(variation)) =
         (user_type, nullable, variation)
     {
-        data_type::DataType::new(
-            data_type::Class::UserDefined(user_type),
+        data::new_type(
+            data::Class::UserDefined(user_type),
             nullable,
             variation,
             parameters,
@@ -590,13 +589,13 @@ pub fn parse_type_kind(
     }
 }
 
-fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>) {
+fn describe_type(y: &mut context::Context, data_type: &data::Type) {
     let mut brief = match &data_type.class() {
-        data_type::Class::Simple(data_type::Simple::Boolean) => {
+        data::Class::Simple(data::class::Simple::Boolean) => {
             summary!(y, "Values of this type can be either true or false.");
             String::from("boolean type")
         }
-        data_type::Class::Simple(data_type::Simple::I8) => {
+        data::Class::Simple(data::class::Simple::I8) => {
             summary!(
                 y,
                 "Implementations of this type must support all integers in \
@@ -604,7 +603,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("8-bit signed integer type")
         }
-        data_type::Class::Simple(data_type::Simple::I16) => {
+        data::Class::Simple(data::class::Simple::I16) => {
             summary!(
                 y,
                 "Implementations of this type must support all integers in \
@@ -612,7 +611,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("16-bit signed integer type")
         }
-        data_type::Class::Simple(data_type::Simple::I32) => {
+        data::Class::Simple(data::class::Simple::I32) => {
             summary!(
                 y,
                 "Implementations of this type must support all integers in \
@@ -620,7 +619,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("32-bit signed integer type")
         }
-        data_type::Class::Simple(data_type::Simple::I64) => {
+        data::Class::Simple(data::class::Simple::I64) => {
             summary!(
                 y,
                 "Implementations of this type must support all integers in \
@@ -628,7 +627,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("64-bit signed integer type")
         }
-        data_type::Class::Simple(data_type::Simple::Fp32) => {
+        data::Class::Simple(data::class::Simple::Fp32) => {
             summary!(
                 y,
                 "Implementations of this type must support a superset of the \
@@ -636,7 +635,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("single-precision float type")
         }
-        data_type::Class::Simple(data_type::Simple::Fp64) => {
+        data::Class::Simple(data::class::Simple::Fp64) => {
             summary!(
                 y,
                 "Implementations of this type must support a superset of the \
@@ -644,7 +643,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("double-precision float type")
         }
-        data_type::Class::Simple(data_type::Simple::String) => {
+        data::Class::Simple(data::class::Simple::String) => {
             summary!(
                 y,
                 "Implementations of this type must support all strings \
@@ -653,7 +652,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Unicode string type")
         }
-        data_type::Class::Simple(data_type::Simple::Binary) => {
+        data::Class::Simple(data::class::Simple::Binary) => {
             summary!(
                 y,
                 "Implementations of this type must support all byte strings \
@@ -661,7 +660,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Binary string type")
         }
-        data_type::Class::Simple(data_type::Simple::Timestamp) => {
+        data::Class::Simple(data::class::Simple::Timestamp) => {
             summary!(
                 y,
                 "Implementations of this type must support all timestamps \
@@ -673,7 +672,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Timezone-naive timestamp type")
         }
-        data_type::Class::Simple(data_type::Simple::TimestampTz) => {
+        data::Class::Simple(data::class::Simple::TimestampTz) => {
             summary!(
                 y,
                 "Implementations of this type must support all timestamps \
@@ -682,7 +681,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Timezone-aware timestamp type")
         }
-        data_type::Class::Simple(data_type::Simple::Date) => {
+        data::Class::Simple(data::class::Simple::Date) => {
             summary!(
                 y,
                 "Implementations of this type must support all dates within \
@@ -690,7 +689,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Date type")
         }
-        data_type::Class::Simple(data_type::Simple::Time) => {
+        data::Class::Simple(data::class::Simple::Time) => {
             summary!(
                 y,
                 "Implementations of this type must support all times of day \
@@ -700,7 +699,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Time-of-day type")
         }
-        data_type::Class::Simple(data_type::Simple::IntervalYear) => {
+        data::Class::Simple(data::class::Simple::IntervalYear) => {
             // FIXME: the way this type is defined makes no sense; its
             // definition conflicts with the analog representations of at least
             // Arrow as specified on the website (assuming INTERVAL_MONTHS was
@@ -731,7 +730,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Year/month interval type")
         }
-        data_type::Class::Simple(data_type::Simple::IntervalDay) => {
+        data::Class::Simple(data::class::Simple::IntervalDay) => {
             // FIXME: see note for IntervalYear, making this
             // interval_microsecond, i.e. a signed interval with at least
             // microsecond precision and +/- 10000 year range.
@@ -748,7 +747,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Day/microsecond interval type")
         }
-        data_type::Class::Simple(data_type::Simple::Uuid) => {
+        data::Class::Simple(data::class::Simple::Uuid) => {
             summary!(
                 y,
                 "Implementations of this type must support 2^128 different \
@@ -757,7 +756,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("128-bit identifier type")
         }
-        data_type::Class::Compound(data_type::Compound::FixedChar) => {
+        data::Class::Compound(data::class::Compound::FixedChar) => {
             let length = data_type
                 .parameters()
                 .get(0)
@@ -771,7 +770,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             format!("Fixed-length ({length}) unicode string type")
         }
-        data_type::Class::Compound(data_type::Compound::VarChar) => {
+        data::Class::Compound(data::class::Compound::VarChar) => {
             let length = data_type
                 .parameters()
                 .get(0)
@@ -784,7 +783,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             format!("Variable-length ({length}) unicode string type")
         }
-        data_type::Class::Compound(data_type::Compound::FixedBinary) => {
+        data::Class::Compound(data::class::Compound::FixedBinary) => {
             let length = data_type
                 .parameters()
                 .get(0)
@@ -798,7 +797,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             format!("Fixed-length ({length}) binary string type")
         }
-        data_type::Class::Compound(data_type::Compound::Decimal) => {
+        data::Class::Compound(data::class::Compound::Decimal) => {
             let precision = data_type.integer_parameter(0);
             let scale = data_type.integer_parameter(1);
             let (p, i, s) = if let (Some(precision), Some(scale)) = (precision, scale) {
@@ -818,8 +817,8 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             format!("Decimal number type with {i} integer and {s} fractional digits")
         }
-        data_type::Class::Compound(data_type::Compound::Struct)
-        | data_type::Class::Compound(data_type::Compound::NamedStruct) => {
+        data::Class::Compound(data::class::Compound::Struct)
+        | data::Class::Compound(data::class::Compound::NamedStruct) => {
             let n = data_type.parameters().len();
             if n == 1 {
                 summary!(y, "Structure with one field.");
@@ -829,7 +828,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
                 format!("Structure with {n} fields")
             }
         }
-        data_type::Class::Compound(data_type::Compound::List) => {
+        data::Class::Compound(data::class::Compound::List) => {
             let e = data_type
                 .data_type_parameter(0)
                 .map(|t| t.to_string())
@@ -841,7 +840,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("List type")
         }
-        data_type::Class::Compound(data_type::Compound::Map) => {
+        data::Class::Compound(data::class::Compound::Map) => {
             // FIXME: the definition in the spec is technically a multimap,
             // because it says nothing about key uniqueness, but that's
             // probably not intentional (how would references work, then?).
@@ -866,7 +865,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             );
             String::from("Map type")
         }
-        data_type::Class::UserDefined(u) => {
+        data::Class::UserDefined(u) => {
             summary!(y, "Extension type {u}.");
             if let Some(x) = &u.definition {
                 y.push_summary(
@@ -887,7 +886,7 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             }
             format!("Extension type {}", u.name)
         }
-        data_type::Class::Unresolved => {
+        data::Class::Unresolved => {
             summary!(
                 y,
                 "Failed to resolve information about this type due to \
@@ -908,10 +907,10 @@ fn describe_type(y: &mut context::Context, data_type: &Arc<data_type::DataType>)
             "Values of this type are required, i.e. the type is not nullable."
         );
     }
-    let variation = if let Some(u) = data_type.variation() {
+    let variation = if let data::Variation::UserDefined(u) = data_type.variation() {
         let mut variation = format!("This is the {u} variation of this type");
         if let Some(tv) = &u.definition {
-            if tv.function_behavior == extension::FunctionBehavior::Inherits {
+            if tv.function_behavior == data::FunctionBehavior::Inherits {
                 variation +=
                     ", which behaves the same as the base type w.r.t. overload resolution.";
             } else {
@@ -978,13 +977,13 @@ pub fn parse_named_struct(
 /// unresolved, base is returned.
 fn assert_equal_internal(
     context: &mut context::Context,
-    other: &Arc<data_type::DataType>,
+    other: &data::Type,
     promote_other: bool,
-    base: &Arc<data_type::DataType>,
+    base: &data::Type,
     promote_base: bool,
     message: &str,
     path: &str,
-) -> Arc<data_type::DataType> {
+) -> data::Type {
     if other.is_unresolved() {
         base.clone()
     } else if base.is_unresolved() {
@@ -993,12 +992,12 @@ fn assert_equal_internal(
         // Match base types.
         let base_types_match = match (other.class(), base.class()) {
             (
-                data_type::Class::Compound(data_type::Compound::Struct),
-                data_type::Class::Compound(data_type::Compound::NamedStruct),
+                data::Class::Compound(data::class::Compound::Struct),
+                data::Class::Compound(data::class::Compound::NamedStruct),
             ) => true,
             (
-                data_type::Class::Compound(data_type::Compound::NamedStruct),
-                data_type::Class::Compound(data_type::Compound::Struct),
+                data::Class::Compound(data::class::Compound::NamedStruct),
+                data::Class::Compound(data::class::Compound::Struct),
             ) => true,
             (a, b) => a == b,
         };
@@ -1048,7 +1047,7 @@ fn assert_equal_internal(
 
         // Match variations.
         match (other.variation(), base.variation()) {
-            (Some(other), Some(base)) => {
+            (data::Variation::UserDefined(other), data::Variation::UserDefined(base)) => {
                 if base != other {
                     diagnostic!(
                         context,
@@ -1058,19 +1057,19 @@ fn assert_equal_internal(
                     );
                 }
             }
-            (Some(other), None) => diagnostic!(
+            (data::Variation::UserDefined(other), data::Variation::SystemPreferred) => diagnostic!(
                 context,
                 Error,
                 TypeMismatchedVariation,
                 "{message}: variation {other} vs. no variation{path}"
             ),
-            (None, Some(base)) => diagnostic!(
+            (data::Variation::SystemPreferred, data::Variation::UserDefined(base)) => diagnostic!(
                 context,
                 Error,
                 TypeMismatchedVariation,
                 "{message}: no variation vs. variation {base}{path}"
             ),
-            (None, None) => {}
+            (data::Variation::SystemPreferred, data::Variation::SystemPreferred) => {}
         }
 
         // Match parameter count.
@@ -1110,8 +1109,8 @@ fn assert_equal_internal(
                 };
                 match (other_param, base_param) {
                     (
-                        data_type::Parameter::Some(other_name, other),
-                        data_type::Parameter::Some(base_name, base),
+                        data::Parameter::Some(other_name, other),
+                        data::Parameter::Some(base_name, base),
                     ) => {
                         if let (Some(other_name), Some(base_name)) = (other_name, base_name) {
                             if other_name != base_name {
@@ -1125,14 +1124,14 @@ fn assert_equal_internal(
                                 );
                             }
                         }
-                        data_type::Parameter::Some(
+                        data::Parameter::Some(
                             base_name.clone().or_else(|| other_name.clone()),
                             if let (
-                                meta_type::MetaValue::DataType(ref other),
-                                meta_type::MetaValue::DataType(ref base),
+                                meta::Value::DataType(ref other),
+                                meta::Value::DataType(ref base),
                             ) = (other, base)
                             {
-                                meta_type::MetaValue::DataType(assert_equal_internal(
+                                meta::Value::DataType(assert_equal_internal(
                                     context,
                                     other,
                                     promote_other,
@@ -1174,17 +1173,17 @@ fn assert_equal_internal(
         // has them in the loop above.
         let class = match (other.class(), base.class()) {
             (
-                data_type::Class::Compound(data_type::Compound::Struct),
-                data_type::Class::Compound(data_type::Compound::NamedStruct),
-            ) => data_type::Class::Compound(data_type::Compound::NamedStruct),
+                data::Class::Compound(data::class::Compound::Struct),
+                data::Class::Compound(data::class::Compound::NamedStruct),
+            ) => data::Class::Compound(data::class::Compound::NamedStruct),
             (
-                data_type::Class::Compound(data_type::Compound::NamedStruct),
-                data_type::Class::Compound(data_type::Compound::Struct),
-            ) => data_type::Class::Compound(data_type::Compound::NamedStruct),
+                data::Class::Compound(data::class::Compound::NamedStruct),
+                data::Class::Compound(data::class::Compound::Struct),
+            ) => data::Class::Compound(data::class::Compound::NamedStruct),
             (a, _) => a.clone(),
         };
 
-        data_type::DataType::new(class, nullable, base.variation().clone(), parameters)
+        data::new_type(class, nullable, base.variation().clone(), parameters)
             .expect("assert_equal() failed to correctly combine types")
     }
 }
@@ -1196,10 +1195,10 @@ fn assert_equal_internal(
 /// unresolved, base is returned.
 pub fn assert_equal<S: AsRef<str>>(
     context: &mut context::Context,
-    other: &Arc<data_type::DataType>,
-    base: &Arc<data_type::DataType>,
+    other: &data::Type,
+    base: &data::Type,
     message: S,
-) -> Arc<data_type::DataType> {
+) -> data::Type {
     assert_equal_internal(context, other, false, base, false, message.as_ref(), "")
 }
 
@@ -1207,9 +1206,9 @@ pub fn assert_equal<S: AsRef<str>>(
 /// match.
 pub fn promote_and_assert_equal<S: AsRef<str>>(
     context: &mut context::Context,
-    other: &Arc<data_type::DataType>,
-    base: &Arc<data_type::DataType>,
+    other: &data::Type,
+    base: &data::Type,
     message: S,
-) -> Arc<data_type::DataType> {
+) -> data::Type {
     assert_equal_internal(context, other, true, base, true, message.as_ref(), "")
 }

@@ -3,12 +3,11 @@
 //! Module providing toplevel parse/validation functions for plans.
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::extensions;
 use crate::parse::relations;
-use std::sync::Arc;
 
 // Parse a relation root, i.e. a toplevel relation that includes field name
 // information.
@@ -36,7 +35,7 @@ fn parse_rel_root(x: &substrait::RelRoot, y: &mut context::Context) -> diagnosti
 fn parse_rel_type(
     x: &substrait::plan_rel::RelType,
     y: &mut context::Context,
-) -> diagnostic::Result<Arc<data_type::DataType>> {
+) -> diagnostic::Result<data::Type> {
     match x {
         substrait::plan_rel::RelType::Rel(x) => {
             relations::parse_rel(x, y)?;

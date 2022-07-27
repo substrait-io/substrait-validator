@@ -3,8 +3,8 @@
 //! Module for parsing/validating conditional expression types.
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::parse::expressions::literals;
@@ -22,7 +22,7 @@ pub fn parse_if_then(
     x: &substrait::expression::IfThen,
     y: &mut context::Context,
 ) -> diagnostic::Result<expressions::Expression> {
-    let mut return_type: Arc<data_type::DataType> = Arc::default();
+    let mut return_type: data::Type = Arc::default();
     let mut args = vec![];
 
     // Handle branches.
@@ -104,7 +104,7 @@ pub fn parse_switch(
     x: &substrait::expression::SwitchExpression,
     y: &mut context::Context,
 ) -> diagnostic::Result<expressions::Expression> {
-    let mut return_type: Arc<data_type::DataType> = Arc::default();
+    let mut return_type: data::Type = Arc::default();
     let mut args = vec![];
 
     // Parse value to match.
@@ -220,7 +220,7 @@ pub fn parse_singular_or_list(
     });
 
     // Describe node.
-    y.set_data_type(data_type::DataType::new_predicate(false));
+    y.set_data_type(data::new_predicate());
     summary!(
         y,
         "Returns true if and only if {} is equal to any of the options.",
@@ -287,7 +287,7 @@ pub fn parse_multi_or_list(
     });
 
     // Describe node.
-    y.set_data_type(data_type::DataType::new_predicate(false));
+    y.set_data_type(data::new_predicate());
     summary!(
         y,
         "Returns true if and only if {} is equal to any of the options.",

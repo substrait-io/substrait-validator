@@ -6,6 +6,7 @@
 use crate::input::proto::substrait;
 use crate::output::diagnostic::Result;
 use crate::output::extension;
+use crate::output::type_system::data;
 use crate::parse::context;
 use std::sync::Arc;
 
@@ -93,17 +94,17 @@ fn describe_reference<T>(y: &mut context::Context, reference: &Arc<extension::Re
 pub fn parse_type_variation_reference(
     x: &u32,
     y: &mut context::Context,
-) -> Result<Option<Arc<extension::Reference<extension::TypeVariation>>>> {
+) -> Result<data::Variation> {
     match y.tvars().resolve(x).cloned() {
         Some((variation, path)) => {
             describe_reference(y, &variation);
             link!(y, path, "Type variation anchor is defined here");
-            Ok(Some(variation))
+            Ok(data::Variation::UserDefined(variation))
         }
         None => {
             if x == &0 {
-                describe!(y, Misc, "Implicit default type variation");
-                Ok(None)
+                describe!(y, Misc, "System-preferred variation");
+                Ok(data::Variation::SystemPreferred)
             } else {
                 describe!(y, Misc, "Unresolved type variation");
                 Err(cause!(
@@ -116,10 +117,7 @@ pub fn parse_type_variation_reference(
 }
 
 /// Parse a type reference and resolve it.
-pub fn parse_type_reference(
-    x: &u32,
-    y: &mut context::Context,
-) -> Result<Arc<extension::Reference<extension::DataType>>> {
+pub fn parse_type_reference(x: &u32, y: &mut context::Context) -> Result<data::class::UserDefined> {
     match y.types().resolve(x).cloned() {
         Some((data_type, path)) => {
             describe_reference(y, &data_type);

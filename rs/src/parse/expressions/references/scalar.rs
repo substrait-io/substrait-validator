@@ -3,21 +3,20 @@
 //! Module for parsing/validation scalar references.
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions::literals;
 use crate::parse::expressions::references;
 use crate::parse::types;
 use crate::util;
-use std::sync::Arc;
 
 /// Parse a struct field reference. Returns a description of the nested
 /// reference.
 fn parse_struct_field(
     x: &substrait::expression::reference_segment::StructField,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<references::ReferencePath> {
     // Struct selections can only be applied to structs.
     if !root.is_unresolved() && !root.is_struct() {
@@ -74,7 +73,7 @@ fn parse_struct_field(
 fn parse_list_element(
     x: &substrait::expression::reference_segment::ListElement,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<references::ReferencePath> {
     // Struct selections can only be applied to lists.
     if !root.is_unresolved() && !root.is_list() {
@@ -144,7 +143,7 @@ fn parse_list_element(
 fn parse_map_key(
     x: &substrait::expression::reference_segment::MapKey,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<references::ReferencePath> {
     // Map selections can only be applied to maps.
     if !root.is_unresolved() && !root.is_map() {
@@ -216,7 +215,7 @@ fn parse_map_key(
 fn parse_reference_type(
     x: &substrait::expression::reference_segment::ReferenceType,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<references::ReferencePath> {
     match x {
         substrait::expression::reference_segment::ReferenceType::StructField(x) => {
@@ -236,7 +235,7 @@ fn parse_reference_type(
 pub fn parse_reference_segment(
     x: &substrait::expression::ReferenceSegment,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<references::ReferencePath> {
     // Parse the selection.
     let (node, result) = proto_required_field!(x, y, reference_type, parse_reference_type, root);
