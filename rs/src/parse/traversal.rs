@@ -1125,33 +1125,12 @@ fn load_yaml(
     };
 
     // Parse as YAML.
-    let yaml_data = match yaml_rust::YamlLoader::load_from_str(string_data) {
+    let yaml_data = match serde_yaml::from_str::<serde_yaml::Value>(string_data) {
         Err(e) => {
             ediagnostic!(context, Error, YamlParseFailed, e);
             return None;
         }
-        Ok(x) => {
-            if x.len() > 1 {
-                diagnostic!(
-                    context,
-                    Warning,
-                    YamlParseFailed,
-                    "YAML file contains multiple documents; ignoring all but the first"
-                );
-            }
-            match x.into_iter().next() {
-                None => {
-                    diagnostic!(
-                        context,
-                        Error,
-                        YamlParseFailed,
-                        "YAML file contains zero documents"
-                    );
-                    return None;
-                }
-                Some(x) => x,
-            }
-        }
+        Ok(x) => x,
     };
 
     // Convert to JSON DOM.

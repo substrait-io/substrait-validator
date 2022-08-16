@@ -6,7 +6,7 @@
 //! that a [JSON schema](https://json-schema.org/) is used for basic schema
 //! validation of the YAML files, and the [`jsonschema`] crate we use for that
 //! uses [`serde_json`]'s representation). [`yaml_to_json()`] may be used to
-//! convert the output from [`yaml_rust`] to this structure.
+//! convert the output from [`serde_yaml`] to this structure.
 
 use crate::output::diagnostic;
 use crate::output::path;
@@ -14,7 +14,7 @@ use crate::output::primitive_data;
 use crate::output::tree;
 use crate::parse::traversal;
 
-use yaml_rust::yaml::Yaml;
+use serde_yaml::value::Value as Yaml;
 
 /// Type for the type used for arbitrary YAML values.
 pub type Value = serde_json::value::Value;
@@ -25,38 +25,40 @@ pub type Array = Vec<Value>;
 /// Typedef for the type used for YAML maps.
 pub type Map = serde_json::map::Map<String, Value>;
 
-/// Converts a [`yaml_rust`] YAML structure into its equivalent JSON object
+/// Converts a [`serde_yaml`] YAML structure into its equivalent JSON object
 /// model using [`serde_json`]'s types.
 pub fn yaml_to_json(y: Yaml, path: &path::Path) -> diagnostic::DiagResult<Value> {
     match y {
-        Yaml::Real(ref s) => Ok(Value::Number(
-            serde_json::value::Number::from_f64(y.as_f64().ok_or_else(|| {
-                diag!(
-                    path.to_path_buf(),
-                    Error,
-                    YamlParseFailed,
-                    "failed to parse {s} as float"
-                )
-            })?)
-            .ok_or_else(|| {
-                diag!(
-                    path.to_path_buf(),
-                    Error,
-                    YamlParseFailed,
-                    "{s} float is not supported"
-                )
-            })?,
-        )),
-        Yaml::Integer(i) => Ok(Value::Number(i.into())),
+        Yaml::Null => Ok(Value::Null),
+        Yaml::Bool(b) => Ok(Value::Bool(b)),
+        Yaml::Number(n) => {
+            if let Some(u) = n.as_u64() {
+                Ok(Value::Number(u.into()))
+            } else if let Some(i) = n.as_i64() {
+                Ok(Value::Number(i.into()))
+            } else if let Some(f) = n.as_f64() {
+                Ok(Value::Number(
+                    serde_json::value::Number::from_f64(f).ok_or_else(|| {
+                        diag!(
+                            path.to_path_buf(),
+                            Error,
+                            YamlParseFailed,
+                            "{f} float is not supported"
+                        )
+                    })?,
+                ))
+            } else {
+                panic!("encountered serde_yaml::number::Number that cannot be represented as u64, i64, of f64");
+            }
+        }
         Yaml::String(s) => Ok(Value::String(s)),
-        Yaml::Boolean(b) => Ok(Value::Bool(b)),
-        Yaml::Array(a) => Ok(Value::Array(
+        Yaml::Sequence(a) => Ok(Value::Array(
             a.into_iter()
                 .enumerate()
                 .map(|(index, value)| yaml_to_json(value, &path.with_index(index)))
                 .collect::<diagnostic::DiagResult<Vec<Value>>>()?,
         )),
-        Yaml::Hash(m) => Ok(Value::Object(
+        Yaml::Mapping(m) => Ok(Value::Object(
             m.into_iter()
                 .map(|(key, value)| {
                     let key = key
@@ -76,14 +78,12 @@ pub fn yaml_to_json(y: Yaml, path: &path::Path) -> diagnostic::DiagResult<Value>
                 })
                 .collect::<diagnostic::DiagResult<serde_json::value::Map<String, Value>>>()?,
         )),
-        Yaml::Alias(_) => Err(diag!(
+        Yaml::Tagged(_) => Err(diag!(
             path.to_path_buf(),
             Error,
             YamlParseFailed,
-            "YAML aliases are not supported"
+            "YAML tagged values are not supported"
         )),
-        Yaml::Null => Ok(Value::Null),
-        Yaml::BadValue => panic!("encountered Yaml::BadValue"),
     }
 }
 
