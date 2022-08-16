@@ -21,4 +21,4 @@ plan:
           - selection:
               rootReference: {}
               directReference: { structField: { field: 0 } }
-        __test: [ type: "STRUCT<string, i32>" ]
+        __test: [ type: "STRUCT<string>" ]

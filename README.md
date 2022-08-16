@@ -25,12 +25,13 @@ Substrait versions. Whenever Substrait makes a breaking change that affects
 validation, the validator will be updated accordingly and drop support for the
 older version. Refer to the table below for the version compatibility matrix.
 
-| Substrait...  | ... is supported by validator ...    |
-| ------------- | ------------------------------------ |
-| 0.7.x - 0.8.x | current version                      |
-| 0.5.x - 0.6.x | 0.0.6                                |
-| 0.3.x - 0.4.x | 0.0.4 - 0.0.5                        |
-| older         | try 0.0.1, but your mileage may vary |
+| Substrait...   | ... is supported by validator ...    |
+| -------------- | ------------------------------------ |
+| 0.9.x - 0.10.x | current version                      |
+| 0.7.x - 0.8.x  | 0.0.7                                |
+| 0.5.x - 0.6.x  | 0.0.6                                |
+| 0.3.x - 0.4.x  | 0.0.4 - 0.0.5                        |
+| older          | try 0.0.1, but your mileage may vary |
 
 As Substrait and the validator stabilize and breaking changes become less
 frequent, the intention is to support more versions within a single validator

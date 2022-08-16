@@ -181,15 +181,15 @@ pub fn parse_aggregate_rel(
         );
     }
 
-    // Add the column for the grouping set index.
-    // FIXME: this field makes no sense for aggregate relations that only have
-    // measures. It's also disputable whether it should exist when there is
-    // only one grouping set.
-    fields.push(Field {
-        expression: expressions::Expression::Function(String::from("group_index"), vec![]),
-        data_type: data_type::DataType::new_integer(false),
-        field_type: FieldType::GroupingSetIndex,
-    });
+    // Add the column for the grouping set index if there is more than one
+    // grouping set.
+    if sets.len() > 1 {
+        fields.push(Field {
+            expression: expressions::Expression::Function(String::from("group_index"), vec![]),
+            data_type: data_type::DataType::new_integer(false),
+            field_type: FieldType::GroupingSetIndex,
+        });
+    }
     let fields = fields;
 
     // Derive schema.
@@ -260,23 +260,11 @@ pub fn parse_aggregate_rel(
                 }
             }
             FieldType::GroupingSetIndex => {
-                if x.groupings.is_empty() {
-                    format!(
-                        "Field {index}: undefined value, reserved for grouping \
-                        set index."
-                    )
-                } else if x.groupings.len() == 1 {
-                    format!(
-                        "Field {index}: always zero, representing the index of the \
-                        matched grouping set (of which there is only one here)."
-                    )
-                } else {
-                    format!(
-                        "Field {index}: integer between 0 and {} inclusive, \
-                        representing the index of the matched grouping set.",
-                        x.groupings.len() - 1
-                    )
-                }
+                format!(
+                    "Field {index}: integer between 0 and {} inclusive, \
+                    representing the index of the matched grouping set.",
+                    x.groupings.len() - 1
+                )
             }
         });
     }

@@ -75,7 +75,7 @@ plan:
   relations:
   - root:
       __test:
-      - type: "NSTRUCT<L_ORDERKEY: i32, REVENUE: i64, O_ORDERDATE: DECIMAL?<19, 0>, O_SHIPPRIORITY: date?>"
+      - type: "NSTRUCT<L_ORDERKEY: i64, REVENUE: DECIMAL?<19, 0>, O_ORDERDATE: date?, O_SHIPPRIORITY: i32?>"
       input:
         fetch:
           common:

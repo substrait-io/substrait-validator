@@ -76,7 +76,7 @@ plan:
   relations:
   - root:
       __test:
-      - type: "NSTRUCT<PROMO_REVENUE: i32>"
+      - type: "NSTRUCT<PROMO_REVENUE: DECIMAL?<19, 2>>"
       input:
         project:
           common:
