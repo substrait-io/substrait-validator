@@ -71,6 +71,12 @@ fn main() -> Result<()> {
         let validator_git_dir = manifest_dir.join("..");
         let substrait_git_dir = validator_git_dir.join("substrait");
 
+        // Give a proper error message if submodules aren't checked out.
+        assert!(
+            substrait_git_dir.join("proto").exists(),
+            "Could not find (git-root)/substrait/proto. Did you check out submodules?"
+        );
+
         // Synchronize the YAML extension file schema.
         synchronize(
             &substrait_git_dir,

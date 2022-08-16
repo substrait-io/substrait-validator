@@ -5,13 +5,21 @@ validator library.
 
 ## Installation
 
-No wheels are published yet at this time, so you have to build manually.
-Running something along the lines of `pip install .` should work. You should
-only need to have a [rust](https://www.rust-lang.org/tools/install) compiler
-installed.
+The easiest way to install the validator is to get it from PyPI:
 
-If you want to do an editable install, you must run
-`./prepare_build.py populate` first.
+```console
+user@host:~$ pip install substrait-validator
+```
+
+If you want to build manually, running something along the lines of
+`pip install .` should work. You should only need to have a
+[rust](https://www.rust-lang.org/tools/install) compiler installed.
+
+Be aware that this project relies on submodules, so you need to check those out
+first. If you've done that and get weird errors, try running
+`./prepare_build.py populate` manually first. The protobuf generation logic has
+to be run very early in the build process, and while this should be done
+automatically, the hook is not very reliable.
 
 ## Building wheels and source distributions
 

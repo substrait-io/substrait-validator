@@ -40,10 +40,15 @@ Command-line interface
 ----------------------
 
 The easiest way to play around with the validator is via the command-line
-interface provided by the Python `substrait-validator` module. At the time of
-writing, the package is not yet available on PyPI, but it should be easy enough
-to build from source (see the `py` subdirectory). After installing, you should
-be able to run:
+interface provided by the Python `substrait-validator` module. You can install
+this from PyPI using pip:
+
+```console
+user@host:~$ pip install substrait-validator
+```
+
+You can also build it from source if you want; see the `py` subdirectory. After
+installing, you should be able to run:
 
 ```console
 user@host:~$ substrait-validator
