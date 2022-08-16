@@ -19,6 +19,13 @@ fn main() {
     let input_paths = if std::path::Path::new("local_dependencies").exists() {
         vec!["proto"]
     } else {
+        assert!(
+            std::path::Path::new("..")
+                .join("substrait")
+                .join("proto")
+                .exists(),
+            "Could not find (git-root)/substrait/proto. Did you check out submodules?"
+        );
         vec!["../proto", "../substrait/proto"]
     };
 

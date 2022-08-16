@@ -31,8 +31,17 @@ def _copytree(source, dest):
         files = os.listdir(source)
         for f in files:
             _copytree(os.path.join(source, f), os.path.join(dest, f))
-    else:
+    elif os.path.isfile(source):
         shutil.copyfile(source, dest)
+    else:
+        rel_path = os.path.relpath(source, "..")
+        abs_path = os.path.realpath(source)
+        path = os.path.join("(git-root)", rel_path)
+        msg = f"Could not find {path}."
+        if rel_path.startswith("substrait"):
+            msg = f"{msg} Did you check out submodules?"
+        msg = f"{msg} Full path = {abs_path}"
+        raise FileNotFoundError(msg)
 
 
 def populate():
