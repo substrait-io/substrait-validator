@@ -42,4 +42,4 @@ plan:
         - measure:
             functionReference: 1
             output_type: { i64: { nullability: NULLABILITY_REQUIRED } }
-        __test: [ type: "STRUCT<string, i64, i32>" ]
+        __test: [ type: "STRUCT<string, i64>" ]

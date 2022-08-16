@@ -87,14 +87,14 @@ plan:
       __test:
       - type: "\
         NSTRUCT<\
-          C_CUSTKEY: i32, \
-          C_NAME: i64, \
-          REVENUE: VARCHAR?<25>, \
+          C_CUSTKEY: i64, \
+          C_NAME: VARCHAR?<25>, \
+          REVENUE: DECIMAL?<19, 0>, \
           C_ACCTBAL: DECIMAL?<19, 0>, \
-          N_NAME: DECIMAL?<19, 0>, \
-          C_ADDRESS: FIXEDCHAR?<25>, \
-          C_PHONE: VARCHAR?<40>, \
-          C_COMMENT: FIXEDCHAR?<15>\
+          N_NAME: FIXEDCHAR?<25>, \
+          C_ADDRESS: VARCHAR?<40>, \
+          C_PHONE: FIXEDCHAR?<15>, \
+          C_COMMENT: VARCHAR?<117>\
         >"
       input:
         fetch:
