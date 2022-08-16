@@ -3,6 +3,7 @@
 from maturin import *
 import shutil
 import os
+import sys
 
 
 _PATHS = [
@@ -55,8 +56,27 @@ def _prepare():
     # If the local_dependencies directory exists, pip is building the package
     # from a source distribution. In that case, the build environment is
     # already as it should be.
-    if not os.path.isdir("local_dependencies"):
-        populate()
+    if os.path.isdir("local_dependencies"):
+        return
+
+    # Outside of building from specially-prepared sdist packages, we don't
+    # support out-of-tree builds, because that breaks Maturin and Cargo. The
+    # error messages you'd get if you were to try would be cryptic at best, so
+    # we detect this and fail more gently here.
+    if os.path.basename(os.path.realpath(".")) != "py":
+        print(
+            "\n"
+            "=================================================================\n"
+            "Out-of-tree build detected. This is not supported. Please\n"
+            "configure pip (or whatever build system you're using) to build\n"
+            "in-tree, for example using an editable install.\n"
+            "See https://github.com/substrait-io/substrait-validator/issues/35\n"
+            "=================================================================\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    populate()
 
 
 _maturin_prepare_metadata_for_build_wheel = (
