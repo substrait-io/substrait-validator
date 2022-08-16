@@ -422,31 +422,22 @@ impl From<&data::variation::FunctionBehavior> for i32 {
 impl From<&data::Parameter> for validator::data_type::Parameter {
     fn from(node: &data::Parameter) -> Self {
         Self {
-            kind: Some(match node {
-                data::Parameter::Null => validator::data_type::parameter::Kind::Null(()),
-                data::Parameter::Some(_, meta::Value::Unresolved) => {
+            name: node.name.clone().unwrap_or_default(),
+            kind: Some(match &node.value {
+                None => validator::data_type::parameter::Kind::Null(()),
+                Some(meta::Value::Unresolved) => {
                     validator::data_type::parameter::Kind::Unresolved(())
                 }
-                data::Parameter::Some(_, meta::Value::Boolean(x)) => {
-                    validator::data_type::parameter::Kind::Boolean(*x)
-                }
-                data::Parameter::Some(_, meta::Value::Integer(x)) => {
-                    validator::data_type::parameter::Kind::Integer(*x)
-                }
-                data::Parameter::Some(_, meta::Value::Enum(x)) => {
+                Some(meta::Value::Boolean(x)) => validator::data_type::parameter::Kind::Boolean(*x),
+                Some(meta::Value::Integer(x)) => validator::data_type::parameter::Kind::Integer(*x),
+                Some(meta::Value::Enum(x)) => {
                     validator::data_type::parameter::Kind::Enumeration(x.clone())
                 }
-                data::Parameter::Some(_, meta::Value::String(x)) => {
+                Some(meta::Value::String(x)) => {
                     validator::data_type::parameter::Kind::String(x.clone())
                 }
-                data::Parameter::Some(None, meta::Value::DataType(data_type)) => {
+                Some(meta::Value::DataType(data_type)) => {
                     validator::data_type::parameter::Kind::DataType(data_type.into())
-                }
-                data::Parameter::Some(Some(name), meta::Value::DataType(data_type)) => {
-                    validator::data_type::parameter::Kind::NamedType(validator::data_type::Named {
-                        name: name.to_string(),
-                        data_type: Some(data_type.into()),
-                    })
                 }
             }),
         }

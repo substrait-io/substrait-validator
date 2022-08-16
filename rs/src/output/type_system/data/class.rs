@@ -153,6 +153,30 @@ pub enum Compound {
     Map,
 }
 
+/// Most parameters don't support a name and are mandatory. This function just
+/// checks both these things and yields a reference to the value of the
+/// parameter if it's valid.
+fn check_normal_parameter<F: FnOnce() -> String>(
+    describe: F,
+    param: &data::Parameter,
+) -> diagnostic::Result<&meta::Value> {
+    if param.name.is_some() {
+        Err(cause!(
+            TypeMismatchedParameters,
+            "{} does not support naming",
+            describe()
+        ))
+    } else if let Some(value) = &param.value {
+        Ok(value)
+    } else {
+        Err(cause!(
+            TypeMismatchedParameters,
+            "{} is mandatory",
+            describe()
+        ))
+    }
+}
+
 impl ParameterInfo for Compound {
     fn check_parameters(&self, params: &[data::Parameter]) -> diagnostic::Result<()> {
         match self {
@@ -163,14 +187,16 @@ impl ParameterInfo for Compound {
                         "{self} expects a single parameter (length)"
                     ));
                 }
-                if let data::Parameter::Some(None, meta::Value::Integer(length)) = params[0] {
+                if let meta::Value::Integer(length) =
+                    check_normal_parameter(|| format!("{self} length parameter"), &params[0])?
+                {
                     // Note: 2147483647 = 2^31-1 = maximum value for signed
                     // 32-bit integer. However, the significance of the number
                     // is just that the Substrait specification says this is
                     // the limit.
                     const MIN_LENGTH: i64 = 1;
                     const MAX_LENGTH: i64 = 2147483647;
-                    if !(MIN_LENGTH..=MAX_LENGTH).contains(&length) {
+                    if !(MIN_LENGTH..=MAX_LENGTH).contains(length) {
                         return Err(cause!(
                             TypeMismatchedParameters,
                             "{self} length {length} is out of range {MIN_LENGTH}..{MAX_LENGTH}"
@@ -190,17 +216,21 @@ impl ParameterInfo for Compound {
                         "{self} expects two parameters (precision and scale)"
                     ));
                 }
-                if let data::Parameter::Some(None, meta::Value::Integer(precision)) = params[0] {
+                if let meta::Value::Integer(precision) =
+                    check_normal_parameter(|| format!("{self} precision parameter"), &params[0])?
+                {
                     const MIN_PRECISION: i64 = 1;
                     const MAX_PRECISION: i64 = 38;
-                    if !(MIN_PRECISION..=MAX_PRECISION).contains(&precision) {
+                    if !(MIN_PRECISION..=MAX_PRECISION).contains(precision) {
                         return Err(cause!(
                             TypeMismatchedParameters,
                             "{self} precision {precision} is out of range {MIN_PRECISION}..{MAX_PRECISION}"
                         ));
                     }
-                    if let data::Parameter::Some(None, meta::Value::Integer(scale)) = params[1] {
-                        if scale < 0 || scale > precision {
+                    if let meta::Value::Integer(scale) =
+                        check_normal_parameter(|| format!("{self} scale parameter"), &params[1])?
+                    {
+                        if *scale < 0 || scale > precision {
                             return Err(cause!(
                                 TypeMismatchedParameters,
                                 "{self} scale {scale} is out of range 0..{precision}"
@@ -221,10 +251,16 @@ impl ParameterInfo for Compound {
             }
             Compound::Struct => {
                 for param in params.iter() {
-                    if !matches!(param, data::Parameter::Some(None, meta::Value::DataType(_))) {
+                    if param.name.is_some() {
                         return Err(cause!(
                             TypeMismatchedParameters,
-                            "{self} parameters must be types"
+                            "{self} parameters do not support naming (did you mean to use NSTRUCT?)"
+                        ));
+                    }
+                    if !matches!(param.value, Some(meta::Value::DataType(_))) {
+                        return Err(cause!(
+                            TypeMismatchedParameters,
+                            "{self} parameters are mandatory and must be types"
                         ));
                     }
                 }
@@ -232,7 +268,9 @@ impl ParameterInfo for Compound {
             Compound::NamedStruct => {
                 let mut names = HashSet::with_capacity(params.len());
                 for param in params.iter() {
-                    if let data::Parameter::Some(Some(name), meta::Value::DataType(_)) = &param {
+                    if let (Some(name), Some(meta::Value::DataType(_))) =
+                        (&param.name, &param.value)
+                    {
                         if !names.insert(name) {
                             return Err(cause!(
                                 TypeMismatchedParameters,
@@ -242,7 +280,7 @@ impl ParameterInfo for Compound {
                     } else {
                         return Err(cause!(
                             TypeMismatchedParameters,
-                            "{self} parameters must be name-types pairs"
+                            "{self} parameters ara mandatory and must be name-type pairs"
                         ));
                     }
                 }
@@ -255,8 +293,11 @@ impl ParameterInfo for Compound {
                     ));
                 }
                 if !matches!(
-                    params[0],
-                    data::Parameter::Some(None, meta::Value::DataType(_))
+                    check_normal_parameter(
+                        || format!("{self} element type parameter"),
+                        &params[0]
+                    )?,
+                    meta::Value::DataType(_)
                 ) {
                     return Err(cause!(
                         TypeMismatchedParameters,
@@ -272,8 +313,8 @@ impl ParameterInfo for Compound {
                     ));
                 }
                 if !matches!(
-                    params[0],
-                    data::Parameter::Some(None, meta::Value::DataType(_))
+                    check_normal_parameter(|| format!("{self} key type parameter"), &params[0])?,
+                    meta::Value::DataType(_)
                 ) {
                     return Err(cause!(
                         TypeMismatchedParameters,
@@ -281,8 +322,8 @@ impl ParameterInfo for Compound {
                     ));
                 }
                 if !matches!(
-                    params[1],
-                    data::Parameter::Some(None, meta::Value::DataType(_))
+                    check_normal_parameter(|| format!("{self} value type parameter"), &params[1])?,
+                    meta::Value::DataType(_)
                 ) {
                     return Err(cause!(
                         TypeMismatchedParameters,
@@ -413,26 +454,28 @@ impl ParameterInfo for UserDefinedDefinition {
 
             // Check the provided parameter against the information contained
             // in the slot.
-            match param {
-                data::Parameter::Null => {
-                    if !slot.optional {
-                        return Err(cause!(
-                            TypeMismatchedParameters,
-                            "parameter {} is not optional and can thus not be skipped with null",
-                            self.parameter_name_or_index(index)
-                        ));
-                    }
+            if param.name.is_some() {
+                return Err(cause!(
+                    TypeMismatchedParameters,
+                    "parameter {} cannot be named",
+                    self.parameter_name_or_index(index)
+                ));
+            }
+            if let Some(value) = &param.value {
+                if !slot.pattern.match_pattern(value) {
+                    return Err(cause!(
+                        TypeMismatchedParameters,
+                        "parameter {} does not match pattern {}",
+                        self.parameter_name_or_index(index),
+                        slot.pattern
+                    ));
                 }
-                data::Parameter::Some(_, value) => {
-                    if !slot.pattern.match_pattern(value) {
-                        return Err(cause!(
-                            TypeMismatchedParameters,
-                            "parameter {} does not match pattern {}",
-                            self.parameter_name_or_index(index),
-                            slot.pattern
-                        ));
-                    }
-                }
+            } else if !slot.optional {
+                return Err(cause!(
+                    TypeMismatchedParameters,
+                    "parameter {} is not optional and can thus not be skipped with null",
+                    self.parameter_name_or_index(index)
+                ));
             }
         }
         Ok(())

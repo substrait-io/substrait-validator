@@ -475,7 +475,7 @@ pub fn parse_type_parameter_variant(
     y: &mut context::Context,
 ) -> diagnostic::Result<data::Parameter> {
     Ok(match x {
-        substrait::r#type::parameter::Parameter::Null(_) => data::Parameter::Null,
+        substrait::r#type::parameter::Parameter::Null(_) => data::Parameter::null(),
         substrait::r#type::parameter::Parameter::DataType(x) => {
             parse_type(x, y)?;
             y.data_type().into()
@@ -1107,29 +1107,26 @@ fn assert_equal_internal(
                 } else {
                     format!("{path}.{path_element}")
                 };
-                match (other_param, base_param) {
-                    (
-                        data::Parameter::Some(other_name, other),
-                        data::Parameter::Some(base_name, base),
-                    ) => {
-                        if let (Some(other_name), Some(base_name)) = (other_name, base_name) {
-                            if other_name != base_name {
-                                diagnostic!(
-                                    context,
-                                    Warning,
-                                    TypeMismatch,
-                                    "{message}: field name {} vs. {}{path}",
-                                    util::string::as_ident_or_string(&other_name),
-                                    util::string::as_ident_or_string(&base_name)
-                                );
-                            }
-                        }
-                        data::Parameter::Some(
-                            base_name.clone().or_else(|| other_name.clone()),
-                            if let (
-                                meta::Value::DataType(ref other),
-                                meta::Value::DataType(ref base),
-                            ) = (other, base)
+                if let (Some(other_name), Some(base_name)) = (&other_param.name, &base_param.name) {
+                    if other_name != base_name {
+                        diagnostic!(
+                            context,
+                            Warning,
+                            TypeMismatch,
+                            "{message}: field name {} vs. {}{path}",
+                            util::string::as_ident_or_string(&other_name),
+                            util::string::as_ident_or_string(&base_name)
+                        );
+                    }
+                }
+                if let (Some(other_value), Some(base_value)) =
+                    (&other_param.value, &base_param.value)
+                {
+                    data::Parameter {
+                        name: base_param.name.clone().or_else(|| other_param.name.clone()),
+                        value: Some(
+                            if let (meta::Value::DataType(other), meta::Value::DataType(base)) =
+                                (other_value, base_value)
                             {
                                 meta::Value::DataType(assert_equal_internal(
                                     context,
@@ -1141,29 +1138,28 @@ fn assert_equal_internal(
                                     &path,
                                 ))
                             } else {
-                                if other != base {
+                                if other_value != base_value {
                                     diagnostic!(
                                         context,
                                         Error,
                                         TypeMismatch,
-                                        "{message}: {other} vs. {base}{path}"
+                                        "{message}: {other_value} vs. {base_value}{path}"
                                     );
                                 }
-                                base.clone()
+                                base_value.clone()
                             },
-                        )
+                        ),
                     }
-                    (other, base) => {
-                        if other != base {
-                            diagnostic!(
-                                context,
-                                Error,
-                                TypeMismatch,
-                                "{message}: {other} vs. {base}{path}"
-                            );
-                        }
-                        base.clone()
+                } else {
+                    if other_param != base_param {
+                        diagnostic!(
+                            context,
+                            Error,
+                            TypeMismatch,
+                            "{message}: {other} vs. {base}{path}"
+                        );
                     }
+                    base_param.clone()
                 }
             })
             .collect();

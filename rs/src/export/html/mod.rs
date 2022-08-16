@@ -461,15 +461,15 @@ fn format_data_type(prefix: &str, data_type: &data::Type) -> Vec<String> {
                 .class()
                 .parameter_name(index)
                 .unwrap_or_else(|| "?".to_string());
-            match parameter {
-                data::Parameter::Null => {
-                    html.push(format_data_type_card(&format!(".{name}: null")))
-                }
-                data::Parameter::Some(n, x) => html.push(format_data_type_card(&format!(
-                    ".{}: {x}",
-                    n.as_ref().unwrap_or(&name)
-                ))),
-            }
+            html.push(format_data_type_card(&format!(
+                ".{}: {}",
+                parameter.name.as_ref().unwrap_or(&name),
+                parameter
+                    .value
+                    .as_ref()
+                    .map(ToString::to_string)
+                    .unwrap_or_else(|| String::from("null"))
+            )));
         }
         html.push("</details>".to_string());
     }

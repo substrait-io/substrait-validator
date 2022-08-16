@@ -464,13 +464,13 @@ message DataType {
 
   // Type parameter.
   message Parameter {
+    // Optional name given to the parameter (used for NSTRUCT).
+    string name = 10;
+
     // Type of parameter.
     oneof kind {
       // Anonymous data type parameter, for example the T in LIST<T>.
       DataType data_type = 1;
-
-      // Named data type parameter, for example N:T in NSTRUCT<N:T>.
-      Named named_type = 2;
 
       // Boolean paramater, used only for extension types.
       bool boolean = 4;
@@ -492,11 +492,16 @@ message DataType {
 
       // Replaced by `integer`.
       uint64 unsigned = 3 [deprecated = true];
+
+      // Replaced by data_type and an assigned name field.
+      Named named_type = 2 [deprecated = true];
     }
   }
 
   // A named type, used for NSTRUCT (meta)types.
   message Named {
+    option deprecated = true;
+
     // Name of the struct element.
     string name = 1;
 

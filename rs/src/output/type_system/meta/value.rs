@@ -40,7 +40,8 @@ impl Describe for Value {
     ) -> std::fmt::Result {
         match self {
             Value::Unresolved => write!(f, "!"),
-            Value::Boolean(value) => write!(f, "{value}"),
+            Value::Boolean(true) => write!(f, "true"),
+            Value::Boolean(false) => write!(f, "false"),
             Value::Integer(value) => write!(f, "{value}"),
             Value::Enum(variant) => util::string::describe_identifier(f, variant, limit),
             Value::String(value) => util::string::describe_string(f, value, limit),
@@ -110,6 +111,11 @@ impl Value {
         } else {
             self
         })
+    }
+
+    /// Returns whether this is an unresolved value.
+    pub fn is_unresolved(&self) -> bool {
+        matches!(self, Value::Unresolved)
     }
 
     /// If this value is a boolean, returns the boolean.

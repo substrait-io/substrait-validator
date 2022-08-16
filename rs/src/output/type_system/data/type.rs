@@ -137,27 +137,42 @@ impl Definition {
 
     /// Returns the value of the given boolean parameter.
     pub fn boolean_parameter(&self, index: usize) -> Option<bool> {
-        self.parameters.get(index).and_then(|x| x.get_boolean())
+        self.parameters
+            .get(index)
+            .and_then(|x| x.value.as_ref())
+            .and_then(meta::Value::get_boolean)
     }
 
     /// Returns the value of the given integer parameter.
     pub fn integer_parameter(&self, index: usize) -> Option<i64> {
-        self.parameters.get(index).and_then(|x| x.get_integer())
+        self.parameters
+            .get(index)
+            .and_then(|x| x.value.as_ref())
+            .and_then(meta::Value::get_integer)
     }
 
     /// Returns the value of the given enum parameter.
     pub fn enum_parameter(&self, index: usize) -> Option<&str> {
-        self.parameters.get(index).and_then(|x| x.get_enum())
+        self.parameters
+            .get(index)
+            .and_then(|x| x.value.as_ref())
+            .and_then(meta::Value::get_enum)
     }
 
     /// Returns the value of the given string parameter.
     pub fn string_parameter(&self, index: usize) -> Option<&str> {
-        self.parameters.get(index).and_then(|x| x.get_string())
+        self.parameters
+            .get(index)
+            .and_then(|x| x.value.as_ref())
+            .and_then(meta::Value::get_string)
     }
 
     /// Returns the value of the given type parameter.
     pub fn data_type_parameter(&self, index: usize) -> Option<Arc<Definition>> {
-        self.parameters.get(index).and_then(|x| x.get_data_type())
+        self.parameters
+            .get(index)
+            .and_then(|x| x.value.as_ref())
+            .and_then(meta::Value::get_data_type)
     }
 
     /// Returns whether this is an unresolved type.
@@ -168,9 +183,9 @@ impl Definition {
     /// Returns whether any part of this type tree is an unresolved type.
     pub fn is_unresolved_deep(&self) -> bool {
         self.is_unresolved()
-            || self.parameters.iter().any(|p| match p {
-                data::Parameter::Some(_, meta::Value::Unresolved) => true,
-                data::Parameter::Some(_, meta::Value::DataType(t)) => t.is_unresolved_deep(),
+            || self.parameters.iter().any(|p| match &p.value {
+                Some(meta::Value::Unresolved) => true,
+                Some(meta::Value::DataType(t)) => t.is_unresolved_deep(),
                 _ => false,
             })
     }
@@ -191,7 +206,12 @@ impl Definition {
             Some(
                 self.parameters
                     .iter()
-                    .map(|x| x.get_data_type().unwrap_or_default())
+                    .map(|x| {
+                        x.value
+                            .as_ref()
+                            .and_then(meta::Value::get_data_type)
+                            .unwrap_or_default()
+                    })
                     .collect(),
             )
         } else {
@@ -318,15 +338,16 @@ impl Definition {
     /// Internal helper function for apply_field_names().
     fn apply_field_names_internal<F: FnMut() -> diagnostic::Result<String>>(
         &self,
-        mut namer: &mut F,
+        namer: &mut F,
     ) -> diagnostic::Result<Arc<Definition>> {
         if self.is_struct() {
             let parameters: Result<Vec<_>, _> = self
                 .parameters
                 .iter()
                 .cloned()
-                .map(|p| {
-                    p.with_name(&mut namer)?.map_result(|v| {
+                .map(|mut p| {
+                    p.name.replace(namer()?);
+                    p.map_result(|v| {
                         v.map_data_type_result(|t| t.apply_field_names_internal(namer))
                     })
                 })

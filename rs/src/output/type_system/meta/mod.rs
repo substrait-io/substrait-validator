@@ -6,11 +6,13 @@
 //! See [`Type`], [`Value`], and [`Pattern`].
 
 pub mod context;
+pub mod function;
 pub mod pattern;
 pub mod r#type;
 pub mod value;
 
 pub use context::Context;
+pub use function::Function;
 pub use pattern::Pattern;
 pub use r#type::Type;
 pub use value::Value;

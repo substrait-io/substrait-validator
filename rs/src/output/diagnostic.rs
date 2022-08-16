@@ -320,6 +320,15 @@ pub enum Classification {
 
     #[strum(props(Description = "redundant field"))]
     RedundantField = 7007,
+
+    // Type derivations (group 8).
+    #[strum(props(
+        HiddenDescription = "diagnostics for type derivation patterns and expressions"
+    ))]
+    Derivation = 8000,
+
+    #[strum(props(Description = "invalid type derivation pattern or expression"))]
+    DerivationInvalid = 8001,
 }
 
 impl Default for Classification {
