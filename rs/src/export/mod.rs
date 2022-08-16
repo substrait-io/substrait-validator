@@ -10,7 +10,7 @@ mod proto;
 use crate::output::parse_result;
 
 /// Supported output formats for exporting.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Format {
     /// Emit a newline-separated, flattened list of diagnostics.
     Diagnostics,

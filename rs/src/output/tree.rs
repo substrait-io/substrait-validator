@@ -214,7 +214,7 @@ pub enum NodeType {
 }
 
 /// Semantical information about a node.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
     /// Used for nodes for which no better classification exists.
     Misc,

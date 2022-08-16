@@ -13,7 +13,7 @@ use crate::output::tree;
 /// are more sensible in the context of a diagnostic, while the names for
 /// Validity are more sensible when talking about a validation result as a
 /// whole.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Validity {
     /// The plan is valid.
     Valid,

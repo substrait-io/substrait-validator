@@ -587,7 +587,7 @@ fn parse_interval_year_to_month(
         }
     });
     let months = x.months.saturating_add(x.years.saturating_mul(12));
-    if months < -120000 || months > 120000 {
+    if !(-120000..=120000).contains(&months) {
         diagnostic!(
             y,
             Error,
