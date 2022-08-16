@@ -59,8 +59,8 @@
 //!  - returning as many diagnostics as possible, rather than just stopping
 //!    at the first sight of trouble.
 //!
-//! Diagnostics can be pushed into the parser context using the [`diagnostic!`]
-//! and [`ediagnostic!`] macros. The latter allows third-party `Err` types to
+//! Diagnostics can be pushed into the parser context using the `diagnostic!`
+//! and `ediagnostic!` macros. The latter allows third-party `Err` types to
 //! be pushed as the message, the former uses a [format!] syntax. However,
 //! sometimes it also very useful to just use the `?` operator for something.
 //! Therefore, parse functions also return
@@ -74,8 +74,7 @@
 //! found in the docs for the [diagnostic](crate::output::diagnostic) module.
 //!
 //! Beyond diagnostics, it's also possible to push comments into the context.
-//! This can be done using the [`comment!`] and [`link!`] macros, or, for more
-//! control, by pushing a []
+//! This can be done using the `comment!` and `link!` macros.
 //!
 //! ## Data types
 //!

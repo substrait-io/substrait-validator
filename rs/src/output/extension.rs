@@ -119,7 +119,7 @@ impl<T> std::fmt::Display for Reference<T> {
 }
 
 /// User-defined type class.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct DataType {
     /// The underlying structure of the type.
     pub structure: Vec<(String, data_type::Simple)>,
@@ -132,7 +132,7 @@ pub struct DataType {
 }
 
 /// A parameter slot for a user-defined data type.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DataTypeParameterSlot {
     /// YAML-provided name of the parameter.
     pub name: String,
@@ -149,7 +149,7 @@ pub struct DataTypeParameterSlot {
 }
 
 /// Expected metatype and bounds for a type parameter.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DataTypeParameterBounds {
     /// The parameter must be bound to a (nested) data type.
     DataType,
@@ -209,7 +209,7 @@ impl TypeVariation {
 }
 
 /// Type variation function behavior.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FunctionBehavior {
     Inherits,
     Separate,
@@ -222,7 +222,7 @@ impl Default for FunctionBehavior {
 }
 
 /// Function extension.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Function {
     // TODO: need much more information here to do type checking.
 }

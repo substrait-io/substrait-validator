@@ -36,7 +36,7 @@ impl Default for Root {
 }
 
 /// Description of a reference path.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReferencePath {
     // *Reversed* list of segments.
     segments: Vec<String>,

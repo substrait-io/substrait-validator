@@ -11,7 +11,7 @@
 use crate::util;
 
 /// Element of a path to some field of a protobuf message and/or YAML file.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PathElement {
     /// Refers to an optional protobuf field with the given name within the
     /// message, or a YAML map entry with the given key.
@@ -63,7 +63,7 @@ impl PathElement {
 }
 
 /// Refers to a location within a protobuf message.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PathBuf {
     pub root: &'static str,
     pub elements: Vec<PathElement>,

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// This happens in PyO3 generated code, and there doesn't seem to be a more
+// These happen in PyO3 generated code, and there doesn't seem to be a more
 // narrow scope that this can be disabled in (clippy seems a bit confused about
 // the code causing the warning, in general).
 #![allow(clippy::needless_option_as_deref)]
+#![allow(clippy::borrow_deref_ref)]
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;

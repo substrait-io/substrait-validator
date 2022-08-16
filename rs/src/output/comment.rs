@@ -11,7 +11,7 @@ use crate::output::path;
 
 /// Representation of a comment message intended only for human consumption.
 /// Includes basic formatting information.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Comment {
     /// Formatting elements and spans that make up the comment.
     elements: Vec<Element>,
@@ -176,7 +176,7 @@ impl From<String> for Comment {
 }
 
 /// A comment element.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Element {
     /// A span of text. Should not include newlines.
     Span(Span),
@@ -195,7 +195,7 @@ pub enum Element {
 }
 
 /// Like Comment, but single-line.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Eq)]
 pub struct Brief {
     /// Spans that make up the comment. These are simply concatenated, but
     /// spans may contain optional formatting information.
@@ -293,7 +293,7 @@ impl From<Brief> for Comment {
 }
 
 /// A span of text within a comment.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Span {
     /// The span of text.
     pub text: String,
@@ -331,7 +331,7 @@ fn merge_spans(mut a: Span, b: Span) -> (Span, Option<Span>) {
 }
 
 /// A link to something.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Link {
     /// Link to another node in the tree, via an absolute node path.
     Path(path::PathBuf),
