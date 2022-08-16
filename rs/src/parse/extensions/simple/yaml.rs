@@ -55,11 +55,9 @@ pub fn parse_uri<S: AsRef<str>>(
         once_cell::sync::Lazy::new(|| {
             jsonschema::JSONSchema::compile(
                 &yaml::yaml_to_json(
-                    yaml_rust::YamlLoader::load_from_str(include_str!(
+                    serde_yaml::from_str::<serde_yaml::Value>(include_str!(
                         "../../../resources/text/simple_extensions_schema.yaml"
                     ))
-                    .unwrap()
-                    .pop()
                     .unwrap(),
                     &path::Path::default(),
                 )

@@ -32,10 +32,8 @@ substrait-validator-derive = { path = "../derive", version = "0.0.7" }
 # of our own.
 heck = "0.4"
 
-# Used for dealing with deserializing the YAML extension files. Note that we're
-# not using serde_yaml here because serde_yaml is just a wrapper around
-# yaml-rust, and we don't use any of serde's derive logic.
-yaml-rust = "0.4"
+# Used for dealing with deserializing the YAML extension files.
+serde_yaml = "0.9"
 
 # The schema for the extension files uses jsonschema syntax. The rust crate for
 # schema validation with this format this uses serde_json types as input for

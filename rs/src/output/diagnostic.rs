@@ -91,7 +91,7 @@ pub enum Message {
     UtfError(#[from] std::str::Utf8Error),
 
     #[error("{0}")]
-    YamlScanError(#[from] yaml_rust::ScanError),
+    YamlError(#[from] serde_yaml::Error),
 
     #[error("{0}")]
     JsonSchemaValidationError(#[from] JsonSchemaValidationError),
