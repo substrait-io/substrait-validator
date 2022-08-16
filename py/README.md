@@ -15,11 +15,31 @@ If you want to build manually, running something along the lines of
 `pip install .` should work. You should only need to have a
 [rust](https://www.rust-lang.org/tools/install) compiler installed.
 
-Be aware that this project relies on submodules, so you need to check those out
-first. If you've done that and get weird errors, try running
-`./prepare_build.py populate` manually first. The protobuf generation logic has
-to be run very early in the build process, and while this should be done
-automatically, the hook is not very reliable.
+If you want to create wheels or sdists of your own, you can do so using
+maturin (note the manual prepare_build.py invocation, see hints):
+
+```console
+user@host:~$ pip install maturin
+...
+user@host:~$ ./prepare_build.py populate
+user@host:~$ maturin build
+...
+📦 Built wheel for CPython 3.x to /path/to/substrait-validator/target/wheels/substrait_validator-x.y.z-cp3xx-cp3xx-linux_x86_64.whl
+user@host:~$ maturin sdist
+...
+📦 Built source distribution to /path/to/substrait-validator/target/wheels/substrait_validator-x.y.z.tar.gz
+```
+
+Some hints if you run into issues:
+
+ - This project relies on submodules, so you need to check those out first.
+ - Out-of-tree builds are not supported, so you may need to beat pip into
+   submission if you're using an old version or it otherwise insists on
+   building from a temp directory.
+ - If you get weird errors, try running `./prepare_build.py populate` manually
+   first. The protobuf generation logic has to be run very early in the build
+   process, and while this is done automatically for most build methods, not
+   all methods provide a hook for this.
 
 ## Building wheels and source distributions
 
