@@ -465,6 +465,20 @@ impl std::fmt::Display for Cause {
     }
 }
 
+impl Cause {
+    /// Prefixes the message with context information.
+    pub fn prefix<S: AsRef<str>>(self, prefix: S) -> Cause {
+        Cause {
+            message: Arc::new(Message::from(format!(
+                "{}: {}",
+                prefix.as_ref(),
+                self.message
+            ))),
+            classification: self.classification,
+        }
+    }
+}
+
 /// Convenience/shorthand macro for creating error diagnostics. Use this
 /// variant when you have something that can be cast into a Message via into(),
 /// like a pre-formatted string or a compatible Error type from a dependency.

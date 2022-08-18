@@ -156,10 +156,10 @@ impl Value {
 
     /// If this value is a data type, returns the data type.
     pub fn get_data_type(&self) -> Option<data::Type> {
-        if let Value::DataType(x) = self {
-            Some(x.clone())
-        } else {
-            None
+        match self {
+            Value::Unresolved => Some(data::new_unresolved_type()),
+            Value::DataType(x) => Some(x.clone()),
+            _ => None,
         }
     }
 
