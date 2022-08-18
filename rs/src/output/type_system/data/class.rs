@@ -8,6 +8,7 @@ use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::type_system::data;
 use crate::output::type_system::meta;
+use crate::output::type_system::meta::Pattern;
 use std::collections::HashSet;
 use std::sync::Arc;
 use strum_macros::{Display, EnumString};
@@ -382,7 +383,7 @@ pub struct DataTypeParameterSlot {
     pub description: String,
 
     /// Pattern for type- and bounds-checking parameters bound to this slot.
-    pub pattern: meta::Pattern,
+    pub pattern: meta::pattern::Value,
 
     /// Whether this parameter is optional. If optional, it may be skipped
     /// using null or omitted entirely if at the end of the list.

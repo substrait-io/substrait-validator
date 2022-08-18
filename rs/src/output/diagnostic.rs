@@ -329,6 +329,20 @@ pub enum Classification {
 
     #[strum(props(Description = "invalid type derivation pattern or expression"))]
     DerivationInvalid = 8001,
+
+    // Note the difference between above and below! Above should be used when
+    // the derivation itself is invalid due to syntax or metatype errors, or in
+    // other words, when it could *never* match or evaluate, regardless of
+    // context. Below is used when the derivation itself appears to be sane,
+    // but it does not apply to the given context. From a user perspective,
+    // above means that the YAML is wrong, while below means that a function
+    // is used incorrectly in a plan. Note that we cannot detect all problems
+    // with type derivation expressions without evaluating them because they
+    // are dynamically typed.
+    #[strum(props(
+        Description = "type derivation pattern or expression failed to match or evaluate"
+    ))]
+    DerivationFailed = 8002,
 }
 
 impl Default for Classification {

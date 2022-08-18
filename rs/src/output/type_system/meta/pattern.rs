@@ -12,10 +12,34 @@ use crate::util::string::Describe;
 use std::fmt::Write;
 use std::sync::Arc;
 
-// TODO: s/Pattern/Value/g, then make Pattern trait for exactly(),
-// match_pattern*(), evaluate*(), and some derived stuff
+/// Trait for patterns that can match a particular value or be evaluated to
+/// one.
+pub trait Pattern {
+    /// The value type that this pattern matches.
+    type Value;
 
-// TODO: implement meta::Function
+    /// Returns a pattern that matches the given value exactly.
+    fn exactly(value: Self::Value) -> Self;
+
+    /// Matches this pattern without any provided context.
+    fn match_pattern(&self, value: &Self::Value) -> bool {
+        let mut context = meta::Context::default();
+        self.match_pattern_with_context(&mut context, value)
+    }
+
+    /// Matches this pattern with a provided context.
+    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool;
+
+    /// Evaluates this pattern without any provided context.
+    fn evaluate(&self) -> diagnostic::Result<Self::Value> {
+        let mut context = meta::Context::default();
+        self.evaluate_with_context(&mut context)
+    }
+
+    /// Evaluates this pattern with a provided context.
+    fn evaluate_with_context(&self, context: &mut meta::Context)
+        -> diagnostic::Result<Self::Value>;
+}
 
 /// Patterns are used wherever a meta::Value is expected, such as for type
 /// parameter slots. When they appear as an input (argument type, LHS of
@@ -27,7 +51,7 @@ use std::sync::Arc;
 /// and [Pattern::evaluate_with_context()]. This either fails or yields a
 /// [meta::Value].
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Pattern {
+pub enum Value {
     /// Accepts any meta::Value. Syntax: `?`. Also used when a pattern is unknown
     /// due to validator-specific error recovery. Cannot be evaluated.
     Any,
@@ -97,40 +121,40 @@ pub enum Pattern {
     ///  - Comparisons: `a == b`, `a != b`, `a < b`, `a <= b`, `a > b`,
     ///    `a >= b`;
     ///  - Ternary: `if a then b else c`.
-    Function(meta::Function, Vec<Pattern>),
+    Function(meta::Function, Vec<Value>),
 }
 
-impl Describe for Pattern {
+impl Describe for Value {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
-            Pattern::Any => write!(f, "?"),
-            Pattern::Binding(name) => util::string::describe_identifier(f, name, limit),
-            Pattern::ImplicitOrBinding(name) => {
+            Value::Any => write!(f, "?"),
+            Value::Binding(name) => util::string::describe_identifier(f, name, limit),
+            Value::ImplicitOrBinding(name) => {
                 util::string::describe_identifier(f, name, limit)?;
                 write!(f, "?")
             }
-            Pattern::Boolean(None) => write!(f, "metabool"),
-            Pattern::Boolean(Some(true)) => write!(f, "true"),
-            Pattern::Boolean(Some(false)) => write!(f, "false"),
-            Pattern::Integer(i64::MIN, i64::MAX) => write!(f, "metaint"),
-            Pattern::Integer(i64::MIN, max) => write!(f, "..{max}"),
-            Pattern::Integer(min, i64::MAX) => write!(f, "{min}.."),
-            Pattern::Integer(min, max) => write!(f, "{min}..{max}"),
-            Pattern::Enum(None) => write!(f, "metaenum"),
-            Pattern::Enum(Some(variants)) => {
+            Value::Boolean(None) => write!(f, "metabool"),
+            Value::Boolean(Some(true)) => write!(f, "true"),
+            Value::Boolean(Some(false)) => write!(f, "false"),
+            Value::Integer(i64::MIN, i64::MAX) => write!(f, "metaint"),
+            Value::Integer(i64::MIN, max) => write!(f, "..{max}"),
+            Value::Integer(min, i64::MAX) => write!(f, "{min}.."),
+            Value::Integer(min, max) => write!(f, "{min}..{max}"),
+            Value::Enum(None) => write!(f, "metaenum"),
+            Value::Enum(Some(variants)) => {
                 util::string::describe_sequence(f, variants, limit, 10, |f, variant, _, limit| {
                     util::string::describe_identifier(f, variant, limit)
                 })
             }
-            Pattern::String(None) => write!(f, "metastr"),
-            Pattern::String(Some(text)) => util::string::describe_string(f, text, limit),
-            Pattern::DataType(None) => write!(f, "typename"),
-            Pattern::DataType(Some(pattern)) => pattern.describe(f, limit),
-            Pattern::Function(func, args) => {
+            Value::String(None) => write!(f, "metastr"),
+            Value::String(Some(text)) => util::string::describe_string(f, text, limit),
+            Value::DataType(None) => write!(f, "typename"),
+            Value::DataType(Some(pattern)) => pattern.describe(f, limit),
+            Value::Function(func, args) => {
                 let (a, b) = limit.split(20);
                 func.describe(f, a)?;
                 write!(f, "(")?;
@@ -142,52 +166,23 @@ impl Describe for Pattern {
     }
 }
 
-impl std::fmt::Display for Pattern {
+impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.display().fmt(f)
     }
 }
 
-impl Pattern {
-    /// Returns a pattern that matches the given value exactly.
-    pub fn exactly(value: meta::Value) -> Self {
-        match value {
-            meta::Value::Unresolved => Pattern::Any,
-            meta::Value::Boolean(x) => Pattern::Boolean(Some(x)),
-            meta::Value::Integer(x) => Pattern::Integer(x, x),
-            meta::Value::Enum(x) => Pattern::Enum(Some(vec![x])),
-            meta::Value::String(x) => Pattern::String(Some(x)),
-            meta::Value::DataType(x) => Pattern::DataType(Some(DataType::exactly(x))),
-        }
-    }
-
-    /// Returns a pattern that matches the given type exactly.
-    pub fn exactly_type(meta_type: meta::Type) -> Self {
-        match meta_type {
-            meta::Type::Unresolved => Pattern::Any,
-            meta::Type::Boolean => Pattern::Boolean(None),
-            meta::Type::Integer => Pattern::Integer(i64::MIN, i64::MAX),
-            meta::Type::Enum => Pattern::Enum(None),
-            meta::Type::String => Pattern::String(None),
-            meta::Type::DataType => Pattern::DataType(None),
-        }
-    }
-
-    /// Matches this pattern without any provided context.
-    pub fn match_pattern(&self, value: &meta::Value) -> bool {
-        let mut context = meta::Context::default();
-        self.match_pattern_with_context(&mut context, value)
-    }
-
-    /// Matches this pattern with a provided context.
-    pub fn match_pattern_with_context(
-        &self,
-        context: &mut meta::Context,
-        value: &meta::Value,
-    ) -> bool {
+impl Value {
+    /// Match the given value without being lenient about unresolved values.
+    /// Whenever this returns false, the public match_pattern_with_context()
+    /// function will check if the value was unresolved, and override the
+    /// result with true if so; unresolved values should always match
+    /// everything in order to avoid flooding the user with error messages
+    /// when the validator is confused due to a previous error.
+    fn match_strictly(&self, context: &mut meta::Context, value: &meta::Value) -> bool {
         match self {
-            Pattern::Any => true,
-            Pattern::Binding(name) => {
+            Value::Any => true,
+            Value::Binding(name) => {
                 if let Some(expected) = context.bindings.get(name) {
                     if value != expected {
                         return false;
@@ -200,7 +195,7 @@ impl Pattern {
                 }
                 true
             }
-            Pattern::ImplicitOrBinding(name) => {
+            Value::ImplicitOrBinding(name) => {
                 if let Some(mut value) = value.get_boolean() {
                     if let Some(expected) = context.bindings.get(name) {
                         if let Some(current) = expected.get_boolean() {
@@ -215,7 +210,7 @@ impl Pattern {
                     false
                 }
             }
-            Pattern::Boolean(expected) => {
+            Value::Boolean(expected) => {
                 if let Some(value) = value.get_boolean() {
                     if let Some(expected) = expected {
                         value == *expected
@@ -226,14 +221,14 @@ impl Pattern {
                     false
                 }
             }
-            Pattern::Integer(low, high) => {
+            Value::Integer(low, high) => {
                 if let Some(value) = value.get_integer() {
                     value >= *low && value <= *high
                 } else {
                     false
                 }
             }
-            Pattern::Enum(expected) => {
+            Value::Enum(expected) => {
                 if let Some(value) = value.get_enum() {
                     if let Some(variants) = expected {
                         variants
@@ -246,7 +241,7 @@ impl Pattern {
                     false
                 }
             }
-            Pattern::String(expected) => {
+            Value::String(expected) => {
                 if let Some(value) = value.get_string() {
                     if let Some(expected) = expected {
                         value == expected
@@ -257,7 +252,7 @@ impl Pattern {
                     false
                 }
             }
-            Pattern::DataType(expected) => {
+            Value::DataType(expected) => {
                 if let Some(value) = value.get_data_type() {
                     if let Some(expected) = expected {
                         expected.match_pattern_with_context(context, &value)
@@ -268,31 +263,43 @@ impl Pattern {
                     false
                 }
             }
-            Pattern::Function(_, _) => false,
+            Value::Function(_, _) => false,
+        }
+    }
+}
+
+impl Pattern for Value {
+    type Value = meta::Value;
+
+    fn exactly(value: Self::Value) -> Self {
+        match value {
+            meta::Value::Unresolved => Value::Any,
+            meta::Value::Boolean(x) => Value::Boolean(Some(x)),
+            meta::Value::Integer(x) => Value::Integer(x, x),
+            meta::Value::Enum(x) => Value::Enum(Some(vec![x])),
+            meta::Value::String(x) => Value::String(Some(x)),
+            meta::Value::DataType(x) => Value::DataType(Some(DataType::exactly(x))),
         }
     }
 
-    /// Evaluates this pattern without any provided context.
-    pub fn evaluate(&self) -> diagnostic::Result<meta::Value> {
-        let mut context = meta::Context::default();
-        self.evaluate_with_context(&mut context)
+    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool {
+        self.match_strictly(context, value) || value.is_unresolved()
     }
 
-    /// Evaluates this pattern with a provided context.
-    pub fn evaluate_with_context(
+    fn evaluate_with_context(
         &self,
         context: &mut meta::Context,
-    ) -> diagnostic::Result<meta::Value> {
+    ) -> diagnostic::Result<Self::Value> {
         match self {
-            Pattern::Any => Err(cause!(DerivationInvalid, "? patterns cannot be evaluated")),
-            Pattern::Binding(name) => {
+            Value::Any => Err(cause!(DerivationInvalid, "? patterns cannot be evaluated")),
+            Value::Binding(name) => {
                 if let Some(value) = context.bindings.get(name) {
                     Ok(value.clone())
                 } else {
                     Err(cause!(DerivationInvalid, "{name} was never bound"))
                 }
             }
-            Pattern::ImplicitOrBinding(name) => {
+            Value::ImplicitOrBinding(name) => {
                 if let Some(value) = context.bindings.get(name) {
                     if value.get_boolean().is_none() {
                         Err(cause!(
@@ -306,7 +313,7 @@ impl Pattern {
                     Ok(false.into())
                 }
             }
-            Pattern::Boolean(value) => {
+            Value::Boolean(value) => {
                 if let Some(value) = value {
                     Ok((*value).into())
                 } else {
@@ -316,7 +323,7 @@ impl Pattern {
                     ))
                 }
             }
-            Pattern::Integer(low, high) => {
+            Value::Integer(low, high) => {
                 if low == high {
                     Ok((*low).into())
                 } else {
@@ -326,7 +333,7 @@ impl Pattern {
                     ))
                 }
             }
-            Pattern::Enum(values) => {
+            Value::Enum(values) => {
                 if let Some(values) = values {
                     if values.len() == 1 {
                         Ok(meta::Value::Enum(values[0].clone()))
@@ -340,7 +347,7 @@ impl Pattern {
                     Err(cause!(DerivationInvalid, "cannot evaluate undefined enum"))
                 }
             }
-            Pattern::String(value) => {
+            Value::String(value) => {
                 if let Some(value) = value {
                     Ok(value.clone().into())
                 } else {
@@ -350,7 +357,7 @@ impl Pattern {
                     ))
                 }
             }
-            Pattern::DataType(value) => {
+            Value::DataType(value) => {
                 if let Some(value) = value {
                     value.evaluate_with_context(context).map(meta::Value::from)
                 } else {
@@ -360,7 +367,21 @@ impl Pattern {
                     ))
                 }
             }
-            Pattern::Function(func, args) => func.evaluate_with_context(context, &args[..]),
+            Value::Function(func, args) => func.evaluate(context, args),
+        }
+    }
+}
+
+impl Value {
+    /// Returns a pattern that matches the given type exactly.
+    pub fn exactly_type(meta_type: meta::Type) -> Self {
+        match meta_type {
+            meta::Type::Unresolved => Value::Any,
+            meta::Type::Boolean => Value::Boolean(None),
+            meta::Type::Integer => Value::Integer(i64::MIN, i64::MAX),
+            meta::Type::Enum => Value::Enum(None),
+            meta::Type::String => Value::String(None),
+            meta::Type::DataType => Value::DataType(None),
         }
     }
 }
@@ -379,7 +400,7 @@ pub struct DataType {
     ///  - `??` suffix: Boolean(None)
     ///  - `?<identifier>` suffix: Binding(_)
     ///  - `?<identifier>?` suffix: ImplicitOrBinding(_)
-    pub nullable: Arc<Pattern>,
+    pub nullable: Arc<Value>,
 
     /// Type variation pattern.
     pub variation: Variation,
@@ -425,34 +446,13 @@ impl std::fmt::Display for DataType {
 }
 
 impl DataType {
-    /// Returns a pattern that matches the given type exactly.
-    pub fn exactly(value: data::Type) -> Self {
-        DataType {
-            class: value.class().clone(),
-            nullable: Arc::new(Pattern::exactly(meta::Value::from(value.nullable()))),
-            variation: Variation::Exactly(value.variation().clone()),
-            parameters: Some(
-                value
-                    .parameters()
-                    .iter()
-                    .cloned()
-                    .map(Parameter::exactly)
-                    .collect(),
-            ),
-        }
-    }
-
-    /// Matches this pattern with a provided context.
-    pub fn match_pattern_with_context(
-        &self,
-        context: &mut meta::Context,
-        value: &data::Type,
-    ) -> bool {
-        // As a rule, unresolved things match everything, in order to not emit
-        // excessive amounts of diagnostics due to a single error.
-        if value.is_unresolved() {
-            return true;
-        }
+    /// Match the given value without being lenient about unresolved values.
+    /// Whenever this returns false, the public match_pattern_with_context()
+    /// function will check if the value was unresolved, and override the
+    /// result with true if so; unresolved values should always match
+    /// everything in order to avoid flooding the user with error messages
+    /// when the validator is confused due to a previous error.
+    fn match_strictly(&self, context: &mut meta::Context, value: &data::Type) -> bool {
         if !value.class().weak_equals(&self.class) {
             return false;
         }
@@ -478,12 +478,35 @@ impl DataType {
         }
         true
     }
+}
 
-    /// Evaluates this data type pattern with a provided context.
-    pub fn evaluate_with_context(
+impl Pattern for DataType {
+    type Value = data::Type;
+
+    fn exactly(value: Self::Value) -> Self {
+        DataType {
+            class: value.class().clone(),
+            nullable: Arc::new(Value::exactly(meta::Value::from(value.nullable()))),
+            variation: Variation::Exactly(value.variation().clone()),
+            parameters: Some(
+                value
+                    .parameters()
+                    .iter()
+                    .cloned()
+                    .map(Parameter::exactly)
+                    .collect(),
+            ),
+        }
+    }
+
+    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool {
+        self.match_strictly(context, value) || value.is_unresolved()
+    }
+
+    fn evaluate_with_context(
         &self,
         context: &mut meta::Context,
-    ) -> diagnostic::Result<data::Type> {
+    ) -> diagnostic::Result<Self::Value> {
         let class = self.class.clone();
         let nullable = self
             .nullable
@@ -536,14 +559,18 @@ impl std::fmt::Display for Variation {
     }
 }
 
-impl Variation {
-    /// Returns a pattern that matches the given variation.
-    pub fn exactly(value: data::Variation) -> Self {
+impl Pattern for Variation {
+    type Value = data::Variation;
+
+    fn exactly(value: Self::Value) -> Self {
         Variation::Exactly(value)
     }
 
-    /// Matches this pattern.
-    pub fn match_pattern(&self, value: &data::Variation) -> bool {
+    fn match_pattern_with_context(
+        &self,
+        _context: &mut meta::Context,
+        value: &Self::Value,
+    ) -> bool {
         match self {
             Variation::Any => true,
             Variation::Compatible => value.is_compatible_with_system_preferred(),
@@ -551,8 +578,10 @@ impl Variation {
         }
     }
 
-    /// Evaluates this pattern.
-    pub fn evaluate(&self) -> diagnostic::Result<data::Variation> {
+    fn evaluate_with_context(
+        &self,
+        _context: &mut meta::Context,
+    ) -> diagnostic::Result<Self::Value> {
         match self {
             Variation::Any => Err(cause!(
                 DerivationInvalid,
@@ -573,10 +602,10 @@ pub struct Parameter {
 
     /// Pattern for the value that the parameter is set to, if not skipped.
     /// Some(Pattern::Any) is special-cased to also match skipped parameters.
-    pub value: Option<Pattern>,
+    pub value: Option<Value>,
 }
 
-impl Describe for Option<Pattern> {
+impl Describe for Option<Value> {
     fn describe(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -613,22 +642,19 @@ impl std::fmt::Display for Parameter {
     }
 }
 
-impl Parameter {
-    /// Returns a pattern that matches the given variation.
-    pub fn exactly(param: data::Parameter) -> Self {
+impl Pattern for Parameter {
+    type Value = data::Parameter;
+
+    fn exactly(param: Self::Value) -> Self {
         Parameter {
             name: param.name,
-            value: param.value.map(Pattern::exactly),
+            value: param.value.map(Value::exactly),
         }
     }
 
     /// Matches this pattern. Note the special case to let the ? pattern match
     /// nulls, and note that names are ignored.
-    pub fn match_pattern_with_context(
-        &self,
-        context: &mut meta::Context,
-        param: &data::Parameter,
-    ) -> bool {
+    fn match_pattern_with_context(&self, context: &mut meta::Context, param: &Self::Value) -> bool {
         match &self.value {
             None => {
                 // The null pattern only matches nulls.
@@ -637,18 +663,17 @@ impl Parameter {
             Some(pattern) => match &param.value {
                 None => {
                     // Special case for nulls and ? to make ? match null.
-                    matches!(pattern, Pattern::Any)
+                    matches!(pattern, Value::Any)
                 }
                 Some(value) => pattern.match_pattern_with_context(context, value),
             },
         }
     }
 
-    /// Evaluates this pattern.
-    pub fn evaluate_with_context(
+    fn evaluate_with_context(
         &self,
         context: &mut meta::Context,
-    ) -> diagnostic::Result<data::Parameter> {
+    ) -> diagnostic::Result<Self::Value> {
         Ok(data::Parameter {
             name: self.name.clone(),
             value: self
