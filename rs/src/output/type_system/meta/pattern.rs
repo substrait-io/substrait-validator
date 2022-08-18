@@ -539,7 +539,8 @@ pub enum Variation {
 
     /// Matches any variation that is compatible with the system-preferred
     /// variation; that is, matches the system-preferred variation and any
-    /// variation declared with INHERITS function behavior.
+    /// variation declared with INHERITS function behavior. Syntax: no
+    /// suffix.
     Compatible,
 
     /// Matches exactly the given variation, regardless of INHERITS function

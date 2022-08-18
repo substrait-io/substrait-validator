@@ -1,0 +1,407 @@
+
+/* NOTE: this grammar should be matched case-insensitively. */
+
+/**
+ * A type derivation program consists of zero or more statements followed by
+ * the final pattern that should evaluate to the derived data type.
+ */
+program ::= statement-separator* ( statement statement-separator+ )* pattern statement-separator*;
+
+/**
+ * Statements are separated from each other and from the final derivation
+ * expression using newlines or a semicolon.
+ */
+statement-separator :== [#r#n;]+ ;
+
+/**
+ * Statements manipulate the state of the type derivation interpreter before
+ * the final derivation expression is evaluated. They look like assignment
+ * statements at first glance, but act more like equality or set containment
+ * assertions: the right-hand side is evaluated like an expression as you
+ * might expect, but the left-hand side acts just like the patterns that are
+ * used to match function argument types. While this is perhaps not the most
+ * intuitive ruleset, it is extremely easy to implement (it only reuses
+ * features we already needed anyway), while also being a much more powerful
+ * primitive than a simple assignment statement, because it can also be used
+ * for bounds checking and other assertions. For example, if we have a
+ * function like `fn(VARCHAR(a), VARCHAR(b))` and the implementation of the
+ * function requires that a + b equals 10, we can simply write "10 = a + b".
+ * This works, because the pattern "10" will only match the value 10, and
+ * a pattern mismatch at any point during the matching and evaluation process
+ * indicates that the implementation is incompatible with the given argument
+ * types. If you find this syntax confusing, you may also write
+ * "assert a + b matches 10" or "assert a + b == 10"; the former does the
+ * exact same thing, while the latter reduces to "true = a + b == 10", which is
+ * functionally the same thing.
+ *
+ * Note that when you use these statements like assignment statements, you can
+ * only ever reassign a binding to the same value. For example, "a = 10; a = 20"
+ * will always fail, because a cannot both be 10 and 20 at the same time (more
+ * accurately, a is bound to 10, so the second statement behaves like
+ * "10 = 20", and 20 does not match 10).
+ */
+statement
+  ::= pattern "=" pattern -> normal
+    | "assert" pattern "matches" pattern -> match
+    | "assert" pattern -> assert
+    ;
+
+/**
+ * Patterns are at the core of the type derivation interpreter; they are used
+ * both for matching and as expressions. However, note that not all types of
+ * patterns work in both contexts.
+ */
+pattern ::= pattern-or;
+
+/**
+ * Lazily-evaluated boolean OR expression. Maps to builtin or() function if
+ * more than one pattern is parsed.
+ */
+pattern-or ::= pattern-and ( "||" pattern-and )* ;
+
+/**
+ * Lazily-evaluated boolean AND expression. Maps to builtin and() function if
+ * more than one pattern is parsed.
+ */
+pattern-and ::= pattern-eq-neq ( "&&" pattern-eq-neq )* ;
+
+/**
+ * Equality and not-equality expressions. These map to the builtin equal()
+ * and not_equal() functions in left-to-right order.
+ */
+pattern-eq-neq ::= pattern-ineq ( op-eq-neq pattern-ineq )* ;
+op-eq-neq ::= "==" | "!=" ;
+
+/**
+ * Integer inequality expressions. These map to the builtin greater_than(),
+ * less_than(), greater_equal(), and less_equal() functions in left-to-right
+ * order.
+ */
+pattern-ineq ::= pattern-add-sub ( op-ineq pattern-add-sub )* ;
+op-ineq ::= "<" | "<=" | ">" | ">=" ;
+
+/**
+ * Integer addition and subtraction. These map to the builtin add() and
+ * subtract() functions in left-to-right order.
+ */
+pattern-add-sub ::= pattern-mul-div ( op-add-sub pattern-mul-div )* ;
+op-add-sub ::= "+" | "-" ;
+
+/**
+ * Integer multiplication and division. These map to the builtin multiply() and
+ * divide() functions in left-to-right order.
+ */
+pattern-mul-div ::= pattern-misc ( op-mul-div pattern-misc )* ;
+op-mul-div ::= "*" | "/" ;
+
+/**
+ * Miscellaneous patterns that don't need special rules for precedence or
+ * avoiding left-recursion.
+ */
+pattern-misc
+
+  /**
+   * Parentheses for overriding operator precedence.
+   */
+  ::= "(" pattern ")" -> parentheses
+
+  /**
+   * If-then-else pattern. Can only be evaluated. The first pattern must
+   * evaluate to a boolean. The second or third pattern is then evaluated
+   * based on that boolean and returned. The branch that is not selected is
+   * also not evaluated (i.e. evaluation is lazy).
+   */
+    | "if" pattern "then" pattern "else" pattern -> if-then-else
+
+  /**
+   * Unary not function. Can only be evaluated and can only be applied to
+   * booleans.
+   */
+    | "!" pattern -> unary-not
+
+  /**
+   * The "anything" pattern. This matches everything, and cannot be evaluated.
+   * It's primarily intended for matching (parts of) argument types, when you
+   * don't need or want a binding. For example, `equals(?, ?) -> boolean` would
+   * allow for any combination of argument types. This distinguishes it from
+   * `equals(any1, any1) -> boolean`, which only accepts equal types; instead
+   * it behaves like `equals(any1, any2) -> boolean`. `?` is especially useful
+   * when you want this type of behavior for a variadic function; for example,
+   * `serialize(?...) -> binary` will match any number and combination of
+   * argument types, while `serialize(any1...) -> binary` would only accept any
+   * number of any *one* data type.
+   */
+    | "?" -> any
+
+  /**
+   * Matches any boolean value. Cannot be evaluated.
+   */
+    | "metabool" -> bool-any
+
+  /**
+   * Matches and evaluates to the boolean value "true".
+   */
+    | "true" -> bool-true
+
+  /**
+   * Matches and evaluates to the boolean value "false".
+   */
+    | "false" -> bool-false
+
+  /**
+   * Matches any integer value. Cannot be evaluated.
+   */
+    | "metaint" -> int-any
+
+  /**
+   * Matches any integer value within the specified inclusive range. Can only
+   * be evaluated if the two bounds are equal, in which case it reduces to just
+   * a single integer.
+   */
+    | integer ".." integer -> int-range
+
+  /**
+   * Matches any integer value that equals at least the given number. Cannot be
+   * evaluated.
+   */
+    | integer ".." -> int-at-least
+
+  /**
+   * Matches any integer value that equals at most the given number. Cannot be
+   * evaluated.
+   */
+    | ".." integer -> int-at-most
+
+  /**
+   * Matches and evaluates to exactly the given integer.
+   */
+    | integer -> int-exactly
+
+  /**
+   * Matches any enumeration constant.
+   */
+    | "metaenum" -> enum-any
+
+  /**
+   * Matches an enumeration constant in the given set. If only a single
+   * constant is specified, the pattern evaluates to that constant, otherwise
+   * it cannot be evaluated.
+   */
+    | "{" identifier ("," identifier)*  "}" -> enum-set
+
+  /**
+   * Matches any string.
+   */
+    | "metastr" -> str-any
+
+  /**
+   * Matches and evaluates to exactly the given string.
+   */
+    | string -> str-exactly
+
+  /**
+   * Matches any data type.
+   */
+    | "typename" -> dt-any
+
+  /**
+   * Evaluates a function. Cannot be matched. The following functions are
+   * currently available:
+   *
+   *  - "not(metabool) -> metabool": boolean NOT.
+   *  - "and(metabool*) -> metabool": boolean AND. Evaluated lazily from left
+   *    to right.
+   *  - "or(metabool*) -> metabool": boolean OR. Evaluated lazily from left to
+   *    right.
+   *  - "negate(metaint) -> metaint": integer negation. 64-bit two's complement
+   *    overflow must be detected, and implies that the function implementation
+   *    that the program belongs to does not match the given argument types.
+   *  - "add(metaint*) -> metaint": integer sum. Overflow handled as above.
+   *  - "subtract(metaint, metaint) -> metaint": subtracts an integer from
+   *    another. Overflow handled as above.
+   *  - "multiply(metaint*) -> metaint": integer product. Overflow handled as
+   *    above.
+   *  - "divide(metaint, metaint) -> metaint": divides an integer over
+   *    another. Overflow and division by zero handled as above.
+   *  - "min(metaint+) -> metaint": return the minimum integer value.
+   *  - "max(metaint+) -> metaint": return the maximum integer value.
+   *  - "equal(T, T) -> metabool": return whether the two values are equal.
+   *  - "not_equal(T, T) -> metabool": return whether the two values are not
+   *    equal.
+   *  - "greater_than(metaint, metaint) -> metabool": return whether the left
+   *    integer is greater than the right.
+   *  - "less_than(metaint, metaint) -> metabool": return whether the left
+   *    integer is less than the right.
+   *  - "greater_equal(metaint, metaint) -> metabool": return whether the left
+   *    integer is greater than or equal to the right.
+   *  - "less_equal(metaint, metaint) -> metabool": return whether the left
+   *    integer is less than or equal to the right.
+   *  - "covers(value, pattern) -> metabool": return whether the left value
+   *    matches the pattern. The pattern may make use of bindings that were
+   *    previously defined, but it does NOT capture new bindings regardless
+   *    of whether the pattern match succeeded.
+   *  - "if_then_else(metabool, T, T) -> T": if-then-else expression. Evaluated
+   *    lazily.
+   *
+   * Note that many of the functions also have corresponding expressions. These
+   * expressions are simply syntactic sugar for calling the functions directly.
+   */
+    | identifier "(" ( pattern ("," pattern)* )? ")" -> function
+
+  /**
+   * This pattern matches one of three things, which are too context-sensitive
+   * to distinguish at this time:
+   *
+   *  - a data type pattern;
+   *  - a binding; or
+   *  - an enum constant.
+   *
+   * The type depends on the identifier path, and must be disambiguated in a
+   * three-step process:
+   *
+   *  - Gather all identifiers that match a builtin type class or an in-scope
+   *    user-defined type class.
+   *  - Gather all enumeration parameter constants that these types declare.
+   *  - Now disambiguate as follows: if an identifier path matches a type
+   *    class, it's a type pattern; if it matches an enumeration parameter
+   *    constant, it's an enum constant pattern; otherwise, it's a binding.
+   *
+   * Two types of bindings exist, with different behavior:
+   *
+   *  - Normal bindings. The subset of the data type pattern syntax used for
+   *    these is just a single identifier with no suffix. When matched the
+   *    first time, this matches anything and binds the identifier to the
+   *    matched value. The next time it will only match the previously bound
+   *    value, and once bound, it will evaluate to the bound value.
+   *  - Implicit-OR bindings. The subset of the data type pattern syntax used
+   *    for these is just a single identifier with exactly and only a "?"
+   *    suffix. These will always match both true and false, and will evaluate
+   *    to whether any true value was matched. This is useful to model
+   *    nullability behavior. For example, `add(i8?n?, i8?n?) -> i8?n?` will
+   *    match any combination of nullabilities for the arguments, and return
+   *    a nullable type if and only if either argument is nullable.
+   *
+   * Enum constants only match a single identifier. If a dt-binding-constant
+   * AST node resolves to a binding or an enum constant, an error should be
+   * emitted if illegal syntax was used.
+   */
+    | identifier-path nullability? variation? parameters? -> dt-binding-constant
+
+  /**
+   * Unary negation function. Can only be evaluated and can only be applied to
+   * integers. Note that this is all the way at the back because signed integer
+   * literals should be preferred, since those can also be matched, and can
+   * deal with -2^63 without overflow.
+   */
+    | "-" pattern -> unary-negate
+    ;
+
+/**
+ * Nullability suffix for a data type pattern.
+ *
+ *  - If there is no such suffix, the pattern matches only non-nullable types,
+ *    and also evaluates to a non-nullable type if applicable.
+ *  - If this suffix is just "?", the pattern matches only nullable types,
+ *    and also evaluates to a nullable type if applicable.
+ *  - If this suffix is a "?" followed by a pattern, the pattern is matched
+ *    against false for non-nullable and true for nullable types. Likewise for
+ *    evaluation; if the pattern evaluates to false the type will be
+ *    non-nullable, if it evaluates to true it will be nullable.
+ *
+ * The "?" is also used for implicit-OR bindings.
+ */
+nullability ::= "?" pattern? ;
+
+/**
+ * Type variation suffix.
+ *
+ *  - If there is no such suffix, the pattern matches any variation that is
+ *    marked as compatible with the system-preferred variation via the function
+ *    behavior option of the variation, as well as the system-preferred
+ *    variation itself. It will evaluate to the system-preferred variation.
+ *  - If the suffix is [0], the pattern matches and evaluates to the
+ *    system-preferred variation exactly.
+ *  - If the suffix is [ident], the pattern matches and evaluates to the named
+ *    variation exactly. The variation must be in scope.
+ */
+variation ::= "[" variation-body "]" ;
+variation-body ::= "?" | zero | identifier-path ;
+
+/**
+ * Type parameter pack suffix.
+ *
+ *  - If there is no such suffix, the pattern accepts any number of parameters
+ *    for the type (assuming that the type class accepts this as well), and
+ *    will attempt to evaluate to a type with no parameters.
+ *  - If there is a "<>" suffix, the pattern accepts only types with zero
+ *    parameters, and will attempt to evaluate to a type with no parameters.
+ *  - If parameters are specified, the pattern accepts only types with exactly
+ *    the specified number of parameters, and will attempt to evaluate to a
+ *    type with exactly those parameters.
+ */
+parameters ::= "<" ( parameter ("," parameter)* )? ">" ;
+
+/**
+ * Type parameter pattern. The name prefix is only used when evaluated (it is
+ * never matched), and is currently only accepted by the NSTRUCT (pseudo)type.
+ */
+parameter ::= ( ident-or-string ":" )? optional-pattern ;
+
+/**
+ * A pattern for matching potentially-optional parameter values. "null" may be
+ * used to match or evaluate to explicitly-skipped optional parameters;
+ * otherwise, the given pattern is used for the parameter value. The "?" (any)
+ * pattern is special-cased to also match explicitly-skipped parameter slots.
+ */
+optional-pattern ::= "null" | pattern ;
+
+/**
+ * An identifier or a string (so the syntax allows for both).
+ */
+ident-or-string ::= string | identifier ;
+
+/**
+ * An identifier path, separated by periods.
+ */
+identifier-path ::= ( identifier "." )* identifier ;
+
+/**
+ * An identifier. Note that $ signs are legal in identifiers, and note that all
+ * identifier matching is case-insensitive.
+ */
+identifier :== [a-zA-Z_$] [a-zA-Z0-9_$]* ;
+
+/**
+ * A string literal.
+ */
+string :== '"' [^"]+ '"' ;
+
+/**
+ * An integer literal.
+ */
+integer ::= sign? unsigned ;
+
+/**
+ * The (optional) sign of a signed integer.
+ */
+sign ::= "-" | "+" ;
+
+/**
+ * An unsigned integer.
+ */
+unsigned ::= zero | nonzero ;
+
+/**
+ * The number zero.
+ */
+zero :== "0" ;
+
+/**
+ * A natural+ number.
+ */
+nonzero :== [1-9] [0-9]* ;
+
+/**
+ * Ignore spaces, tabs, and # end-of-line comments.
+ */
+_ :== [ #t]+ | ## [^#n#r]+ [#r#n]+ ;
