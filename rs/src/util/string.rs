@@ -368,15 +368,30 @@ pub fn describe_sequence<T, F>(
 where
     F: Fn(&mut std::fmt::Formatter<'_>, &T, usize, Limit) -> std::fmt::Result,
 {
+    describe_sequence_with_sep(f, values, limit, element_size, ',', repr)
+}
+
+/// Represent the given sequence with heuristic length limits.
+pub fn describe_sequence_with_sep<T, F>(
+    f: &mut std::fmt::Formatter<'_>,
+    values: &[T],
+    limit: Limit,
+    element_size: usize,
+    separator: char,
+    repr: F,
+) -> std::fmt::Result
+where
+    F: Fn(&mut std::fmt::Formatter<'_>, &T, usize, Limit) -> std::fmt::Result,
+{
     let (n_left, n_right, el_limit) = limit.split_n(values.len(), element_size);
     describe_sequence_all(f, &values[..n_left], 0, el_limit, &repr)?;
     if let Some(n_right) = n_right {
         if n_left > 0 {
-            write!(f, ", ")?;
+            write!(f, "{separator} ")?;
         }
         write!(f, "..")?;
         if n_right > 0 {
-            write!(f, ", ")?;
+            write!(f, "{separator} ")?;
         }
         let offset = values.len() - n_right;
         describe_sequence_all(f, &values[offset..], offset, el_limit, &repr)?;

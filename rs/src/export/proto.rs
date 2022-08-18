@@ -10,13 +10,14 @@
 
 use crate::input::proto::substrait::validator;
 use crate::output::comment;
-use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::parse_result;
 use crate::output::path;
 use crate::output::primitive_data;
 use crate::output::tree;
+use crate::output::type_system::data;
+use crate::output::type_system::meta;
 use prost::Message;
 
 impl From<&parse_result::ParseResult> for validator::ParseResult {
@@ -34,7 +35,7 @@ impl From<&tree::Node> for validator::Node {
             class: (&node.class).into(),
             brief: node.brief.as_ref().map(|x| x.into()),
             summary: node.summary.as_ref().map(|x| x.into()),
-            data_type: node.data_type.as_ref().map(|x| x.as_ref().into()),
+            data_type: node.data_type.as_ref().map(|x| x.into()),
             data: node.data.iter().map(|x| x.into()).collect(),
         }
     }
@@ -61,7 +62,7 @@ impl From<&tree::NodeData> for validator::node::Data {
                     validator::node::data::Kind::Diagnostic(diagnostic.into())
                 }
                 tree::NodeData::DataType(data_type) => {
-                    validator::node::data::Kind::DataType(data_type.as_ref().into())
+                    validator::node::data::Kind::DataType(data_type.into())
                 }
                 tree::NodeData::Comment(comment) => {
                     validator::node::data::Kind::Comment(comment.into())
@@ -269,80 +270,80 @@ impl From<&path::PathElement> for validator::path::Element {
     }
 }
 
-impl From<&data_type::DataType> for validator::DataType {
-    fn from(node: &data_type::DataType) -> Self {
+impl From<&data::Type> for validator::DataType {
+    fn from(node: &data::Type) -> Self {
         Self {
             class: Some(node.class().into()),
             nullable: node.nullable(),
-            variation: node.variation().as_ref().map(|x| x.as_ref().into()),
+            variation: Some(node.variation().into()),
             parameters: node.parameters().iter().map(|x| x.into()).collect(),
         }
     }
 }
 
-impl From<&data_type::Class> for validator::data_type::Class {
-    fn from(node: &data_type::Class) -> Self {
+impl From<&data::Class> for validator::data_type::Class {
+    fn from(node: &data::Class) -> Self {
         validator::data_type::Class {
             kind: Some(match node {
-                data_type::Class::Simple(simple) => {
+                data::Class::Simple(simple) => {
                     validator::data_type::class::Kind::Simple(simple.into())
                 }
-                data_type::Class::Compound(compound) => {
+                data::Class::Compound(compound) => {
                     validator::data_type::class::Kind::Compound(compound.into())
                 }
-                data_type::Class::UserDefined(user_defined) => {
+                data::Class::UserDefined(user_defined) => {
                     validator::data_type::class::Kind::UserDefinedType(user_defined.as_ref().into())
                 }
-                data_type::Class::Unresolved => {
-                    validator::data_type::class::Kind::UnresolvedType(())
-                }
+                data::Class::Unresolved => validator::data_type::class::Kind::UnresolvedType(()),
             }),
         }
     }
 }
 
-impl From<&data_type::Simple> for i32 {
-    fn from(node: &data_type::Simple) -> Self {
+impl From<&data::class::Simple> for i32 {
+    fn from(node: &data::class::Simple) -> Self {
         match node {
-            data_type::Simple::Boolean => validator::data_type::Simple::Boolean,
-            data_type::Simple::I8 => validator::data_type::Simple::I8,
-            data_type::Simple::I16 => validator::data_type::Simple::I16,
-            data_type::Simple::I32 => validator::data_type::Simple::I32,
-            data_type::Simple::I64 => validator::data_type::Simple::I64,
-            data_type::Simple::Fp32 => validator::data_type::Simple::Fp32,
-            data_type::Simple::Fp64 => validator::data_type::Simple::Fp64,
-            data_type::Simple::String => validator::data_type::Simple::String,
-            data_type::Simple::Binary => validator::data_type::Simple::Binary,
-            data_type::Simple::Timestamp => validator::data_type::Simple::Timestamp,
-            data_type::Simple::TimestampTz => validator::data_type::Simple::TimestampTz,
-            data_type::Simple::Date => validator::data_type::Simple::Date,
-            data_type::Simple::Time => validator::data_type::Simple::Time,
-            data_type::Simple::IntervalYear => validator::data_type::Simple::IntervalYear,
-            data_type::Simple::IntervalDay => validator::data_type::Simple::IntervalDay,
-            data_type::Simple::Uuid => validator::data_type::Simple::Uuid,
+            data::class::Simple::Boolean => validator::data_type::Simple::Boolean,
+            data::class::Simple::I8 => validator::data_type::Simple::I8,
+            data::class::Simple::I16 => validator::data_type::Simple::I16,
+            data::class::Simple::I32 => validator::data_type::Simple::I32,
+            data::class::Simple::I64 => validator::data_type::Simple::I64,
+            data::class::Simple::Fp32 => validator::data_type::Simple::Fp32,
+            data::class::Simple::Fp64 => validator::data_type::Simple::Fp64,
+            data::class::Simple::String => validator::data_type::Simple::String,
+            data::class::Simple::Binary => validator::data_type::Simple::Binary,
+            data::class::Simple::Timestamp => validator::data_type::Simple::Timestamp,
+            data::class::Simple::TimestampTz => validator::data_type::Simple::TimestampTz,
+            data::class::Simple::Date => validator::data_type::Simple::Date,
+            data::class::Simple::Time => validator::data_type::Simple::Time,
+            data::class::Simple::IntervalYear => validator::data_type::Simple::IntervalYear,
+            data::class::Simple::IntervalDay => validator::data_type::Simple::IntervalDay,
+            data::class::Simple::Uuid => validator::data_type::Simple::Uuid,
         }
         .into()
     }
 }
 
-impl From<&data_type::Compound> for i32 {
-    fn from(node: &data_type::Compound) -> Self {
+impl From<&data::class::Compound> for i32 {
+    fn from(node: &data::class::Compound) -> Self {
         match node {
-            data_type::Compound::FixedChar => validator::data_type::Compound::FixedChar,
-            data_type::Compound::VarChar => validator::data_type::Compound::VarChar,
-            data_type::Compound::FixedBinary => validator::data_type::Compound::FixedBinary,
-            data_type::Compound::Decimal => validator::data_type::Compound::Decimal,
-            data_type::Compound::Struct => validator::data_type::Compound::Struct,
-            data_type::Compound::NamedStruct => validator::data_type::Compound::NamedStruct,
-            data_type::Compound::List => validator::data_type::Compound::List,
-            data_type::Compound::Map => validator::data_type::Compound::Map,
+            data::class::Compound::FixedChar => validator::data_type::Compound::FixedChar,
+            data::class::Compound::VarChar => validator::data_type::Compound::VarChar,
+            data::class::Compound::FixedBinary => validator::data_type::Compound::FixedBinary,
+            data::class::Compound::Decimal => validator::data_type::Compound::Decimal,
+            data::class::Compound::Struct => validator::data_type::Compound::Struct,
+            data::class::Compound::NamedStruct => validator::data_type::Compound::NamedStruct,
+            data::class::Compound::List => validator::data_type::Compound::List,
+            data::class::Compound::Map => validator::data_type::Compound::Map,
         }
         .into()
     }
 }
 
-impl From<&extension::Reference<extension::DataType>> for validator::data_type::UserDefinedType {
-    fn from(node: &extension::Reference<extension::DataType>) -> Self {
+impl From<&extension::Reference<data::class::UserDefinedDefinition>>
+    for validator::data_type::UserDefinedType
+{
+    fn from(node: &extension::Reference<data::class::UserDefinedDefinition>) -> Self {
         Self {
             uri: node.uri.name().unwrap_or_default().to_string(),
             name: node.name.name().unwrap_or_default().to_string(),
@@ -351,8 +352,10 @@ impl From<&extension::Reference<extension::DataType>> for validator::data_type::
     }
 }
 
-impl From<&extension::DataType> for validator::data_type::user_defined_type::Definition {
-    fn from(node: &extension::DataType) -> Self {
+impl From<&data::class::UserDefinedDefinition>
+    for validator::data_type::user_defined_type::Definition
+{
+    fn from(node: &data::class::UserDefinedDefinition) -> Self {
         Self {
             structure: node
                 .structure
@@ -368,24 +371,33 @@ impl From<&extension::DataType> for validator::data_type::user_defined_type::Def
     }
 }
 
-impl From<&extension::Reference<extension::TypeVariation>> for validator::data_type::Variation {
-    fn from(node: &extension::Reference<extension::TypeVariation>) -> Self {
-        if let Some(ref definition) = node.definition {
-            validator::data_type::Variation::UserDefinedVariation(
-                validator::data_type::UserDefinedVariation {
-                    uri: node.uri.name().unwrap_or_default().to_string(),
-                    name: node.name.name().unwrap_or_default().to_string(),
-                    definition: Some(Box::new(definition.as_ref().into())),
-                },
-            )
-        } else {
-            validator::data_type::Variation::UnresolvedVariation(())
+impl From<&data::Variation> for validator::data_type::Variation {
+    fn from(node: &data::Variation) -> Self {
+        match node {
+            data::Variation::SystemPreferred => {
+                validator::data_type::Variation::SystemPreferredVariation(())
+            }
+            data::Variation::UserDefined(variation) => {
+                if let Some(definition) = &variation.definition {
+                    validator::data_type::Variation::UserDefinedVariation(
+                        validator::data_type::UserDefinedVariation {
+                            uri: variation.uri.name().unwrap_or_default().to_string(),
+                            name: variation.name.name().unwrap_or_default().to_string(),
+                            definition: Some(Box::new(definition.as_ref().into())),
+                        },
+                    )
+                } else {
+                    validator::data_type::Variation::UnresolvedVariation(())
+                }
+            }
         }
     }
 }
 
-impl From<&extension::TypeVariation> for validator::data_type::user_defined_variation::Definition {
-    fn from(node: &extension::TypeVariation) -> Self {
+impl From<&data::variation::UserDefinedDefinition>
+    for validator::data_type::user_defined_variation::Definition
+{
+    fn from(node: &data::variation::UserDefinedDefinition) -> Self {
         Self {
             base_type: None,
             function_behavior: (&node.function_behavior).into(),
@@ -393,13 +405,13 @@ impl From<&extension::TypeVariation> for validator::data_type::user_defined_vari
     }
 }
 
-impl From<&extension::FunctionBehavior> for i32 {
-    fn from(node: &extension::FunctionBehavior) -> Self {
+impl From<&data::variation::FunctionBehavior> for i32 {
+    fn from(node: &data::variation::FunctionBehavior) -> Self {
         match node {
-            extension::FunctionBehavior::Inherits => {
+            data::variation::FunctionBehavior::Inherits => {
                 validator::data_type::user_defined_variation::FunctionBehavior::Inherits
             }
-            extension::FunctionBehavior::Separate => {
+            data::variation::FunctionBehavior::Separate => {
                 validator::data_type::user_defined_variation::FunctionBehavior::Separate
             }
         }
@@ -407,34 +419,25 @@ impl From<&extension::FunctionBehavior> for i32 {
     }
 }
 
-impl From<&data_type::Parameter> for validator::data_type::Parameter {
-    fn from(node: &data_type::Parameter) -> Self {
+impl From<&data::Parameter> for validator::data_type::Parameter {
+    fn from(node: &data::Parameter) -> Self {
         Self {
-            kind: Some(match node {
-                data_type::Parameter::Unresolved => {
+            name: node.name.clone().unwrap_or_default(),
+            kind: Some(match &node.value {
+                None => validator::data_type::parameter::Kind::Null(()),
+                Some(meta::Value::Unresolved) => {
                     validator::data_type::parameter::Kind::Unresolved(())
                 }
-                data_type::Parameter::Null => validator::data_type::parameter::Kind::Null(()),
-                data_type::Parameter::Boolean(x) => {
-                    validator::data_type::parameter::Kind::Boolean(*x)
-                }
-                data_type::Parameter::Integer(x) => {
-                    validator::data_type::parameter::Kind::Integer(*x)
-                }
-                data_type::Parameter::Enum(x) => {
+                Some(meta::Value::Boolean(x)) => validator::data_type::parameter::Kind::Boolean(*x),
+                Some(meta::Value::Integer(x)) => validator::data_type::parameter::Kind::Integer(*x),
+                Some(meta::Value::Enum(x)) => {
                     validator::data_type::parameter::Kind::Enumeration(x.clone())
                 }
-                data_type::Parameter::String(x) => {
+                Some(meta::Value::String(x)) => {
                     validator::data_type::parameter::Kind::String(x.clone())
                 }
-                data_type::Parameter::Type(data_type) => {
-                    validator::data_type::parameter::Kind::DataType(data_type.as_ref().into())
-                }
-                data_type::Parameter::NamedType(name, data_type) => {
-                    validator::data_type::parameter::Kind::NamedType(validator::data_type::Named {
-                        name: name.to_string(),
-                        data_type: Some(data_type.as_ref().into()),
-                    })
+                Some(meta::Value::DataType(data_type)) => {
+                    validator::data_type::parameter::Kind::DataType(data_type.into())
                 }
             }),
         }

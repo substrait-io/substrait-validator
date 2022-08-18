@@ -10,8 +10,8 @@
 use std::sync::Arc;
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 
@@ -36,7 +36,7 @@ pub fn parse_project_rel(
             // Update the schema.
             if let Some(mut fields) = schema.unwrap_struct() {
                 fields.push(n.data_type());
-                schema = data_type::DataType::new_struct(fields, false);
+                schema = data::new_struct(fields, false);
                 y.set_schema(schema.clone());
             } else {
                 y.set_schema(Arc::default());

@@ -4,8 +4,8 @@
 
 use crate::input::proto::substrait;
 use crate::output::comment;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::util;
@@ -140,8 +140,8 @@ impl std::fmt::Display for Reference {
 fn parse_struct_field_index(
     x: &i32,
     _y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
-) -> diagnostic::Result<Arc<data_type::DataType>> {
+    root: &data::Type,
+) -> diagnostic::Result<data::Type> {
     let index = *x;
     if index < 0 {
         return Err(cause!(
@@ -152,7 +152,7 @@ fn parse_struct_field_index(
     let index: usize = index.try_into().unwrap();
     if root.is_struct() {
         let size = root.parameters().len();
-        root.type_parameter(index)
+        root.data_type_parameter(index)
             .ok_or_else(|| cause!(IllegalValue, "struct index out of range (size = {size})"))
     } else {
         Ok(Arc::default())
@@ -202,7 +202,7 @@ fn parse_root_type(
 fn parse_reference_type(
     x: &substrait::expression::field_reference::ReferenceType,
     y: &mut context::Context,
-    root: &Arc<data_type::DataType>,
+    root: &data::Type,
 ) -> diagnostic::Result<ReferencePath> {
     match x {
         substrait::expression::field_reference::ReferenceType::DirectReference(x) => {

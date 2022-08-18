@@ -2,13 +2,11 @@
 
 //! Module providing parse/validation functions for sort fields.
 
-use std::sync::Arc;
-
 use crate::input::proto::substrait;
 use crate::input::traits::ProtoEnum;
 use crate::output::comment;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::parse::expressions::functions;
@@ -64,7 +62,7 @@ fn parse_sort_direction(x: &i32, y: &mut context::Context) -> diagnostic::Result
 fn parse_comparison_function_reference(
     x: &u32,
     y: &mut context::Context,
-    data_type: &Arc<data_type::DataType>,
+    data_type: &data::Type,
 ) -> diagnostic::Result<&'static str> {
     // Resolve the reference as normal.
     let function = extensions::simple::parse_function_reference(x, y)?;
@@ -75,12 +73,12 @@ fn parse_comparison_function_reference(
             functions::check_function(y, function, &[], &[data_type.clone(), data_type.clone()]);
         if !matches!(
             return_type.class(),
-            data_type::Class::Simple(data_type::Simple::Boolean)
-                | data_type::Class::Simple(data_type::Simple::I8)
-                | data_type::Class::Simple(data_type::Simple::I16)
-                | data_type::Class::Simple(data_type::Simple::I32)
-                | data_type::Class::Simple(data_type::Simple::I64)
-                | data_type::Class::Unresolved
+            data::Class::Simple(data::class::Simple::Boolean)
+                | data::Class::Simple(data::class::Simple::I8)
+                | data::Class::Simple(data::class::Simple::I16)
+                | data::Class::Simple(data::class::Simple::I32)
+                | data::Class::Simple(data::class::Simple::I64)
+                | data::Class::Unresolved
         ) {
             diagnostic!(
                 y,
@@ -122,7 +120,7 @@ fn parse_comparison_function_reference(
 fn parse_sort_kind(
     x: &substrait::sort_field::SortKind,
     y: &mut context::Context,
-    data_type: &Arc<data_type::DataType>,
+    data_type: &data::Type,
 ) -> diagnostic::Result<&'static str> {
     match x {
         substrait::sort_field::SortKind::Direction(x) => parse_sort_direction(x, y),

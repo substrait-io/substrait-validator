@@ -3,10 +3,10 @@
 //! Module for parsing/validating function calls.
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::tree;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::parse::extensions;
@@ -23,7 +23,7 @@ pub enum FunctionArgument {
     Value(expressions::Expression),
 
     /// Used for type arguments.
-    Type(Arc<data_type::DataType>),
+    Type(data::Type),
 
     /// Used for enum option arguments.
     Enum(Option<String>),
@@ -131,8 +131,8 @@ pub fn check_function(
     y: &mut context::Context,
     _function: &extension::Function,
     _options: &[Option<String>],
-    _arg_types: &[Arc<data_type::DataType>],
-) -> Arc<data_type::DataType> {
+    _arg_types: &[data::Type],
+) -> data::Type {
     // TODO: check consistency of:
     //  - _function (function definition information from the YAML file);
     //  - _options: number of options passed to the function, and validity of
@@ -154,8 +154,8 @@ fn parse_function(
     function: Option<Arc<extension::Reference<extension::Function>>>,
     arguments: (Vec<Arc<tree::Node>>, Vec<Option<FunctionArgument>>),
     legacy_arguments: (Vec<Arc<tree::Node>>, Vec<Option<FunctionArgument>>),
-    return_type: Arc<data_type::DataType>,
-) -> (Arc<data_type::DataType>, expressions::Expression) {
+    return_type: data::Type,
+) -> (data::Type, expressions::Expression) {
     // Determine the name of the function.
     let name = function
         .as_ref()

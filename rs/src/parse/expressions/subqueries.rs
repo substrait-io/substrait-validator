@@ -3,8 +3,8 @@
 //! Module for parsing/validating function calls.
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 use crate::parse::relations;
@@ -103,7 +103,7 @@ fn parse_in_predicate(
     }
 
     // Describe node.
-    y.set_data_type(data_type::DataType::new_predicate(false));
+    y.set_data_type(data::new_predicate());
     summary!(
         y,
         "Executes the contained subquery for each row. Returns true \
@@ -131,7 +131,7 @@ fn parse_set_predicate(
         .unwrap_or_default();
 
     // Describe node.
-    y.set_data_type(data_type::DataType::new_predicate(false));
+    y.set_data_type(data::new_predicate());
     let expression = match operation {
         PredicateOp::Unspecified => {
             expressions::Expression::BigFunction(String::from("invalid_subquery"))
@@ -209,7 +209,7 @@ fn parse_set_comparison(
     );
 
     // Describe node.
-    y.set_data_type(data_type::DataType::new_predicate(false));
+    y.set_data_type(data::new_predicate());
     let expression = expressions::Expression::BigFunction(format!(
         "{}_{}_subquery",
         match comparison_op {

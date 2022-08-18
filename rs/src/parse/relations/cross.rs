@@ -11,8 +11,8 @@
 use std::sync::Arc;
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 
 /// Parse cross relation.
@@ -29,7 +29,7 @@ pub fn parse_cross_rel(
         (left.unwrap_struct(), right.unwrap_struct())
     {
         fields.extend(additional_fields.into_iter());
-        let schema = data_type::DataType::new_struct(fields, false);
+        let schema = data::new_struct(fields, false);
         y.set_schema(schema);
     } else {
         y.set_schema(Arc::default());

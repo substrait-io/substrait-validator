@@ -13,8 +13,8 @@ use std::sync::Arc;
 
 use crate::input::proto::substrait;
 use crate::output::comment;
-use crate::output::data_type;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
 
@@ -31,7 +31,7 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         (left.unwrap_struct(), right.unwrap_struct())
     {
         fields.extend(additional_fields.into_iter());
-        let schema = data_type::DataType::new_struct(fields, false);
+        let schema = data::new_struct(fields, false);
         y.set_schema(schema);
     } else {
         y.set_schema(Arc::default());
@@ -76,7 +76,7 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                 fields.extend(right_fields.into_iter())
             }
         }
-        let schema = data_type::DataType::new_struct(fields, false);
+        let schema = data::new_struct(fields, false);
         y.set_schema(schema);
     } else {
         y.set_schema(Arc::default());

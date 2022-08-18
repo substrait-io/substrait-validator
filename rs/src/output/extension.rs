@@ -2,9 +2,9 @@
 
 //! Module for dealing with YAML-based Substrait extensions.
 
-use crate::output::data_type;
 use crate::output::path;
 use crate::output::tree;
+use crate::output::type_system::data;
 use crate::util;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -118,109 +118,6 @@ impl<T> std::fmt::Display for Reference<T> {
     }
 }
 
-/// User-defined type class.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct DataType {
-    /// The underlying structure of the type.
-    pub structure: Vec<(String, data_type::Simple)>,
-
-    /// The parameters expected by the data type.
-    pub parameter_slots: Vec<DataTypeParameterSlot>,
-
-    /// Whether or not the last parameter slot is variadic.
-    pub parameters_variadic: bool,
-}
-
-/// A parameter slot for a user-defined data type.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct DataTypeParameterSlot {
-    /// YAML-provided name of the parameter.
-    pub name: String,
-
-    /// YAML-provided human-readable description of the parameter.
-    pub description: String,
-
-    /// Information about what types and values of parameters are supported.
-    pub bounds: DataTypeParameterBounds,
-
-    /// Whether this parameter is optional. If optional, it may be skipped
-    /// using null or omitted entirely if at the end of the list.
-    pub optional: bool,
-}
-
-/// Expected metatype and bounds for a type parameter.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum DataTypeParameterBounds {
-    /// The parameter must be bound to a (nested) data type.
-    DataType,
-
-    /// The parameter must be bound to a boolean.
-    Boolean,
-
-    /// The parameter must be bound to an integer within the specified
-    /// inclusive range.
-    Integer(i64, i64),
-
-    /// The parameter must be bound to one of the specified enum variants.
-    Enum(Vec<String>),
-
-    /// The parameter must be bound to a string.
-    String,
-}
-
-/// The base type of a type variation.
-#[derive(Clone, Debug, PartialEq)]
-pub enum TypeVariationBase {
-    /// The type variation is immediately based in a physical type.
-    Physical(data_type::Class),
-
-    /// The type variation is based in another logical type variation.
-    Logical(Arc<TypeVariation>),
-
-    /// The base type is unknown.
-    Unresolved,
-}
-
-impl Default for TypeVariationBase {
-    fn default() -> Self {
-        TypeVariationBase::Unresolved
-    }
-}
-
-/// Type variation extension.
-#[derive(Clone, Debug, PartialEq, Default)]
-pub struct TypeVariation {
-    /// The base type for this variation.
-    pub base: TypeVariationBase,
-
-    /// Function behavior for this variation.
-    pub function_behavior: FunctionBehavior,
-}
-
-impl TypeVariation {
-    /// Return the base class for this type variation, if known.
-    pub fn get_base_class(&self) -> data_type::Class {
-        match &self.base {
-            TypeVariationBase::Physical(x) => x.clone(),
-            TypeVariationBase::Logical(x) => x.get_base_class(),
-            TypeVariationBase::Unresolved => data_type::Class::Unresolved,
-        }
-    }
-}
-
-/// Type variation function behavior.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum FunctionBehavior {
-    Inherits,
-    Separate,
-}
-
-impl Default for FunctionBehavior {
-    fn default() -> Self {
-        FunctionBehavior::Inherits
-    }
-}
-
 /// Function extension.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Function {
@@ -277,11 +174,13 @@ pub struct YamlData {
 
     /// Types defined in this YAML file. Names are stored in lower case
     /// (Substrait's name resolution is case-insensitive).
-    pub types: HashMap<String, Arc<DataType>>,
+    pub types: HashMap<String, Arc<data::class::UserDefinedDefinition>>,
 
     /// Type variations defined in this YAML file. Names are stored in lower
     /// case (Substrait's name resolution is case-insensitive).
-    pub type_variations: HashMap<String, Arc<TypeVariation>>,
+    /// FIXME: this declaration to definition map is insufficient. See
+    /// <https://github.com/substrait-io/substrait/issues/268>
+    pub type_variations: HashMap<String, Arc<data::variation::UserDefinedDefinition>>,
 }
 
 impl YamlData {
@@ -324,7 +223,7 @@ impl YamlData {
 
     /// Resolves a type defined in this YAML data block by name. Returns an
     /// unresolved reference if it does not exist.
-    pub fn resolve_type<S: ToString>(&self, name: S) -> Arc<Reference<DataType>> {
+    pub fn resolve_type<S: ToString>(&self, name: S) -> data::class::UserDefined {
         let name = name.to_string();
         let maybe_def = self.types.get(&name).cloned();
         self.local_reference(name, maybe_def)
@@ -332,7 +231,7 @@ impl YamlData {
 
     /// Resolves a type variation defined in this YAML data block by name.
     /// Returns an unresolved reference if it does not exist.
-    pub fn resolve_type_variation<S: ToString>(&self, name: S) -> Arc<Reference<TypeVariation>> {
+    pub fn resolve_type_variation<S: ToString>(&self, name: S) -> data::variation::UserDefined {
         let name = name.to_string();
         let maybe_def = self.type_variations.get(&name).cloned();
         self.local_reference(name, maybe_def)

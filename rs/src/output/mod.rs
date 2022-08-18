@@ -9,9 +9,9 @@
 pub mod diagnostic;
 
 pub mod comment;
-pub mod data_type;
 pub mod extension;
 pub mod parse_result;
 pub mod path;
 pub mod primitive_data;
 pub mod tree;
+pub mod type_system;

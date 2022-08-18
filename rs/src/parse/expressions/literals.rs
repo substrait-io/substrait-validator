@@ -3,9 +3,8 @@
 //! Module for parsing/validating literals.
 
 use crate::input::proto::substrait;
-use crate::output::data_type;
 use crate::output::diagnostic;
-use crate::output::extension;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::extensions;
 use crate::parse::types;
@@ -64,7 +63,7 @@ pub struct Literal {
 
     /// The data type of the literal. LiteralValue must be a valid instance of
     /// this.
-    data_type: Arc<data_type::DataType>,
+    data_type: data::Type,
 }
 
 /// Converts a value in microseconds since the epoch to a chrono::NaiveDateTime.
@@ -86,7 +85,7 @@ fn to_date_time_str(micros: i64, fmt: &str) -> String {
 
 impl Literal {
     /// Shorthand for a new null literal.
-    pub fn new_null(data_type: Arc<data_type::DataType>) -> Literal {
+    pub fn new_null(data_type: data::Type) -> Literal {
         Literal {
             value: LiteralValue::Null,
             data_type,
@@ -96,33 +95,28 @@ impl Literal {
     /// Shorthand for a new simple literal.
     fn new_simple(
         value: LiteralValue,
-        simple: data_type::Simple,
+        simple: data::class::Simple,
         nullable: bool,
-        variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+        variation: data::Variation,
     ) -> diagnostic::Result<Literal> {
         Ok(Literal {
             value,
-            data_type: data_type::DataType::new(
-                data_type::Class::Simple(simple),
-                nullable,
-                variation,
-                vec![],
-            )?,
+            data_type: data::new_type(data::Class::Simple(simple), nullable, variation, vec![])?,
         })
     }
 
     /// Shorthand for a new compound literal.
-    fn new_compound<T: Into<data_type::Parameter>>(
+    fn new_compound<T: Into<data::Parameter>>(
         value: LiteralValue,
-        compound: data_type::Compound,
+        compound: data::class::Compound,
         nullable: bool,
-        variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+        variation: data::Variation,
         args: Vec<T>,
     ) -> diagnostic::Result<Literal> {
         Ok(Literal {
             value,
-            data_type: data_type::DataType::new(
-                data_type::Class::Compound(compound),
+            data_type: data::new_type(
+                data::Class::Compound(compound),
                 nullable,
                 variation,
                 args.into_iter().map(|x| x.into()).collect(),
@@ -131,7 +125,7 @@ impl Literal {
     }
 
     /// Returns the data type of this literal.
-    pub fn data_type(&self) -> &Arc<data_type::DataType> {
+    pub fn data_type(&self) -> &data::Type {
         &self.data_type
     }
 }
@@ -156,24 +150,24 @@ impl Describe for Literal {
             LiteralValue::Boolean(true) => write!(f, "true"),
             LiteralValue::Boolean(false) => write!(f, "false"),
             LiteralValue::Integer(i) => match self.data_type.class() {
-                data_type::Class::Simple(data_type::Simple::I8) => write!(f, "{i}i8"),
-                data_type::Class::Simple(data_type::Simple::I16) => write!(f, "{i}i16"),
-                data_type::Class::Simple(data_type::Simple::I32) => write!(f, "{i}i32"),
-                data_type::Class::Simple(data_type::Simple::I64) => write!(f, "{i}i64"),
-                data_type::Class::Simple(data_type::Simple::Timestamp) => {
+                data::Class::Simple(data::class::Simple::I8) => write!(f, "{i}i8"),
+                data::Class::Simple(data::class::Simple::I16) => write!(f, "{i}i16"),
+                data::Class::Simple(data::class::Simple::I32) => write!(f, "{i}i32"),
+                data::Class::Simple(data::class::Simple::I64) => write!(f, "{i}i64"),
+                data::Class::Simple(data::class::Simple::Timestamp) => {
                     write!(f, "{}", to_date_time_str(*i, "%Y-%m-%d %H:%M:%S%.6f"))
                 }
-                data_type::Class::Simple(data_type::Simple::TimestampTz) => {
+                data::Class::Simple(data::class::Simple::TimestampTz) => {
                     write!(f, "{} UTC", to_date_time_str(*i, "%Y-%m-%d %H:%M:%S%.6f"))
                 }
-                data_type::Class::Simple(data_type::Simple::Date) => {
+                data::Class::Simple(data::class::Simple::Date) => {
                     write!(
                         f,
                         "{}",
                         to_date_time_str(i.saturating_mul(24 * 60 * 60 * 1_000_000), "%Y-%m-%d")
                     )
                 }
-                data_type::Class::Simple(data_type::Simple::Time) => {
+                data::Class::Simple(data::class::Simple::Time) => {
                     write!(f, "{}", to_date_time_str(*i, "%H:%M:%S%.6f"))
                 }
                 _ => write!(f, "{i}"),
@@ -183,8 +177,8 @@ impl Describe for Literal {
                 write!(f, "{:3.1$}", float_pretty_print::PrettyPrintFloat(*v), max)
             }
             LiteralValue::Data16(d) => match self.data_type.class() {
-                data_type::Class::Compound(data_type::Compound::Decimal) => {
-                    if let Some(scale) = self.data_type.int_parameter(1) {
+                data::Class::Compound(data::class::Compound::Decimal) => {
+                    if let Some(scale) = self.data_type.integer_parameter(1) {
                         if d < &0 {
                             write!(f, "-")?;
                         }
@@ -192,7 +186,7 @@ impl Describe for Literal {
                         let s = 10u128.pow(scale as u32);
                         if self
                             .data_type
-                            .int_parameter(0)
+                            .integer_parameter(0)
                             .map(|precision| scale < precision)
                             .unwrap_or(true)
                         {
@@ -207,7 +201,7 @@ impl Describe for Literal {
                         util::string::describe_binary(f, &d.to_le_bytes(), limit)
                     }
                 }
-                data_type::Class::Simple(data_type::Simple::Uuid) => {
+                data::Class::Simple(data::class::Simple::Uuid) => {
                     let b = d.to_ne_bytes();
                     write!(
                         f,
@@ -220,10 +214,10 @@ impl Describe for Literal {
             LiteralValue::String(s) => util::string::describe_string(f, s, limit),
             LiteralValue::Binary(b) => util::string::describe_binary(f, b, limit),
             LiteralValue::Interval(a, b) => match self.data_type.class() {
-                data_type::Class::Simple(data_type::Simple::IntervalYear) => {
+                data::Class::Simple(data::class::Simple::IntervalYear) => {
                     write!(f, "{a}y{b:+}m")
                 }
-                data_type::Class::Simple(data_type::Simple::IntervalDay) => {
+                data::Class::Simple(data::class::Simple::IntervalDay) => {
                     let s = b / 1000000;
                     let us = if b > &0 { *b } else { -b } % 1000000;
                     write!(f, "{a}d{s:+}.{us:06}s")
@@ -231,7 +225,7 @@ impl Describe for Literal {
                 _ => write!(f, "({a}, {b})"),
             },
             LiteralValue::Items(x) => match self.data_type.class() {
-                data_type::Class::Compound(data_type::Compound::Struct) => {
+                data::Class::Compound(data::class::Compound::Struct) => {
                     write!(f, "(")?;
                     util::string::describe_sequence(f, x, limit, 20, |f, value, index, limit| {
                         write!(f, ".{index}: ")?;
@@ -239,7 +233,7 @@ impl Describe for Literal {
                     })?;
                     write!(f, ")")
                 }
-                data_type::Class::Compound(data_type::Compound::NamedStruct) => {
+                data::Class::Compound(data::class::Compound::NamedStruct) => {
                     write!(f, "(")?;
                     util::string::describe_sequence(f, x, limit, 20, |f, value, index, limit| {
                         if let Some(name) = self
@@ -256,7 +250,7 @@ impl Describe for Literal {
                     })?;
                     write!(f, ")")
                 }
-                data_type::Class::Compound(data_type::Compound::List) => {
+                data::Class::Compound(data::class::Compound::List) => {
                     write!(f, "[")?;
                     util::string::describe_sequence(f, x, limit, 20, |f, value, _, limit| {
                         value.describe(f, limit)
@@ -272,7 +266,7 @@ impl Describe for Literal {
                 }
             },
             LiteralValue::Pairs(x) => match self.data_type.class() {
-                data_type::Class::Compound(data_type::Compound::Map) => {
+                data::Class::Compound(data::class::Compound::Map) => {
                     write!(f, "{{")?;
                     util::string::describe_sequence(
                         f,
@@ -323,11 +317,11 @@ fn parse_boolean(
     x: &bool,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Boolean(*x),
-        data_type::Simple::Boolean,
+        data::class::Simple::Boolean,
         nullable,
         variation,
     )
@@ -338,13 +332,13 @@ fn parse_i8(
     x: &i32,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let x = i8::try_from(*x)
         .map_err(|_| cause!(ExpressionIllegalLiteralValue, "i8 value out of range"))?;
     Literal::new_simple(
         LiteralValue::Integer(x as i64),
-        data_type::Simple::I8,
+        data::class::Simple::I8,
         nullable,
         variation,
     )
@@ -355,13 +349,13 @@ fn parse_i16(
     x: &i32,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let x = i16::try_from(*x)
         .map_err(|_| cause!(ExpressionIllegalLiteralValue, "i16 value out of range"))?;
     Literal::new_simple(
         LiteralValue::Integer(x as i64),
-        data_type::Simple::I16,
+        data::class::Simple::I16,
         nullable,
         variation,
     )
@@ -372,11 +366,11 @@ fn parse_i32(
     x: &i32,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Integer(*x as i64),
-        data_type::Simple::I32,
+        data::class::Simple::I32,
         nullable,
         variation,
     )
@@ -387,11 +381,11 @@ fn parse_i64(
     x: &i64,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Integer(*x),
-        data_type::Simple::I64,
+        data::class::Simple::I64,
         nullable,
         variation,
     )
@@ -402,11 +396,11 @@ fn parse_fp32(
     x: &f32,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Float(*x as f64),
-        data_type::Simple::Fp32,
+        data::class::Simple::Fp32,
         nullable,
         variation,
     )
@@ -417,11 +411,11 @@ fn parse_fp64(
     x: &f64,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Float(*x),
-        data_type::Simple::Fp64,
+        data::class::Simple::Fp64,
         nullable,
         variation,
     )
@@ -432,11 +426,11 @@ fn parse_string(
     x: &str,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::String(x.to_string()),
-        data_type::Simple::String,
+        data::class::Simple::String,
         nullable,
         variation,
     )
@@ -447,11 +441,11 @@ fn parse_binary(
     x: &[u8],
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Binary(x.to_owned()),
-        data_type::Simple::Binary,
+        data::class::Simple::Binary,
         nullable,
         variation,
     )
@@ -462,7 +456,7 @@ fn parse_timestamp(
     x: &i64,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time(*x)?;
     if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
@@ -477,7 +471,7 @@ fn parse_timestamp(
     }
     Literal::new_simple(
         LiteralValue::Integer(*x),
-        data_type::Simple::Timestamp,
+        data::class::Simple::Timestamp,
         nullable,
         variation,
     )
@@ -488,7 +482,7 @@ fn parse_timestamp_tz(
     x: &i64,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time(*x)?;
     if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
@@ -503,7 +497,7 @@ fn parse_timestamp_tz(
     }
     Literal::new_simple(
         LiteralValue::Integer(*x),
-        data_type::Simple::TimestampTz,
+        data::class::Simple::TimestampTz,
         nullable,
         variation,
     )
@@ -514,7 +508,7 @@ fn parse_date(
     x: &i32,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time((*x as i64).saturating_mul(24 * 60 * 60 * 1_000_000))?;
     if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
@@ -529,7 +523,7 @@ fn parse_date(
     }
     Literal::new_simple(
         LiteralValue::Integer(*x as i64),
-        data_type::Simple::Date,
+        data::class::Simple::Date,
         nullable,
         variation,
     )
@@ -540,7 +534,7 @@ fn parse_time(
     x: &i64,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     if *x < 0 || *x >= 24 * 60 * 60 * 1_000_000 {
         diagnostic!(
@@ -552,7 +546,7 @@ fn parse_time(
     }
     Literal::new_simple(
         LiteralValue::Integer(*x),
-        data_type::Simple::Time,
+        data::class::Simple::Time,
         nullable,
         variation,
     )
@@ -563,7 +557,7 @@ fn parse_interval_year_to_month(
     x: &substrait::expression::literal::IntervalYearToMonth,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     // FIXME: see FIXME for associated type.
     proto_primitive_field!(x, y, years, |x, _| {
@@ -597,7 +591,7 @@ fn parse_interval_year_to_month(
     }
     Literal::new_simple(
         LiteralValue::Interval(x.years.into(), x.months.into()),
-        data_type::Simple::IntervalYear,
+        data::class::Simple::IntervalYear,
         nullable,
         variation,
     )
@@ -608,7 +602,7 @@ fn parse_interval_day_to_second(
     x: &substrait::expression::literal::IntervalDayToSecond,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     // FIXME: see FIXME for associated type.
     proto_primitive_field!(x, y, days, |x, _| {
@@ -629,7 +623,7 @@ fn parse_interval_day_to_second(
             x.days.into(),
             i64::from(x.seconds) * 1000000 + i64::from(x.microseconds),
         ),
-        data_type::Simple::IntervalDay,
+        data::class::Simple::IntervalDay,
         nullable,
         variation,
     )
@@ -640,12 +634,12 @@ fn parse_uuid(
     x: &[u8],
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     if let Ok(x) = x.try_into() {
         Literal::new_simple(
             LiteralValue::Data16(i128::from_ne_bytes(x)),
-            data_type::Simple::Uuid,
+            data::class::Simple::Uuid,
             nullable,
             variation,
         )
@@ -663,11 +657,11 @@ fn parse_fixed_char(
     x: &str,
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_compound(
         LiteralValue::String(x.to_string()),
-        data_type::Compound::FixedChar,
+        data::class::Compound::FixedChar,
         nullable,
         variation,
         vec![i64::try_from(x.len()).unwrap()],
@@ -679,7 +673,7 @@ fn parse_var_char(
     x: &substrait::expression::literal::VarChar,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     proto_primitive_field!(x, y, length);
     let len: u32 = x.length;
@@ -695,7 +689,7 @@ fn parse_var_char(
     });
     Literal::new_compound(
         LiteralValue::String(x.value.clone()),
-        data_type::Compound::VarChar,
+        data::class::Compound::VarChar,
         nullable,
         variation,
         vec![len as i64],
@@ -707,11 +701,11 @@ fn parse_fixed_binary(
     x: &[u8],
     _y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     Literal::new_compound(
         LiteralValue::Binary(x.to_owned()),
-        data_type::Compound::FixedBinary,
+        data::class::Compound::FixedBinary,
         nullable,
         variation,
         vec![i64::try_from(x.len()).unwrap()],
@@ -723,7 +717,7 @@ fn parse_decimal(
     x: &substrait::expression::literal::Decimal,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     proto_primitive_field!(x, y, precision, |x, _| {
         if *x < 0 {
@@ -761,7 +755,7 @@ fn parse_decimal(
         } else {
             Literal::new_compound(
                 LiteralValue::Data16(val),
-                data_type::Compound::Decimal,
+                data::class::Compound::Decimal,
                 nullable,
                 variation,
                 vec![precision, scale],
@@ -777,7 +771,7 @@ fn parse_struct_int(
     x: &substrait::expression::literal::Struct,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let (values, types): (Vec<_>, Vec<_>) = proto_repeated_field!(x, y, fields, parse_literal)
         .1
@@ -790,7 +784,7 @@ fn parse_struct_int(
         .unzip();
     Literal::new_compound(
         LiteralValue::Items(values),
-        data_type::Compound::Struct,
+        data::class::Compound::Struct,
         nullable,
         variation,
         types,
@@ -802,7 +796,7 @@ pub fn parse_struct(
     x: &substrait::expression::literal::Struct,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let literal = parse_struct_int(x, y, nullable, variation)?;
     y.set_data_type(literal.data_type().clone());
@@ -814,7 +808,7 @@ fn parse_list(
     x: &substrait::expression::literal::List,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let values: Vec<_> = proto_required_repeated_field!(x, y, values, parse_literal)
         .1
@@ -838,7 +832,7 @@ fn parse_list(
     }
     Literal::new_compound(
         LiteralValue::Items(values),
-        data_type::Compound::List,
+        data::class::Compound::List,
         nullable,
         variation,
         vec![data_type],
@@ -850,7 +844,7 @@ fn parse_map(
     x: &substrait::expression::literal::Map,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let values: Vec<_> = proto_required_repeated_field!(x, y, key_values, |x, y| {
         let key = proto_required_field!(x, y, key, parse_literal)
@@ -889,7 +883,7 @@ fn parse_map(
     }
     Literal::new_compound(
         LiteralValue::Pairs(values),
-        data_type::Compound::Map,
+        data::class::Compound::Map,
         nullable,
         variation,
         vec![key_type, value_type],
@@ -947,7 +941,7 @@ fn parse_user_defined(
     x: &substrait::expression::literal::UserDefined,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     let extension_type = proto_primitive_field!(
         x,
@@ -959,11 +953,11 @@ fn parse_user_defined(
     proto_required_field!(x, y, value, extensions::advanced::parse_functional_any);
     Ok(Literal {
         value: LiteralValue::UserDefined,
-        data_type: data_type::DataType::new(
+        data_type: data::new_type(
             if let Some(extension_type) = extension_type {
-                data_type::Class::UserDefined(extension_type)
+                data::Class::UserDefined(extension_type)
             } else {
-                data_type::Class::Unresolved
+                data::Class::Unresolved
             },
             nullable,
             variation,
@@ -977,7 +971,7 @@ fn parse_literal_type(
     x: &substrait::expression::literal::LiteralType,
     y: &mut context::Context,
     nullable: bool,
-    variation: Option<Arc<extension::Reference<extension::TypeVariation>>>,
+    variation: data::Variation,
 ) -> diagnostic::Result<Literal> {
     use substrait::expression::literal::LiteralType;
     match x {
@@ -1070,7 +1064,7 @@ pub fn parse_literal(
             extensions::simple::parse_type_variation_reference
         )
         .1
-        .flatten()
+        .unwrap_or_default()
     } else {
         proto_primitive_field!(x, y, type_variation_reference, |x, y| {
             // Send diagnostic only when x is not set to its default value,
@@ -1090,7 +1084,7 @@ pub fn parse_literal(
             }
             Ok(())
         });
-        None
+        data::Variation::SystemPreferred
     };
 
     // Parse the literal value.
