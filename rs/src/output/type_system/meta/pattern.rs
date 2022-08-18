@@ -390,7 +390,7 @@ impl Value {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DataType {
     /// Type class (simple, compound, or user-defined). This must always match
-    /// exactly. [DataTypePattern]s are wrapped in an Option if the class can
+    /// exactly. [DataType] patterns are wrapped in an Option if the class can
     /// also be omitted.
     pub class: data::Class,
 
