@@ -30,7 +30,7 @@ pub enum Function {
     Add,
 
     /// Integer subtraction: `subtract(metaint, metaint) -> metaint`
-    Substract,
+    Subtract,
 
     /// Integer product: `multiply(metaint*) -> metaint`
     Multiply,
@@ -84,7 +84,7 @@ impl Describe for Function {
             Function::Or => write!(f, "or"),
             Function::Negate => write!(f, "negate"),
             Function::Add => write!(f, "add"),
-            Function::Substract => write!(f, "subtract"),
+            Function::Subtract => write!(f, "subtract"),
             Function::Multiply => write!(f, "multiply"),
             Function::Divide => write!(f, "divide"),
             Function::Min => write!(f, "min"),
@@ -195,7 +195,7 @@ impl Function {
                 }
                 Ok(accumulator.into())
             }
-            Function::Substract => {
+            Function::Subtract => {
                 if args.len() != 2 {
                     Err(cause!(
                         DerivationInvalid,
