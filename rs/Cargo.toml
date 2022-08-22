@@ -46,6 +46,9 @@ serde_json = "1"
 # being useful elsewhere too).
 regex = "1.5"
 
+# Used for the type derivation DSL.
+antlr-rust = "0.3.0-beta"
+
 # Used for checking URI syntax.
 uriparse = "0.6"
 

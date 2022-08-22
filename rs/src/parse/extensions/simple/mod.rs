@@ -10,6 +10,7 @@ use crate::output::type_system::data;
 use crate::parse::context;
 
 mod builder;
+mod derivations;
 mod function_decls;
 mod type_decls;
 mod type_variation_decls;
