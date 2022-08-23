@@ -118,14 +118,14 @@ impl Function {
             Function::Not => {
                 if args.len() != 1 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects a single argument"
                     ))
                 } else if let Some(value) = args[0].evaluate_with_context(context)?.get_boolean() {
                     Ok((!value).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metabools"
                     ))
                 }
@@ -137,7 +137,7 @@ impl Function {
                         Some(false) => return Ok(false.into()),
                         None => {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metabools"
                             ))
                         }
@@ -152,7 +152,7 @@ impl Function {
                         Some(true) => return Ok(true.into()),
                         None => {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metabools"
                             ))
                         }
@@ -163,18 +163,18 @@ impl Function {
             Function::Negate => {
                 if args.len() != 1 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects a single argument"
                     ))
                 } else if let Some(value) = args[0].evaluate_with_context(context)?.get_integer() {
                     if let Some(value) = value.checked_neg() {
                         Ok(value.into())
                     } else {
-                        Err(cause!(DerivationFailed, "integer overflow in {self}()"))
+                        Err(cause!(TypeDerivationFailed, "integer overflow in {self}()"))
                     }
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -184,11 +184,11 @@ impl Function {
                 for arg in args.iter() {
                     if let Some(value) = arg.evaluate_with_context(context)?.get_integer() {
                         accumulator = accumulator.checked_add(value).ok_or_else(|| {
-                            cause!(DerivationFailed, "integer overflow in {self}()")
+                            cause!(TypeDerivationFailed, "integer overflow in {self}()")
                         })?;
                     } else {
                         return Err(cause!(
-                            DerivationInvalid,
+                            TypeDerivationInvalid,
                             "{self}() can only be applied to metaints"
                         ));
                     }
@@ -198,7 +198,7 @@ impl Function {
             Function::Subtract => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -208,11 +208,11 @@ impl Function {
                     if let Some(value) = lhs.checked_sub(rhs) {
                         Ok(value.into())
                     } else {
-                        Err(cause!(DerivationFailed, "integer overflow in {self}()"))
+                        Err(cause!(TypeDerivationFailed, "integer overflow in {self}()"))
                     }
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -222,11 +222,11 @@ impl Function {
                 for arg in args.iter() {
                     if let Some(value) = arg.evaluate_with_context(context)?.get_integer() {
                         accumulator = accumulator.checked_mul(value).ok_or_else(|| {
-                            cause!(DerivationFailed, "integer overflow in {self}()")
+                            cause!(TypeDerivationFailed, "integer overflow in {self}()")
                         })?;
                     } else {
                         return Err(cause!(
-                            DerivationInvalid,
+                            TypeDerivationInvalid,
                             "{self}() can only be applied to metaints"
                         ));
                     }
@@ -236,7 +236,7 @@ impl Function {
             Function::Divide => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -246,11 +246,11 @@ impl Function {
                     if let Some(value) = lhs.checked_div(rhs) {
                         Ok(value.into())
                     } else {
-                        Err(cause!(DerivationFailed, "division by zero in {self}()"))
+                        Err(cause!(TypeDerivationFailed, "division by zero in {self}()"))
                     }
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -258,7 +258,7 @@ impl Function {
             Function::Min => {
                 if args.is_empty() {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects at least one argument"
                     ))
                 } else {
@@ -270,7 +270,7 @@ impl Function {
                             }
                         } else {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metaints"
                             ));
                         }
@@ -281,7 +281,7 @@ impl Function {
             Function::Max => {
                 if args.is_empty() {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects at least one argument"
                     ))
                 } else {
@@ -293,7 +293,7 @@ impl Function {
                             }
                         } else {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metaints"
                             ));
                         }
@@ -304,7 +304,7 @@ impl Function {
             Function::Equal => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else {
@@ -316,7 +316,7 @@ impl Function {
             Function::NotEqual => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else {
@@ -328,7 +328,7 @@ impl Function {
             Function::GreaterThan => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -338,7 +338,7 @@ impl Function {
                     Ok((lhs > rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -346,7 +346,7 @@ impl Function {
             Function::LessThan => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -356,7 +356,7 @@ impl Function {
                     Ok((lhs < rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -364,7 +364,7 @@ impl Function {
             Function::GreaterEqual => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -374,7 +374,7 @@ impl Function {
                     Ok((lhs >= rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -382,7 +382,7 @@ impl Function {
             Function::LessEqual => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -392,7 +392,7 @@ impl Function {
                     Ok((lhs <= rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -400,7 +400,7 @@ impl Function {
             Function::Covers => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else {
@@ -414,7 +414,7 @@ impl Function {
             Function::IfThenElse => {
                 if args.len() != 3 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly three arguments"
                     ))
                 } else if let Some(condition) =
@@ -423,7 +423,7 @@ impl Function {
                     args[if condition { 1 } else { 2 }].evaluate_with_context(context)
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "the first argument of {self}() must be a metabool"
                     ))
                 }

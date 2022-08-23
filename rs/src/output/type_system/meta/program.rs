@@ -76,7 +76,7 @@ impl Program {
     pub fn evaluate_type(&self, context: &mut meta::Context) -> diagnostic::Result<data::Type> {
         self.evaluate(context)?.get_data_type().ok_or_else(|| {
             cause!(
-                DerivationInvalid,
+                TypeDerivationInvalid,
                 "type derivation program must yield a typename"
             )
         })
@@ -136,7 +136,7 @@ impl Statement {
             Ok(())
         } else {
             Err(cause!(
-                DerivationFailed,
+                TypeDerivationFailed,
                 "failed to match {} against pattern",
                 value
             ))

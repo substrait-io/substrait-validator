@@ -291,19 +291,22 @@ impl Pattern for Value {
         context: &mut meta::Context,
     ) -> diagnostic::Result<Self::Value> {
         match self {
-            Value::Any => Err(cause!(DerivationInvalid, "? patterns cannot be evaluated")),
+            Value::Any => Err(cause!(
+                TypeDerivationInvalid,
+                "? patterns cannot be evaluated"
+            )),
             Value::Binding(name) => {
                 if let Some(value) = context.bindings.get(name) {
                     Ok(value.clone())
                 } else {
-                    Err(cause!(DerivationInvalid, "{name} was never bound"))
+                    Err(cause!(TypeDerivationInvalid, "{name} was never bound"))
                 }
             }
             Value::ImplicitOrBinding(name) => {
                 if let Some(value) = context.bindings.get(name) {
                     if value.get_boolean().is_none() {
                         Err(cause!(
-                            DerivationInvalid,
+                            TypeDerivationInvalid,
                             "cannot evaluate {name}? because {name} was not bound to a boolean"
                         ))
                     } else {
@@ -318,7 +321,7 @@ impl Pattern for Value {
                     Ok((*value).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate boolean with unknown value"
                     ))
                 }
@@ -328,7 +331,7 @@ impl Pattern for Value {
                     Ok((*low).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate integer with unknown value"
                     ))
                 }
@@ -339,12 +342,15 @@ impl Pattern for Value {
                         Ok(meta::Value::Enum(values[0].clone()))
                     } else {
                         Err(cause!(
-                            DerivationInvalid,
+                            TypeDerivationInvalid,
                             "cannot evaluate enum with unknown value"
                         ))
                     }
                 } else {
-                    Err(cause!(DerivationInvalid, "cannot evaluate undefined enum"))
+                    Err(cause!(
+                        TypeDerivationInvalid,
+                        "cannot evaluate undefined enum"
+                    ))
                 }
             }
             Value::String(value) => {
@@ -352,7 +358,7 @@ impl Pattern for Value {
                     Ok(value.clone().into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate string with unknown value"
                     ))
                 }
@@ -362,7 +368,7 @@ impl Pattern for Value {
                     value.evaluate_with_context(context).map(meta::Value::from)
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate undefined data type"
                     ))
                 }
@@ -514,7 +520,7 @@ impl Pattern for DataType {
             .get_boolean()
             .ok_or_else(|| {
                 cause!(
-                    DerivationInvalid,
+                    TypeDerivationInvalid,
                     "nullability pattern evaluated to non-boolean"
                 )
             })?;
@@ -585,7 +591,7 @@ impl Pattern for Variation {
     ) -> diagnostic::Result<Self::Value> {
         match self {
             Variation::Any => Err(cause!(
-                DerivationInvalid,
+                TypeDerivationInvalid,
                 "cannot evaluate undefined variation"
             )),
             Variation::Compatible => Ok(data::Variation::SystemPreferred),
