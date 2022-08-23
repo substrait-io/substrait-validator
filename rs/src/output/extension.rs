@@ -168,6 +168,9 @@ pub struct YamlData {
     /// Reference to the parsed YAML data, if any.
     pub data: tree::NodeReference,
 
+    /// YAML extension files that this extension depends on.
+    pub dependencies: HashMap<String, YamlInfo>,
+
     /// Functions defined in this YAML file. Names are stored in lower case
     /// (Substrait's name resolution is case-insensitive).
     pub functions: HashMap<String, Arc<Function>>,
@@ -178,9 +181,7 @@ pub struct YamlData {
 
     /// Type variations defined in this YAML file. Names are stored in lower
     /// case (Substrait's name resolution is case-insensitive).
-    /// FIXME: this declaration to definition map is insufficient. See
-    /// <https://github.com/substrait-io/substrait/issues/268>
-    pub type_variations: HashMap<String, Arc<data::variation::UserDefinedDefinition>>,
+    pub type_variations: HashMap<String, Arc<data::variation::UserDefinedDefinitions>>,
 }
 
 impl YamlData {
@@ -194,6 +195,7 @@ impl YamlData {
                 path: path::Path::Root("").to_path_buf(),
                 node: Arc::new(tree::NodeType::YamlMap.into()),
             },
+            dependencies: HashMap::default(),
             functions: HashMap::default(),
             types: HashMap::default(),
             type_variations: HashMap::default(),
@@ -213,27 +215,44 @@ impl YamlData {
         })
     }
 
-    /// Resolves a function defined in this YAML data block by name. Returns an
-    /// unresolved reference if it does not exist.
+    /// Resolves a function defined in this YAML data block by the given
+    /// lowercase name. Returns an unresolved reference if it does not exist.
     pub fn resolve_function<S: ToString>(&self, name: S) -> Arc<Reference<Function>> {
         let name = name.to_string();
         let maybe_def = self.functions.get(&name).cloned();
         self.local_reference(name, maybe_def)
     }
 
-    /// Resolves a type defined in this YAML data block by name. Returns an
-    /// unresolved reference if it does not exist.
+    /// Resolves a type defined in this YAML data block by the given lowercase
+    /// name. Returns an unresolved reference if it does not exist.
     pub fn resolve_type<S: ToString>(&self, name: S) -> data::class::UserDefined {
         let name = name.to_string();
         let maybe_def = self.types.get(&name).cloned();
         self.local_reference(name, maybe_def)
     }
 
-    /// Resolves a type variation defined in this YAML data block by name.
-    /// Returns an unresolved reference if it does not exist.
-    pub fn resolve_type_variation<S: ToString>(&self, name: S) -> data::variation::UserDefined {
+    /// Resolves all type variations defined in this YAML data block by the
+    /// given lowercase name. Returns an unresolved reference if none exist.
+    pub fn resolve_type_variations_by_name<S: ToString>(
+        &self,
+        name: S,
+    ) -> data::variation::UserDefinedByName {
         let name = name.to_string();
-        let maybe_def = self.type_variations.get(&name).cloned();
+        let maybe_def = self
+            .type_variations
+            .get(&name)
+            .filter(|x| !x.variations.is_empty())
+            .cloned();
         self.local_reference(name, maybe_def)
+    }
+
+    /// Resolves all type variations defined in this YAML data block by the
+    /// given lowercase name. Returns an unresolved reference if none exist.
+    pub fn resolve_type_variation<S: ToString>(
+        &self,
+        name: S,
+        base: &data::Class,
+    ) -> data::variation::UserDefined {
+        data::variation::resolve_by_class(&self.resolve_type_variations_by_name(name), base)
     }
 }

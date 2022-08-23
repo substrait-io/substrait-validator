@@ -237,6 +237,9 @@ pub enum Classification {
     #[strum(props(HiddenDescription = "use of anchor zero"))]
     LinkAnchorZero = 3005,
 
+    #[strum(props(Description = "failed to resolve type variation name & class pair"))]
+    LinkMissingTypeVariationNameAndClass = 3006,
+
     // Type-related diagnostics (group 4).
     #[strum(props(HiddenDescription = "type-related diagnostics"))]
     Type = 4000,
