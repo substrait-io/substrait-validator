@@ -84,3 +84,32 @@ impl Default for FunctionBehavior {
         FunctionBehavior::Inherits
     }
 }
+
+/// A reference to one or more user-defined type variations going by the same
+/// name, distinguished by their base type class.
+pub type UserDefinedByName = Arc<extension::Reference<UserDefinedDefinitions>>;
+
+/// A group of one or more variation definitions using a single name. Note:
+/// multiple variations can be defined with the same name, because names are
+/// scoped to the type class they are defined for. See
+/// <https://github.com/substrait-io/substrait/issues/268>.
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct UserDefinedDefinitions {
+    pub variations: Vec<Arc<UserDefinedDefinition>>,
+}
+
+/// Resolve a reference to a set of variations going by the same name to a
+/// single variation indexed by its base class. Returns an unresolved reference
+/// if it does not exist.
+pub fn resolve_by_class(variations: &UserDefinedByName, base: &data::Class) -> UserDefined {
+    let definition = variations
+        .definition
+        .as_ref()
+        .and_then(|x| x.variations.iter().find(|x| &x.base == base))
+        .cloned();
+    Arc::new(extension::Reference {
+        name: variations.name.clone(),
+        uri: variations.uri.clone(),
+        definition,
+    })
+}

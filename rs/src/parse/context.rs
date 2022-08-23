@@ -305,7 +305,7 @@ impl<'a> Context<'a> {
         &mut self.state.types
     }
 
-    /// Registers a type definition. Shorthand for fns().define(), using the
+    /// Registers a type definition. Shorthand for types().define(), using the
     /// current path as the registration path.
     pub fn define_type(
         &mut self,
@@ -318,17 +318,17 @@ impl<'a> Context<'a> {
     }
 
     /// Returns the resolver for type variation anchors and references.
-    pub fn tvars(&mut self) -> &mut Resolver<u32, data::variation::UserDefined> {
+    pub fn tvars(&mut self) -> &mut Resolver<u32, data::variation::UserDefinedByName> {
         &mut self.state.type_variations
     }
 
-    /// Registers a type definition. Shorthand for fns().define(), using the
+    /// Registers a type definition. Shorthand for tvars().define(), using the
     /// current path as the registration path.
     pub fn define_tvar(
         &mut self,
         anchor: u32,
-        variation: data::variation::UserDefined,
-    ) -> Result<(), (data::variation::UserDefined, path::PathBuf)> {
+        variation: data::variation::UserDefinedByName,
+    ) -> Result<(), (data::variation::UserDefinedByName, path::PathBuf)> {
         self.state
             .type_variations
             .define(anchor, variation, self.breadcrumb.path.to_path_buf())
@@ -493,7 +493,7 @@ pub struct State {
     pub types: Resolver<u32, data::class::UserDefined>,
 
     /// YAML-defined type variation anchor resolver.
-    pub type_variations: Resolver<u32, data::variation::UserDefined>,
+    pub type_variations: Resolver<u32, data::variation::UserDefinedByName>,
 
     /// Protobuf Any type URL resolver.
     pub proto_any_types: Resolver<String, ()>,

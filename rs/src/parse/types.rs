@@ -53,7 +53,8 @@ macro_rules! parse_simple_type {
             $input,
             $context,
             type_variation_reference,
-            extensions::simple::parse_type_variation_reference
+            extensions::simple::parse_type_variation_reference_with_class,
+            &data::Class::Simple(data::class::Simple::$typ)
         )
         .1;
 
@@ -197,7 +198,8 @@ macro_rules! parse_compound_type_with_length {
             $input,
             $context,
             type_variation_reference,
-            extensions::simple::parse_type_variation_reference
+            extensions::simple::parse_type_variation_reference_with_class,
+            &data::Class::Compound(data::class::Compound::$typ)
         )
         .1;
 
@@ -268,7 +270,8 @@ pub fn parse_decimal(
         x,
         y,
         type_variation_reference,
-        extensions::simple::parse_type_variation_reference
+        extensions::simple::parse_type_variation_reference_with_class,
+        &data::Class::Compound(data::class::Compound::Decimal)
     )
     .1;
 
@@ -317,7 +320,8 @@ pub fn parse_struct(
         x,
         y,
         type_variation_reference,
-        extensions::simple::parse_type_variation_reference
+        extensions::simple::parse_type_variation_reference_with_class,
+        &data::Class::Compound(data::class::Compound::Struct)
     )
     .1;
 
@@ -361,7 +365,8 @@ pub fn parse_list(x: &substrait::r#type::List, y: &mut context::Context) -> diag
         x,
         y,
         type_variation_reference,
-        extensions::simple::parse_type_variation_reference
+        extensions::simple::parse_type_variation_reference_with_class,
+        &data::Class::Compound(data::class::Compound::List)
     )
     .1;
 
@@ -410,7 +415,8 @@ pub fn parse_map(x: &substrait::r#type::Map, y: &mut context::Context) -> diagno
         x,
         y,
         type_variation_reference,
-        extensions::simple::parse_type_variation_reference
+        extensions::simple::parse_type_variation_reference_with_class,
+        &data::Class::Compound(data::class::Compound::Map)
     )
     .1;
 
@@ -524,7 +530,8 @@ pub fn parse_user_defined(
         x,
         y,
         type_variation_reference,
-        extensions::simple::parse_type_variation_reference
+        extensions::simple::parse_type_variation_reference_with_class,
+        &data::Class::UserDefined(user_type.as_ref().cloned().unwrap_or_default())
     )
     .1;
     let parameters = proto_repeated_field!(x, y, type_parameters, parse_type_parameter)

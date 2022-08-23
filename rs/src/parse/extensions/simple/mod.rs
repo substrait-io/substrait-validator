@@ -90,16 +90,29 @@ fn describe_reference<T>(y: &mut context::Context, reference: &Arc<extension::Re
     describe!(y, Misc, "{}", reference);
 }
 
-/// Parse a type variation reference and resolve it.
-pub fn parse_type_variation_reference(
+/// Parse a type variation reference and resolve it, along with a given class
+/// (the anchor is otherwise not unique!).
+pub fn parse_type_variation_reference_with_class(
     x: &u32,
     y: &mut context::Context,
+    class: &data::Class,
 ) -> Result<data::Variation> {
     match y.tvars().resolve(x).cloned() {
-        Some((variation, path)) => {
+        Some((variations_by_name, path)) => {
+            let variation = data::variation::resolve_by_class(&variations_by_name, class);
             describe_reference(y, &variation);
             link!(y, path, "Type variation anchor is defined here");
-            Ok(data::Variation::UserDefined(variation))
+            if variations_by_name.definition.is_some() && variation.definition.is_none() {
+                Err(cause!(
+                    LinkMissingTypeVariationNameAndClass,
+                    "type variations going by the name {} exist for {}, but not for class {}",
+                    variations_by_name.name,
+                    variations_by_name.uri,
+                    class
+                ))
+            } else {
+                Ok(data::Variation::UserDefined(variation))
+            }
         }
         None => {
             if x == &0 {
@@ -109,7 +122,32 @@ pub fn parse_type_variation_reference(
                 describe!(y, Misc, "Unresolved type variation");
                 Err(cause!(
                     LinkMissingAnchor,
-                    "Type variation anchor {x} does not exist"
+                    "type variation anchor {x} does not exist"
+                ))
+            }
+        }
+    }
+}
+
+/// Parse a type variation reference and resolve it to the set of variations
+/// defined with that name in a given simple extension. Note that there can be
+/// more than one of those, because names are scoped to a type class. None
+/// is returned to reference the system-preferred variation.
+pub fn parse_type_variation_reference_without_class(
+    x: &u32,
+    y: &mut context::Context,
+) -> Result<Option<data::variation::UserDefinedByName>> {
+    match y.tvars().resolve(x).cloned() {
+        Some((variations_by_name, _)) => Ok(Some(variations_by_name)),
+        None => {
+            if x == &0 {
+                describe!(y, Misc, "System-preferred variation");
+                Ok(None)
+            } else {
+                describe!(y, Misc, "Unresolved type variation");
+                Err(cause!(
+                    LinkMissingAnchor,
+                    "type variation anchor {x} does not exist"
                 ))
             }
         }
@@ -126,7 +164,7 @@ pub fn parse_type_reference(x: &u32, y: &mut context::Context) -> Result<data::c
         }
         None => {
             describe!(y, Misc, "Unresolved type");
-            Err(cause!(LinkMissingAnchor, "Type anchor {x} does not exist"))
+            Err(cause!(LinkMissingAnchor, "type anchor {x} does not exist"))
         }
     }
 }
@@ -146,7 +184,7 @@ pub fn parse_function_reference(
             describe!(y, Misc, "Unresolved function");
             Err(cause!(
                 LinkMissingAnchor,
-                "Function anchor {x} does not exist"
+                "function anchor {x} does not exist"
             ))
         }
     }
