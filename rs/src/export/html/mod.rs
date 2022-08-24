@@ -524,6 +524,7 @@ fn format_node_tree(
         tree::NodeType::YamlMap => format!("{brief} {}", format_span("type", "YAML map")),
         tree::NodeType::YamlArray => format!("{brief} {}", format_span("type", "YAML array")),
         tree::NodeType::YamlPrimitive(data) => format!("= {}{brief}", format_span("value", data)),
+        tree::NodeType::AstNode => format!("{brief} {}", format_span("type", "AST node")),
     };
     let header = format!(
         "{} {value} {}",

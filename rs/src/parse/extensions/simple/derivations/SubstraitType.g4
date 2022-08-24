@@ -190,28 +190,34 @@ pattern : patternOr ;
 
 // Lazily-evaluated boolean OR expression. Maps to builtin or() function if
 // more than one pattern is parsed.
-patternOr : patternAnd ( BooleanOr patternAnd )* ;
+patternOr : patternAnd ( operatorOr patternAnd )* ;
+operatorOr : BooleanOr #Or ;
 
 // Lazily-evaluated boolean AND expression. Maps to builtin and() function if
 // more than one pattern is parsed.
-patternAnd : patternEqNeq ( BooleanAnd patternEqNeq )* ;
+patternAnd : patternEqNeq ( operatorAnd patternEqNeq )* ;
+operatorAnd : BooleanAnd #And ;
 
 // Equality and not-equality expressions. These map to the builtin equal()
 // and not_equal() functions in left-to-right order.
-patternEqNeq : patternIneq ( ( Equal | NotEqual ) patternIneq )* ;
+patternEqNeq : patternIneq ( operatorEqNeq patternIneq )* ;
+operatorEqNeq : Equal #Eq | NotEqual #Neq ;
 
 // Integer inequality expressions. These map to the builtin greater_than(),
 // less_than(), greater_equal(), and less_equal() functions in left-to-right
 // order.
-patternIneq : patternAddSub ( ( LessThan | LessEqual | GreaterThan | GreaterEqual ) patternAddSub )* ;
+patternIneq : patternAddSub ( operatorIneq patternAddSub )* ;
+operatorIneq : LessThan #Lt | LessEqual #Le | GreaterThan #Gt | GreaterEqual #Ge ;
 
 // Integer addition and subtraction. These map to the builtin add() and
 // subtract() functions in left-to-right order.
-patternAddSub : patternMulDiv ( ( Plus | Minus ) patternMulDiv )* ;
+patternAddSub : patternMulDiv ( operatorAddSub patternMulDiv )* ;
+operatorAddSub : Plus #Add | Minus #Sub ;
 
 // Integer multiplication and division. These map to the builtin multiply() and
 // divide() functions in left-to-right order.
-patternMulDiv : patternMisc ( ( Multiply | Divide ) patternMisc )* ;
+patternMulDiv : patternMisc ( operatorMulDiv patternMisc )* ;
+operatorMulDiv : Multiply #Mul | Divide #Div ;
 
 // Miscellaneous patterns that don't need special rules for precedence or
 // avoiding left-recursion.

@@ -188,6 +188,7 @@ impl From<&tree::NodeType> for validator::node::NodeType {
                 validator::node::NodeType::YamlPrimitive(data.into())
             }
             tree::NodeType::ResolvedUri(uri) => validator::node::NodeType::ResolvedUri(uri.clone()),
+            tree::NodeType::AstNode => validator::node::NodeType::AstNode(()),
         }
     }
 }

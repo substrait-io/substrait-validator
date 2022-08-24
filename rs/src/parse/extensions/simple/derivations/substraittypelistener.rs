@@ -104,6 +104,18 @@ fn enter_patternOr(&mut self, _ctx: &PatternOrContext<'input>) { }
  */
 fn exit_patternOr(&mut self, _ctx: &PatternOrContext<'input>) { }
 /**
+ * Enter a parse tree produced by the {@code Or}
+ * labeled alternative in {@link SubstraitTypeParser#operatorOr}.
+ * @param ctx the parse tree
+ */
+fn enter_Or(&mut self, _ctx: &OrContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Or}
+ * labeled alternative in {@link SubstraitTypeParser#operatorOr}.
+ * @param ctx the parse tree
+ */
+fn exit_Or(&mut self, _ctx: &OrContext<'input>) { }
+/**
  * Enter a parse tree produced by {@link SubstraitTypeParser#patternAnd}.
  * @param ctx the parse tree
  */
@@ -113,6 +125,18 @@ fn enter_patternAnd(&mut self, _ctx: &PatternAndContext<'input>) { }
  * @param ctx the parse tree
  */
 fn exit_patternAnd(&mut self, _ctx: &PatternAndContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code And}
+ * labeled alternative in {@link SubstraitTypeParser#operatorAnd}.
+ * @param ctx the parse tree
+ */
+fn enter_And(&mut self, _ctx: &AndContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code And}
+ * labeled alternative in {@link SubstraitTypeParser#operatorAnd}.
+ * @param ctx the parse tree
+ */
+fn exit_And(&mut self, _ctx: &AndContext<'input>) { }
 /**
  * Enter a parse tree produced by {@link SubstraitTypeParser#patternEqNeq}.
  * @param ctx the parse tree
@@ -124,6 +148,30 @@ fn enter_patternEqNeq(&mut self, _ctx: &PatternEqNeqContext<'input>) { }
  */
 fn exit_patternEqNeq(&mut self, _ctx: &PatternEqNeqContext<'input>) { }
 /**
+ * Enter a parse tree produced by the {@code Eq}
+ * labeled alternative in {@link SubstraitTypeParser#operatorEqNeq}.
+ * @param ctx the parse tree
+ */
+fn enter_Eq(&mut self, _ctx: &EqContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Eq}
+ * labeled alternative in {@link SubstraitTypeParser#operatorEqNeq}.
+ * @param ctx the parse tree
+ */
+fn exit_Eq(&mut self, _ctx: &EqContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Neq}
+ * labeled alternative in {@link SubstraitTypeParser#operatorEqNeq}.
+ * @param ctx the parse tree
+ */
+fn enter_Neq(&mut self, _ctx: &NeqContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Neq}
+ * labeled alternative in {@link SubstraitTypeParser#operatorEqNeq}.
+ * @param ctx the parse tree
+ */
+fn exit_Neq(&mut self, _ctx: &NeqContext<'input>) { }
+/**
  * Enter a parse tree produced by {@link SubstraitTypeParser#patternIneq}.
  * @param ctx the parse tree
  */
@@ -133,6 +181,54 @@ fn enter_patternIneq(&mut self, _ctx: &PatternIneqContext<'input>) { }
  * @param ctx the parse tree
  */
 fn exit_patternIneq(&mut self, _ctx: &PatternIneqContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Lt}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn enter_Lt(&mut self, _ctx: &LtContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Lt}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn exit_Lt(&mut self, _ctx: &LtContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Le}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn enter_Le(&mut self, _ctx: &LeContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Le}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn exit_Le(&mut self, _ctx: &LeContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Gt}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn enter_Gt(&mut self, _ctx: &GtContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Gt}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn exit_Gt(&mut self, _ctx: &GtContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Ge}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn enter_Ge(&mut self, _ctx: &GeContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Ge}
+ * labeled alternative in {@link SubstraitTypeParser#operatorIneq}.
+ * @param ctx the parse tree
+ */
+fn exit_Ge(&mut self, _ctx: &GeContext<'input>) { }
 /**
  * Enter a parse tree produced by {@link SubstraitTypeParser#patternAddSub}.
  * @param ctx the parse tree
@@ -144,6 +240,30 @@ fn enter_patternAddSub(&mut self, _ctx: &PatternAddSubContext<'input>) { }
  */
 fn exit_patternAddSub(&mut self, _ctx: &PatternAddSubContext<'input>) { }
 /**
+ * Enter a parse tree produced by the {@code Add}
+ * labeled alternative in {@link SubstraitTypeParser#operatorAddSub}.
+ * @param ctx the parse tree
+ */
+fn enter_Add(&mut self, _ctx: &AddContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Add}
+ * labeled alternative in {@link SubstraitTypeParser#operatorAddSub}.
+ * @param ctx the parse tree
+ */
+fn exit_Add(&mut self, _ctx: &AddContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Sub}
+ * labeled alternative in {@link SubstraitTypeParser#operatorAddSub}.
+ * @param ctx the parse tree
+ */
+fn enter_Sub(&mut self, _ctx: &SubContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Sub}
+ * labeled alternative in {@link SubstraitTypeParser#operatorAddSub}.
+ * @param ctx the parse tree
+ */
+fn exit_Sub(&mut self, _ctx: &SubContext<'input>) { }
+/**
  * Enter a parse tree produced by {@link SubstraitTypeParser#patternMulDiv}.
  * @param ctx the parse tree
  */
@@ -153,6 +273,30 @@ fn enter_patternMulDiv(&mut self, _ctx: &PatternMulDivContext<'input>) { }
  * @param ctx the parse tree
  */
 fn exit_patternMulDiv(&mut self, _ctx: &PatternMulDivContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Mul}
+ * labeled alternative in {@link SubstraitTypeParser#operatorMulDiv}.
+ * @param ctx the parse tree
+ */
+fn enter_Mul(&mut self, _ctx: &MulContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Mul}
+ * labeled alternative in {@link SubstraitTypeParser#operatorMulDiv}.
+ * @param ctx the parse tree
+ */
+fn exit_Mul(&mut self, _ctx: &MulContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Div}
+ * labeled alternative in {@link SubstraitTypeParser#operatorMulDiv}.
+ * @param ctx the parse tree
+ */
+fn enter_Div(&mut self, _ctx: &DivContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Div}
+ * labeled alternative in {@link SubstraitTypeParser#operatorMulDiv}.
+ * @param ctx the parse tree
+ */
+fn exit_Div(&mut self, _ctx: &DivContext<'input>) { }
 /**
  * Enter a parse tree produced by the {@code parentheses}
  * labeled alternative in {@link SubstraitTypeParser#patternMisc}.

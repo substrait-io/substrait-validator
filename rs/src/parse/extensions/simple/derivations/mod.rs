@@ -5,6 +5,10 @@
 // TODO
 #![allow(dead_code)]
 
+mod substraittypelexer;
+mod substraittypelistener;
+mod substraittypeparser;
+
 use crate::output::diagnostic::Result;
 use crate::output::extension;
 use crate::output::type_system::data;
@@ -15,63 +19,7 @@ use antlr_rust::Parser;
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::rc::Rc;
-
-mod substraittypelexer;
-mod substraittypelistener;
-mod substraittypeparser;
-
-/// Error listener that just collects error messages into a vector, such that
-/// they can be obtained when parsing completes.
-#[derive(Default, Clone)]
-struct ErrorListener {
-    messages: Rc<RefCell<Vec<String>>>,
-}
-
-impl<'a, T: antlr_rust::recognizer::Recognizer<'a>> antlr_rust::error_listener::ErrorListener<'a, T>
-    for ErrorListener
-{
-    fn syntax_error(
-        &self,
-        _recognizer: &T,
-        _offending_symbol: Option<&<<T>::TF as antlr_rust::token_factory::TokenFactory<'a>>::Inner>,
-        line: isize,
-        column: isize,
-        msg: &str,
-        _error: Option<&antlr_rust::errors::ANTLRError>,
-    ) {
-        self.messages
-            .borrow_mut()
-            .push(format!("at {line}:{column}: {msg}"));
-    }
-}
-
-impl ErrorListener {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn to_context(&self, y: &mut context::Context) {
-        for message in self.messages.borrow_mut().drain(..) {
-            diagnostic!(y, Error, TypeParseError, "{message}");
-        }
-    }
-}
-
-// Boilerplate code for connecting ANTLR to our diagnostic system and parsing
-// a simple string slice with it.
-macro_rules! antlr_parse {
-    ($x:expr, $y:expr, $start:ident) => {{
-        let lexer = substraittypelexer::SubstraitTypeLexer::new(antlr_rust::InputStream::new($x));
-        let token_source = antlr_rust::common_token_stream::CommonTokenStream::new(lexer);
-        let mut parser = substraittypeparser::SubstraitTypeParser::new(token_source);
-        let listener = ErrorListener::new();
-        parser.remove_error_listeners();
-        parser.add_error_listener(Box::new(listener.clone()));
-        let result = parser.$start();
-        listener.to_context($y);
-        result.map_err(|e| cause!(TypeParseError, "{e}"))
-    }};
-}
+use substraittypeparser::*;
 
 /// Resolves an identifier path used in pattern scope.
 fn resolve_pattern_identifier<S, I>(
@@ -119,6 +67,285 @@ where
     Ok(object)
 }
 
+/// Error listener that just collects error messages into a vector, such that
+/// they can be obtained when parsing completes.
+#[derive(Default, Clone)]
+struct ErrorListener {
+    messages: Rc<RefCell<Vec<String>>>,
+}
+
+impl<'a, T: antlr_rust::recognizer::Recognizer<'a>> antlr_rust::error_listener::ErrorListener<'a, T>
+    for ErrorListener
+{
+    fn syntax_error(
+        &self,
+        _recognizer: &T,
+        _offending_symbol: Option<&<<T>::TF as antlr_rust::token_factory::TokenFactory<'a>>::Inner>,
+        line: isize,
+        column: isize,
+        msg: &str,
+        _error: Option<&antlr_rust::errors::ANTLRError>,
+    ) {
+        self.messages
+            .borrow_mut()
+            .push(format!("at {line}:{column}: {msg}"));
+    }
+}
+
+impl ErrorListener {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn to_context(&self, y: &mut context::Context) {
+        for message in self.messages.borrow_mut().drain(..) {
+            diagnostic!(y, Error, TypeParseError, "{message}");
+        }
+    }
+}
+
+// Boilerplate code for connecting ANTLR to our diagnostic system and parsing
+// a simple string slice with it.
+macro_rules! antlr_parse {
+    ($x:expr, $y:expr, $start:ident) => {{
+        let lexer = substraittypelexer::SubstraitTypeLexer::new(antlr_rust::InputStream::new($x));
+        let token_source = antlr_rust::common_token_stream::CommonTokenStream::new(lexer);
+        let mut parser = SubstraitTypeParser::new(token_source);
+        let listener = ErrorListener::new();
+        parser.remove_error_listeners();
+        parser.add_error_listener(Box::new(listener.clone()));
+        let result = parser.$start();
+        listener.to_context($y);
+        result.map_err(|e| cause!(TypeParseError, "{e}"))
+    }};
+}
+
+// Boilerplate code for converting the awkward left-recursion-avoidance rules
+// for expressions into a normal expression tree.
+macro_rules! antlr_reduce_left_recursion {
+    ($x:expr, $y:expr, $x_typ:ty, $all_operands:ident, $next_analyzer:expr, $one_operator:ident, $operator_match:tt) => {{
+        fn left_recursive(
+            x: &$x_typ,
+            y: &mut context::Context,
+            start: usize,
+        ) -> Result<meta::pattern::Value> {
+            if start == 0 {
+                // Only one operand remaining.
+                Ok(antlr_hidden_child!(x, y, $next_analyzer).unwrap_or_default())
+            } else {
+                // We're traversing the tree bottom-up, so start with the last
+                // operation. The operations are evaluated left-to-right, so that's
+                // the rightmost operation.
+                let lhs = antlr_recurse!(x, y, lhs, left_recursive, start - 1)
+                    .1
+                    .unwrap_or_default();
+                let rhs = antlr_child!(x, y, rhs, start, $next_analyzer)
+                    .1
+                    .unwrap_or_default();
+                let function = x.$one_operator(start - 1).map(|x| match x.as_ref() $operator_match).unwrap_or_default();
+                Ok(meta::pattern::Value::Function(function, vec![lhs, rhs]))
+            }
+        }
+
+        let total_operands = $x.$all_operands().len();
+        left_recursive($x, $y, total_operands - 1)
+    }};
+}
+
+/// Analyzes miscellaneous pattern types.
+fn analyze_pattern_misc(
+    _x: &PatternMiscContextAll,
+    _y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    /*match x {
+        PatternMiscContextAll::ParenthesesContext(_) => todo!(),
+        PatternMiscContextAll::IntRangeContext(_) => todo!(),
+        PatternMiscContextAll::UnaryNegateContext(_) => todo!(),
+        PatternMiscContextAll::StrExactlyContext(_) => todo!(),
+        PatternMiscContextAll::IfThenElseContext(_) => todo!(),
+        PatternMiscContextAll::BoolFalseContext(_) => todo!(),
+        PatternMiscContextAll::EnumAnyContext(_) => todo!(),
+        PatternMiscContextAll::DtAnyContext(_) => todo!(),
+        PatternMiscContextAll::AnyContext(_) => todo!(),
+        PatternMiscContextAll::IntAnyContext(_) => todo!(),
+        PatternMiscContextAll::DatatypeBindingOrConstantContext(_) => todo!(),
+        PatternMiscContextAll::EnumSetContext(_) => todo!(),
+        PatternMiscContextAll::StrAnyContext(_) => todo!(),
+        PatternMiscContextAll::BoolTrueContext(_) => todo!(),
+        PatternMiscContextAll::IntAtMostContext(_) => todo!(),
+        PatternMiscContextAll::IntAtLeastContext(_) => todo!(),
+        PatternMiscContextAll::IntExactlyContext(_) => todo!(),
+        PatternMiscContextAll::FunctionContext(_) => todo!(),
+        PatternMiscContextAll::BoolAnyContext(_) => todo!(),
+        PatternMiscContextAll::UnaryNotContext(_) => todo!(),
+        PatternMiscContextAll::Error(_) => todo!(),
+    }*/
+    Ok(meta::pattern::Value::Unresolved)
+}
+
+/// Analyzes a set of zero or more a*b or a/b expressions.
+fn analyze_pattern_mul_div(
+    x: &PatternMulDivContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    antlr_reduce_left_recursion!(
+        x, y, PatternMulDivContextAll,
+        patternMisc_all, analyze_pattern_misc, operatorMulDiv,
+        {
+            OperatorMulDivContextAll::MulContext(_) => meta::Function::Multiply,
+            OperatorMulDivContextAll::DivContext(_) => meta::Function::Divide,
+            OperatorMulDivContextAll::Error(_) => meta::Function::Unresolved,
+        }
+    )
+}
+
+/// Analyzes a set of zero or more a+b or a-b expressions.
+fn analyze_pattern_add_sub(
+    x: &PatternAddSubContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    antlr_reduce_left_recursion!(
+        x, y, PatternAddSubContextAll,
+        patternMulDiv_all, analyze_pattern_mul_div, operatorAddSub,
+        {
+            OperatorAddSubContextAll::AddContext(_) => meta::Function::Add,
+            OperatorAddSubContextAll::SubContext(_) => meta::Function::Subtract,
+            OperatorAddSubContextAll::Error(_) => meta::Function::Unresolved,
+        }
+    )
+}
+
+/// Analyzes a set of zero or more integer inequality expressions.
+fn analyze_pattern_ineq(
+    x: &PatternIneqContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    antlr_reduce_left_recursion!(
+        x, y, PatternIneqContextAll,
+        patternAddSub_all, analyze_pattern_add_sub, operatorIneq,
+        {
+            OperatorIneqContextAll::LtContext(_) => meta::Function::LessThan,
+            OperatorIneqContextAll::LeContext(_) => meta::Function::LessEqual,
+            OperatorIneqContextAll::GtContext(_) => meta::Function::GreaterThan,
+            OperatorIneqContextAll::GeContext(_) => meta::Function::GreaterEqual,
+            OperatorIneqContextAll::Error(_) => meta::Function::Unresolved,
+        }
+    )
+}
+
+/// Analyzes a set of zero or more x==y or x!=y expressions.
+fn analyze_pattern_eq_neq(
+    x: &PatternEqNeqContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    antlr_reduce_left_recursion!(
+        x, y, PatternEqNeqContextAll,
+        patternIneq_all, analyze_pattern_ineq, operatorEqNeq,
+        {
+            OperatorEqNeqContextAll::EqContext(_) => meta::Function::Equal,
+            OperatorEqNeqContextAll::NeqContext(_) => meta::Function::NotEqual,
+            OperatorEqNeqContextAll::Error(_) => meta::Function::Unresolved,
+        }
+    )
+}
+
+/// Analyzes a set of zero or more x&&y expressions.
+fn analyze_pattern_and(
+    x: &PatternAndContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    antlr_reduce_left_recursion!(
+        x, y, PatternAndContextAll,
+        patternEqNeq_all, analyze_pattern_eq_neq, operatorAnd,
+        {
+            OperatorAndContextAll::AndContext(_) => meta::Function::And,
+            OperatorAndContextAll::Error(_) => meta::Function::Unresolved,
+        }
+    )
+}
+
+/// Analyzes a set of zero or more x||y expressions.
+fn analyze_pattern_or(
+    x: &PatternOrContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    antlr_reduce_left_recursion!(
+        x, y, PatternOrContextAll,
+        patternAnd_all, analyze_pattern_and, operatorOr,
+        {
+            OperatorOrContextAll::OrContext(_) => meta::Function::Or,
+            OperatorOrContextAll::Error(_) => meta::Function::Unresolved,
+        }
+    )
+}
+
+/// Analyzes a pattern parse tree node.
+fn analyze_pattern(
+    x: &PatternContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    Ok(antlr_hidden_child!(x, y, analyze_pattern_or).unwrap_or_default())
+}
+
+/// Analyzes a statement parse tree node.
+fn analyze_statement(
+    x: &StatementContextAll,
+    y: &mut context::Context,
+) -> Result<meta::program::Statement> {
+    match x {
+        StatementContextAll::AssertContext(x) => {
+            let rhs_expression = antlr_child!(x, y, rhs, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            Ok(meta::program::Statement {
+                lhs_pattern: meta::pattern::Value::Boolean(Some(true)),
+                rhs_expression,
+            })
+        }
+        StatementContextAll::NormalContext(x) => {
+            let rhs_expression = antlr_child!(x, y, rhs, 1, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            let lhs_pattern = antlr_child!(x, y, lhs, 0, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            Ok(meta::program::Statement {
+                lhs_pattern,
+                rhs_expression,
+            })
+        }
+        StatementContextAll::MatchContext(x) => {
+            let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            let lhs_pattern = antlr_child!(x, y, lhs, 1, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            Ok(meta::program::Statement {
+                lhs_pattern,
+                rhs_expression,
+            })
+        }
+        StatementContextAll::Error(_) => Ok(meta::program::Statement::default()),
+    }
+}
+
+/// Analyzes a program parse tree node.
+fn analyze_program(x: &ProgramContextAll, y: &mut context::Context) -> Result<meta::Program> {
+    let statements = antlr_children!(x, y, statement, analyze_statement)
+        .1
+        .into_iter()
+        .map(|x| x.unwrap_or_default())
+        .collect();
+    let expression = antlr_child!(x, y, pattern, analyze_pattern)
+        .1
+        .unwrap_or_default();
+    Ok(meta::Program {
+        statements,
+        expression,
+    })
+}
+
 /// Parse a string as just the class part of a data type.
 pub fn parse_class(x: &str, y: &mut context::Context) -> Result<data::Class> {
     // Resolve from within a fresh scope.
@@ -152,20 +379,24 @@ pub fn parse_type(x: &str, y: &mut context::Context) -> Result<data::Type> {
 
 /// Parse a string as a meta-pattern.
 pub fn parse_pattern(x: &str, y: &mut context::Context) -> Result<meta::pattern::Value> {
-    // Parse the string with ANTLR.
-    let _tree = antlr_parse!(x, y, startPattern)?;
-
-    //
-    Err(cause!(NotYetImplemented, "TODO"))
+    let x = antlr_parse!(x, y, startPattern)?;
+    y.type_ident_map_init();
+    let result = antlr_child!(x.as_ref(), y, pattern, analyze_pattern)
+        .1
+        .unwrap_or_default();
+    y.type_ident_map_clear();
+    Ok(result)
 }
 
 /// Parse a string as a meta-program.
 pub fn parse_program(x: &str, y: &mut context::Context) -> Result<meta::Program> {
-    // Parse the string with ANTLR.
-    let _tree = antlr_parse!(x, y, startProgram)?;
-
-    //
-    Err(cause!(NotYetImplemented, "TODO"))
+    let x = antlr_parse!(x, y, startProgram)?;
+    y.type_ident_map_init();
+    let result = antlr_child!(x.as_ref(), y, program, analyze_program)
+        .1
+        .unwrap_or_default();
+    y.type_ident_map_clear();
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -180,7 +411,7 @@ mod test {
         let config = crate::Config::new();
         let mut context = context::Context::new("test", &mut node, &mut state, &config);
 
-        parse_program(
+        /*let result = parse_program(
             r#"init_scale = max(S1,S2)
             init_prec = init_scale + max(P1 - S1, P2 - S2) + 1
             min_scale = min(init_scale, 6)
@@ -191,10 +422,12 @@ mod test {
             DECIMAL<prec, scale>"#,
             &mut context,
         )
-        .ok();
+        .ok();*/
 
-        //result.program().unwrap().;
-        //panic!("{node:?}");
+        let result = parse_program(r#"a + b * c - d / e"#, &mut context).ok();
+
+        //panic!("{:#?}", result);
+        //panic!("{node:#?}");
         //panic!("{:#?}", result.to_string_tree(&*parser));
     }
 }

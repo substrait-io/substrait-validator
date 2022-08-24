@@ -210,6 +210,10 @@ pub enum NodeType {
     /// have a child named "data" with the validation tree of the resolved
     /// data.
     ResolvedUri(String),
+
+    /// The associated node represents a node in an abstract syntax tree parsed
+    /// from a string.
+    AstNode,
 }
 
 /// Semantical information about a node.

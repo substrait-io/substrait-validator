@@ -76,6 +76,12 @@ pub enum Function {
     IfThenElse,
 }
 
+impl Default for Function {
+    fn default() -> Self {
+        Function::Unresolved
+    }
+}
+
 impl Function {
     /// Evaluates this function.
     pub fn evaluate(

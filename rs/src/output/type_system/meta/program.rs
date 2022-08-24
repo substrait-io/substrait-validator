@@ -18,7 +18,7 @@ use super::Pattern;
 /// the last maps to a statement, and the last non-empty line maps to the
 /// expression. # can be used as an end-of-line comment, and semicolons may
 /// be used in place of newlines (though these do not terminate a # comment).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Program {
     /// Zero or more evaluate-and-match statements to execute before
     /// evaluating the final expression.
@@ -93,7 +93,7 @@ impl Program {
 /// syntax for this is `lhs = rhs`, but `assert rhs matches lhs` and `assert rhs`
 /// are syntactic sugar for aforementioned patterns to make those easier to
 /// understand.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Statement {
     /// The pattern appearing on the left-hand side of the evaluate-and-match
     /// statement. This is what the result of the expression will be matched
