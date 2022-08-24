@@ -354,6 +354,9 @@ pub enum Classification {
 
     #[strum(props(Description = "redundant field"))]
     RedundantField = 7007,
+
+    #[strum(props(Description = "redundant enum variant"))]
+    RedundantEnumVariant = 7008,
 }
 
 impl Default for Classification {

@@ -18,12 +18,13 @@ use crate::parse::context;
 use antlr_rust::Parser;
 use itertools::Itertools;
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::rc::Rc;
 use substraittypeparser::*;
 
 /// Resolves an identifier path used in pattern scope.
 fn resolve_pattern_identifier<S, I>(
-    path: I,
+    x: I,
     y: &mut context::Context,
 ) -> Result<context::IdentifiedObject>
 where
@@ -31,7 +32,7 @@ where
     I: Iterator<Item = S>,
 {
     // Reconstruct the full identifier path for use in error messages.
-    let path = path.collect::<Vec<_>>();
+    let path = x.collect::<Vec<_>>();
     let ident = path.iter().map(|x| x.as_ref()).join(".");
     let mut path = path.into_iter();
 
@@ -152,35 +153,289 @@ macro_rules! antlr_reduce_left_recursion {
     }};
 }
 
+/// Analyzes a string literal.
+fn analyze_string<S: AsRef<str>>(x: S, _y: &mut context::Context) -> Option<String> {
+    let x = x.as_ref();
+    if !x.starts_with('"') || !x.ends_with('"') || x.len() < 2 {
+        None
+    } else {
+        Some(x[1..x.len() - 1].to_string())
+    }
+}
+
+/// Analyzes an integer literal.
+fn analyze_integer(x: &IntegerContextAll, y: &mut context::Context) -> Result<i64> {
+    let value = if let Some(value) = x.Nonzero() {
+        value.symbol.text.parse().unwrap_or(i128::MAX)
+    } else {
+        0i128
+    };
+    Ok(if x.Minus().is_some() {
+        match i64::try_from(-value) {
+            Ok(val) => val,
+            Err(_) => {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeDerivationInvalid,
+                    "integer literal is too small, minimum is {}",
+                    i64::MIN
+                );
+                i64::MIN
+            }
+        }
+    } else {
+        match i64::try_from(-value) {
+            Ok(val) => val,
+            Err(_) => {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeDerivationInvalid,
+                    "integer literal is too large, maximum is {}",
+                    i64::MAX
+                );
+                i64::MAX
+            }
+        }
+    })
+}
+
+/// Analyzes and resolves an identifier path.
+fn analyze_object(
+    x: &IdentifierPathContextAll,
+    y: &mut context::Context,
+) -> Result<context::IdentifiedObject> {
+    resolve_pattern_identifier(
+        x.Identifier_all().iter().map(|x| x.symbol.text.to_string()),
+        y,
+    )
+}
+
 /// Analyzes miscellaneous pattern types.
 fn analyze_pattern_misc(
-    _x: &PatternMiscContextAll,
-    _y: &mut context::Context,
+    x: &PatternMiscContextAll,
+    y: &mut context::Context,
 ) -> Result<meta::pattern::Value> {
-    /*match x {
-        PatternMiscContextAll::ParenthesesContext(_) => todo!(),
-        PatternMiscContextAll::IntRangeContext(_) => todo!(),
-        PatternMiscContextAll::UnaryNegateContext(_) => todo!(),
-        PatternMiscContextAll::StrExactlyContext(_) => todo!(),
-        PatternMiscContextAll::IfThenElseContext(_) => todo!(),
-        PatternMiscContextAll::BoolFalseContext(_) => todo!(),
-        PatternMiscContextAll::EnumAnyContext(_) => todo!(),
-        PatternMiscContextAll::DtAnyContext(_) => todo!(),
-        PatternMiscContextAll::AnyContext(_) => todo!(),
-        PatternMiscContextAll::IntAnyContext(_) => todo!(),
-        PatternMiscContextAll::DatatypeBindingOrConstantContext(_) => todo!(),
-        PatternMiscContextAll::EnumSetContext(_) => todo!(),
-        PatternMiscContextAll::StrAnyContext(_) => todo!(),
-        PatternMiscContextAll::BoolTrueContext(_) => todo!(),
-        PatternMiscContextAll::IntAtMostContext(_) => todo!(),
-        PatternMiscContextAll::IntAtLeastContext(_) => todo!(),
-        PatternMiscContextAll::IntExactlyContext(_) => todo!(),
-        PatternMiscContextAll::FunctionContext(_) => todo!(),
-        PatternMiscContextAll::BoolAnyContext(_) => todo!(),
-        PatternMiscContextAll::UnaryNotContext(_) => todo!(),
-        PatternMiscContextAll::Error(_) => todo!(),
-    }*/
-    Ok(meta::pattern::Value::Unresolved)
+    match x {
+        PatternMiscContextAll::ParenthesesContext(x) => {
+            Ok(antlr_hidden_child!(x, y, analyze_pattern).unwrap_or_default())
+        }
+        PatternMiscContextAll::IfThenElseContext(x) => {
+            let condition = antlr_child!(x, y, condition, 0, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            let if_true = antlr_child!(x, y, if_true, 1, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            let if_false = antlr_child!(x, y, if_false, 2, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            Ok(meta::pattern::Value::Function(
+                meta::Function::IfThenElse,
+                vec![condition, if_true, if_false],
+            ))
+        }
+        PatternMiscContextAll::UnaryNotContext(x) => {
+            let expression = antlr_child!(x, y, expression, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            Ok(meta::pattern::Value::Function(
+                meta::Function::Not,
+                vec![expression],
+            ))
+        }
+        PatternMiscContextAll::UnaryNegateContext(x) => {
+            let expression = antlr_child!(x, y, expression, analyze_pattern)
+                .1
+                .unwrap_or_default();
+            Ok(meta::pattern::Value::Function(
+                meta::Function::Negate,
+                vec![expression],
+            ))
+        }
+        PatternMiscContextAll::AnyContext(_) => Ok(meta::pattern::Value::Any),
+        PatternMiscContextAll::BoolAnyContext(_) => Ok(meta::pattern::Value::Boolean(None)),
+        PatternMiscContextAll::BoolTrueContext(_) => Ok(meta::pattern::Value::Boolean(Some(true))),
+        PatternMiscContextAll::BoolFalseContext(_) => {
+            Ok(meta::pattern::Value::Boolean(Some(false)))
+        }
+        PatternMiscContextAll::IntAnyContext(_) => {
+            Ok(meta::pattern::Value::Integer(i64::MIN, i64::MAX))
+        }
+        PatternMiscContextAll::IntRangeContext(x) => {
+            let lower = antlr_hidden_child!(x, y, 0, analyze_integer).unwrap_or(i64::MIN);
+            let upper = antlr_hidden_child!(x, y, 1, analyze_integer).unwrap_or(i64::MAX);
+            if lower > upper {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeDerivationInvalid,
+                    "lower bound of range is greater than upper bound"
+                );
+            }
+            Ok(meta::pattern::Value::Integer(lower, upper))
+        }
+        PatternMiscContextAll::IntAtMostContext(x) => {
+            let upper = antlr_hidden_child!(x, y, analyze_integer).unwrap_or(i64::MAX);
+            Ok(meta::pattern::Value::Integer(i64::MIN, upper))
+        }
+        PatternMiscContextAll::IntAtLeastContext(x) => {
+            let lower = antlr_hidden_child!(x, y, analyze_integer).unwrap_or(i64::MAX);
+            Ok(meta::pattern::Value::Integer(lower, i64::MAX))
+        }
+        PatternMiscContextAll::IntExactlyContext(x) => {
+            let value = antlr_hidden_child!(x, y, analyze_integer).unwrap_or(i64::MAX);
+            Ok(meta::pattern::Value::Integer(value, value))
+        }
+        PatternMiscContextAll::EnumAnyContext(_) => Ok(meta::pattern::Value::Enum(None)),
+        PatternMiscContextAll::EnumSetContext(x) => {
+            let names = x
+                .Identifier_all()
+                .iter()
+                .map(|x| x.symbol.text.to_string())
+                .collect::<Vec<_>>();
+            let mut unique_names = HashSet::new();
+            let mut repeated_names = HashSet::new();
+            for name in names.iter() {
+                if !unique_names.insert(name.to_ascii_uppercase()) {
+                    repeated_names.insert(name.to_ascii_uppercase());
+                }
+            }
+            if !repeated_names.is_empty() {
+                diagnostic!(
+                    y,
+                    Error,
+                    RedundantEnumVariant,
+                    "enumeration variant names should be case-insensitively unique: {}",
+                    repeated_names.iter().join(", ")
+                );
+            }
+            Ok(meta::pattern::Value::Enum(Some(names)))
+        }
+        PatternMiscContextAll::StrAnyContext(_) => Ok(meta::pattern::Value::String(None)),
+        PatternMiscContextAll::StrExactlyContext(x) => {
+            let s = x.String().and_then(|x| analyze_string(&x.symbol.text, y));
+            if s.is_none() {
+                diagnostic!(y, Error, TypeParseError, "invalid string literal");
+            }
+            Ok(meta::pattern::Value::String(s))
+        }
+        PatternMiscContextAll::DtAnyContext(_) => Ok(meta::pattern::Value::DataType(None)),
+        PatternMiscContextAll::FunctionContext(x) => {
+            let function = x
+                .Identifier()
+                .and_then(|x| meta::Function::try_from(x.symbol.text.as_ref()).ok());
+            if function.is_none() {
+                diagnostic!(y, Error, TypeParseError, "unknown function");
+            }
+            let arguments = antlr_children!(x, y, argument, analyze_pattern)
+                .1
+                .into_iter()
+                .map(|x| x.unwrap_or_default())
+                .collect();
+            Ok(meta::pattern::Value::Function(
+                function.unwrap_or_default(),
+                arguments,
+            ))
+        }
+        PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => {
+            let object = antlr_hidden_child!(x, y, analyze_object)
+                .ok_or_else(|| cause!(TypeDerivationInvalid, "failed to resolve identifier"))?;
+            match object {
+                context::IdentifiedObject::Binding(name) => {
+                    if x.variation().is_some() {
+                        diagnostic!(
+                            y,
+                            Error,
+                            TypeParseError,
+                            "variation cannot be specified for bindings"
+                        );
+                    }
+                    if x.parameters().is_some() {
+                        diagnostic!(
+                            y,
+                            Error,
+                            TypeParseError,
+                            "parameters cannot be specified for bindings"
+                        );
+                    }
+                    if let Some(qst) = x.nullability() {
+                        if qst.pattern().is_some() {
+                            diagnostic!(
+                                y,
+                                Error,
+                                TypeParseError,
+                                "nullability pattern cannot be specified for bindings"
+                            );
+                        }
+                        Ok(meta::pattern::Value::ImplicitOrBinding(name))
+                    } else {
+                        Ok(meta::pattern::Value::Binding(name))
+                    }
+                }
+                context::IdentifiedObject::EnumLiteral(name) => {
+                    if x.nullability().is_some() {
+                        diagnostic!(
+                            y,
+                            Error,
+                            TypeParseError,
+                            "nullability cannot be specified for enum literals"
+                        );
+                    }
+                    if x.variation().is_some() {
+                        diagnostic!(
+                            y,
+                            Error,
+                            TypeParseError,
+                            "variation cannot be specified for enum literals"
+                        );
+                    }
+                    if x.parameters().is_some() {
+                        diagnostic!(
+                            y,
+                            Error,
+                            TypeParseError,
+                            "parameters cannot be specified for enum literals"
+                        );
+                    }
+                    Ok(meta::pattern::Value::Enum(Some(vec![name])))
+                }
+                context::IdentifiedObject::NamedDependency(_) => Err(cause!(
+                    TypeDerivationInvalid,
+                    "identifier resolves to dependency namespace, which cannot be used as such"
+                )),
+                context::IdentifiedObject::TypeClass(class) => {
+                    let nullable = if let Some(qst) = x.nullability() {
+                        if let Some(pattern) =
+                            antlr_child!(qst.as_ref(), y, nullability, analyze_pattern).1
+                        {
+                            pattern
+                        } else {
+                            meta::pattern::Value::Boolean(Some(true))
+                        }
+                    } else {
+                        meta::pattern::Value::Boolean(Some(false))
+                    };
+                    if x.variation().is_some() {
+                        todo!()
+                    }
+                    if x.parameters().is_some() {
+                        todo!()
+                    }
+                    Ok(meta::pattern::Value::DataType(Some(
+                        meta::pattern::DataType {
+                            class,
+                            nullable: std::sync::Arc::new(nullable),
+                            variation: meta::pattern::Variation::Any,
+                            parameters: None,
+                        },
+                    )))
+                }
+            }
+        }
+        PatternMiscContextAll::Error(_) => Ok(meta::pattern::Value::Unresolved),
+    }
 }
 
 /// Analyzes a set of zero or more a*b or a/b expressions.
@@ -424,8 +679,10 @@ mod test {
         )
         .ok();*/
 
-        let result = parse_program(r#"a + b * c - d / e"#, &mut context).ok();
+        let _result = parse_program(r#"1 + 2 * 3 - 4 / 5"#, &mut context).unwrap_or_default();
 
+        //let mut eval_context = meta::Context::default();
+        //panic!("{:#?}", result.evaluate(&mut eval_context));
         //panic!("{:#?}", result);
         //panic!("{node:#?}");
         //panic!("{:#?}", result.to_string_tree(&*parser));
