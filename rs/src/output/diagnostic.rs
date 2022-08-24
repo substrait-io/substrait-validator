@@ -294,6 +294,11 @@ pub enum Classification {
     #[strum(props(Description = "parse error in type pattern or derivation expression"))]
     TypeParseError = 4011,
 
+    #[strum(props(
+        Description = "name resolution error in type pattern or derivation expression"
+    ))]
+    TypeResolutionError = 4012,
+
     // Relation-related diagnostics (group 5).
     #[strum(props(HiddenDescription = "relation-related diagnostics"))]
     Relation = 5000,

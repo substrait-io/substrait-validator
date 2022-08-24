@@ -52,8 +52,12 @@ pub trait Pattern {
 /// [meta::Value].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
-    /// Accepts any meta::Value. Syntax: `?`. Also used when a pattern is unknown
-    /// due to validator-specific error recovery. Cannot be evaluated.
+    /// Used when a pattern is unknown due to validator-specific error
+    /// recovery. Matches all values, and evaluates to an unresolved value.
+    /// Syntax (only for printing): `!`.
+    Unresolved,
+
+    /// Accepts any meta::Value. Cannot be evaluated. Syntax: `?`.
     Any,
 
     /// A binding. These act sort of like variables in a given context. When
@@ -131,6 +135,7 @@ impl Describe for Value {
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
+            Value::Unresolved => write!(f, "!"),
             Value::Any => write!(f, "?"),
             Value::Binding(name) => util::string::describe_identifier(f, name, limit),
             Value::ImplicitOrBinding(name) => {
@@ -155,10 +160,8 @@ impl Describe for Value {
             Value::DataType(None) => write!(f, "typename"),
             Value::DataType(Some(pattern)) => pattern.describe(f, limit),
             Value::Function(func, args) => {
-                let (a, b) = limit.split(20);
-                func.describe(f, a)?;
-                write!(f, "(")?;
-                util::string::describe_sequence(f, args, b, 10, |f, arg, _, limit| {
+                write!(f, "{func}(")?;
+                util::string::describe_sequence(f, args, limit, 10, |f, arg, _, limit| {
                     arg.describe(f, limit)
                 })
             }
@@ -172,6 +175,12 @@ impl std::fmt::Display for Value {
     }
 }
 
+impl Default for Value {
+    fn default() -> Self {
+        Value::Unresolved
+    }
+}
+
 impl Value {
     /// Match the given value without being lenient about unresolved values.
     /// Whenever this returns false, the public match_pattern_with_context()
@@ -181,6 +190,7 @@ impl Value {
     /// when the validator is confused due to a previous error.
     fn match_strictly(&self, context: &mut meta::Context, value: &meta::Value) -> bool {
         match self {
+            Value::Unresolved => true,
             Value::Any => true,
             Value::Binding(name) => {
                 if let Some(expected) = context.bindings.get(name) {
@@ -266,6 +276,18 @@ impl Value {
             Value::Function(_, _) => false,
         }
     }
+
+    /// Returns a pattern that matches the given type exactly.
+    pub fn exactly_type(meta_type: meta::Type) -> Self {
+        match meta_type {
+            meta::Type::Unresolved => Value::Any,
+            meta::Type::Boolean => Value::Boolean(None),
+            meta::Type::Integer => Value::Integer(i64::MIN, i64::MAX),
+            meta::Type::Enum => Value::Enum(None),
+            meta::Type::String => Value::String(None),
+            meta::Type::DataType => Value::DataType(None),
+        }
+    }
 }
 
 impl Pattern for Value {
@@ -273,7 +295,7 @@ impl Pattern for Value {
 
     fn exactly(value: Self::Value) -> Self {
         match value {
-            meta::Value::Unresolved => Value::Any,
+            meta::Value::Unresolved => Value::Unresolved,
             meta::Value::Boolean(x) => Value::Boolean(Some(x)),
             meta::Value::Integer(x) => Value::Integer(x, x),
             meta::Value::Enum(x) => Value::Enum(Some(vec![x])),
@@ -291,6 +313,7 @@ impl Pattern for Value {
         context: &mut meta::Context,
     ) -> diagnostic::Result<Self::Value> {
         match self {
+            Value::Unresolved => Ok(meta::Value::Unresolved),
             Value::Any => Err(cause!(
                 TypeDerivationInvalid,
                 "? patterns cannot be evaluated"
@@ -374,20 +397,6 @@ impl Pattern for Value {
                 }
             }
             Value::Function(func, args) => func.evaluate(context, args),
-        }
-    }
-}
-
-impl Value {
-    /// Returns a pattern that matches the given type exactly.
-    pub fn exactly_type(meta_type: meta::Type) -> Self {
-        match meta_type {
-            meta::Type::Unresolved => Value::Any,
-            meta::Type::Boolean => Value::Boolean(None),
-            meta::Type::Integer => Value::Integer(i64::MIN, i64::MAX),
-            meta::Type::Enum => Value::Enum(None),
-            meta::Type::String => Value::String(None),
-            meta::Type::DataType => Value::DataType(None),
         }
     }
 }

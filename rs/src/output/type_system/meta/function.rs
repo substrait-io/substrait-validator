@@ -4,14 +4,18 @@
 
 use crate::output::diagnostic;
 use crate::output::type_system::meta;
-use crate::util;
-use crate::util::string::Describe;
 
 use super::Pattern;
 
 /// A function that operates on zero or more values.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, strum_macros::Display, strum_macros::EnumString)]
+#[strum(serialize_all = "snake_case")]
 pub enum Function {
+    /// Used for unknown functions. Takes any number of arguments, doesn't
+    /// evaluate them, and yields an unresolved value.
+    #[strum(serialize = "!")]
+    Unresolved,
+
     /// Boolean not: `not(metabool) -> metabool`
     Not,
 
@@ -72,41 +76,6 @@ pub enum Function {
     IfThenElse,
 }
 
-impl Describe for Function {
-    fn describe(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        _limit: util::string::Limit,
-    ) -> std::fmt::Result {
-        match self {
-            Function::Not => write!(f, "not"),
-            Function::And => write!(f, "and"),
-            Function::Or => write!(f, "or"),
-            Function::Negate => write!(f, "negate"),
-            Function::Add => write!(f, "add"),
-            Function::Subtract => write!(f, "subtract"),
-            Function::Multiply => write!(f, "multiply"),
-            Function::Divide => write!(f, "divide"),
-            Function::Min => write!(f, "min"),
-            Function::Max => write!(f, "max"),
-            Function::Equal => write!(f, "equal"),
-            Function::NotEqual => write!(f, "not_equal"),
-            Function::GreaterThan => write!(f, "greater_than"),
-            Function::LessThan => write!(f, "less_than"),
-            Function::GreaterEqual => write!(f, "greater_equal"),
-            Function::LessEqual => write!(f, "less_equal"),
-            Function::Covers => write!(f, "covers"),
-            Function::IfThenElse => write!(f, "if_then_else"),
-        }
-    }
-}
-
-impl std::fmt::Display for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.display().fmt(f)
-    }
-}
-
 impl Function {
     /// Evaluates this function.
     pub fn evaluate(
@@ -115,6 +84,7 @@ impl Function {
         args: &[meta::pattern::Value],
     ) -> diagnostic::Result<meta::Value> {
         match self {
+            Function::Unresolved => Ok(meta::Value::Unresolved),
             Function::Not => {
                 if args.len() != 1 {
                     Err(cause!(
