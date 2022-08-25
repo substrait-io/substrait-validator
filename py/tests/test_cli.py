@@ -252,6 +252,8 @@ def test_uri_resolution():
                 "0",
                 "info",
                 "info",  # all other diagnostics -> info
+                "--uri-depth",
+                "-1",  # opt in to URI resolution, this will be the default
                 *args
             ).exit_code
 

@@ -572,6 +572,39 @@ pub extern "C" fn substrait_validator_config_uri_resolver(
     true
 }
 
+/// Sets the maximum recursion depth for URI resolution, in the presence of
+/// transitive dependencies. Setting this to a negative number disables the
+/// limit, setting this to zero disables URI resolution entirely.
+///
+/// Returns whether the function was successful. If false is returned, retrieve
+/// the error message with substrait_validator_get_last_error().
+#[no_mangle]
+pub extern "C" fn substrait_validator_config_max_uri_resolution_depth(
+    config: *mut ConfigHandle,
+    max_depth: i64,
+) -> bool {
+    // Check for nulls.
+    if config.is_null() {
+        set_last_error("received null configuration handle");
+        return false;
+    }
+
+    // UNSAFE: unpack configuration handle. Assumes that the pointer was
+    // created by substrait_validator_config_new(), or behavior is undefined.
+    let config = unsafe { &mut (*config).config };
+
+    // Update configuration and return success.
+    if max_depth < 0 {
+        config.set_max_uri_resolution_depth(None);
+    } else if let Ok(max_depth) = usize::try_from(max_depth) {
+        config.set_max_uri_resolution_depth(Some(max_depth));
+    } else {
+        set_last_error("specified depth is out of range");
+        return false;
+    }
+    true
+}
+
 /// Parse/validation result handle.
 pub struct ResultHandle {
     pub result: substrait_validator::ParseResult,

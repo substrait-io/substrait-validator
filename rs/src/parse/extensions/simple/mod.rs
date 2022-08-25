@@ -8,8 +8,8 @@ use crate::output::diagnostic::Result;
 use crate::output::extension;
 use crate::output::type_system::data;
 use crate::parse::context;
-use std::sync::Arc;
 
+mod builder;
 mod function_decls;
 mod type_decls;
 mod type_variation_decls;
@@ -61,7 +61,7 @@ fn parse_simple_extension_yaml_uri_mapping(
                 Error,
                 IllegalValue,
                 "anchor {anchor} is already in use for URI {}",
-                prev_data.uri()
+                prev_data.uri
             );
             link!(y, prev_path, "Previous definition was here.");
         }
@@ -71,10 +71,13 @@ fn parse_simple_extension_yaml_uri_mapping(
 }
 
 /// Parse an URI reference and resolve it.
-fn parse_uri_reference(x: &u32, y: &mut context::Context) -> Result<Arc<extension::YamlInfo>> {
+fn parse_uri_reference(
+    x: &u32,
+    y: &mut context::Context,
+) -> Result<extension::simple::module::Reference> {
     match y.extension_uris().resolve(x).cloned() {
         Some((yaml_data, path)) => {
-            describe!(y, Misc, "{}", yaml_data.uri());
+            describe!(y, Misc, "{}", yaml_data.uri);
             link!(y, path, "URI anchor is defined here");
             Ok(yaml_data)
         }
@@ -85,11 +88,6 @@ fn parse_uri_reference(x: &u32, y: &mut context::Context) -> Result<Arc<extensio
     }
 }
 
-/// Adds a description to a resolved function/type/variation reference node.
-fn describe_reference<T>(y: &mut context::Context, reference: &Arc<extension::Reference<T>>) {
-    describe!(y, Misc, "{}", reference);
-}
-
 /// Parse a type variation reference and resolve it, along with a given class
 /// (the anchor is otherwise not unique!).
 pub fn parse_type_variation_reference_with_class(
@@ -97,22 +95,11 @@ pub fn parse_type_variation_reference_with_class(
     y: &mut context::Context,
     class: &data::Class,
 ) -> Result<data::Variation> {
-    match y.tvars().resolve(x).cloned() {
-        Some((variations_by_name, path)) => {
-            let variation = data::variation::resolve_by_class(&variations_by_name, class);
-            describe_reference(y, &variation);
-            link!(y, path, "Type variation anchor is defined here");
-            if variations_by_name.definition.is_some() && variation.definition.is_none() {
-                Err(cause!(
-                    LinkMissingTypeVariationNameAndClass,
-                    "type variations going by the name {} exist for {}, but not for class {}",
-                    variations_by_name.name,
-                    variations_by_name.uri,
-                    class
-                ))
-            } else {
-                Ok(data::Variation::UserDefined(variation))
-            }
+    match y.type_variations().resolve(x).cloned() {
+        Some((variations, _)) => {
+            let variation = resolve_variation_by_class(y, Some(variations), class);
+            describe!(y, Misc, "{}", variation);
+            Ok(variation)
         }
         None => {
             if x == &0 {
@@ -132,13 +119,17 @@ pub fn parse_type_variation_reference_with_class(
 /// Parse a type variation reference and resolve it to the set of variations
 /// defined with that name in a given simple extension. Note that there can be
 /// more than one of those, because names are scoped to a type class. None
-/// is returned to reference the system-preferred variation.
+/// is returned to reference the system-preferred variation. Resolution can
+/// be completed once the class is known via resolve_variation_by_class().
 pub fn parse_type_variation_reference_without_class(
     x: &u32,
     y: &mut context::Context,
-) -> Result<Option<data::variation::UserDefinedByName>> {
-    match y.tvars().resolve(x).cloned() {
-        Some((variations_by_name, _)) => Ok(Some(variations_by_name)),
+) -> Result<Option<extension::simple::type_variation::ResolutionResult>> {
+    match y.type_variations().resolve(x).cloned() {
+        Some((variations, _)) => {
+            describe!(y, Misc, "{}", &variations);
+            Ok(Some(variations))
+        }
         None => {
             if x == &0 {
                 describe!(y, Misc, "System-preferred variation");
@@ -154,13 +145,47 @@ pub fn parse_type_variation_reference_without_class(
     }
 }
 
+/// Resolves a partial variation lookup previously performed by
+/// parse_type_variation_reference_without_class() once the class is known.
+pub fn resolve_variation_by_class(
+    y: &mut context::Context,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
+    class: &data::Class,
+) -> data::Variation {
+    if let Some(variations) = variations {
+        data::Variation::UserDefined(
+            variations
+                .filter_items(|x| &x.base == class)
+                .expect_one(
+                    y,
+                    |x, y| {
+                        diagnostic!(
+                            y,
+                            Error,
+                            LinkMissingTypeVariationNameAndClass,
+                            "{x} exists, but is not a variation of {class} data types"
+                        );
+                        true
+                    },
+                    |_, _| false,
+                )
+                .as_item(),
+        )
+    } else {
+        data::Variation::SystemPreferred
+    }
+}
+
 /// Parse a type reference and resolve it.
-pub fn parse_type_reference(x: &u32, y: &mut context::Context) -> Result<data::class::UserDefined> {
-    match y.types().resolve(x).cloned() {
-        Some((data_type, path)) => {
-            describe_reference(y, &data_type);
+pub fn parse_type_reference(
+    x: &u32,
+    y: &mut context::Context,
+) -> Result<extension::simple::type_class::Reference> {
+    match y.type_classes().resolve(x).cloned() {
+        Some((type_class, path)) => {
+            describe!(y, Misc, "{}", &type_class);
             link!(y, path, "Type anchor is defined here");
-            Ok(data_type)
+            Ok(type_class.as_item())
         }
         None => {
             describe!(y, Misc, "Unresolved type");
@@ -173,10 +198,10 @@ pub fn parse_type_reference(x: &u32, y: &mut context::Context) -> Result<data::c
 pub fn parse_function_reference(
     x: &u32,
     y: &mut context::Context,
-) -> Result<Arc<extension::Reference<extension::Function>>> {
-    match y.fns().resolve(x).cloned() {
+) -> Result<extension::simple::function::ResolutionResult> {
+    match y.functions().resolve(x).cloned() {
         Some((function, path)) => {
-            describe_reference(y, &function);
+            describe!(y, Misc, "{}", &function);
             link!(y, path, "Function anchor is defined here");
             Ok(function)
         }
@@ -199,36 +224,36 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionType(x) => {
 
             // Parse the fields.
-            let yaml_info = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
             let anchor = proto_primitive_field!(x, y, type_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name, parse_name).1;
+
+            // Construct an unresolved reference for this data type.
+            let reference_data = extension::reference::Data {
+                name: extension::reference::Identifier::new(name.as_ref(), Some(y.path_buf())),
+                uri: module_ref_opt.as_ref().map(|x| x.uri.clone()).unwrap_or_default(),
+                definition: None
+            };
 
             // If we successfully resolved the URI reference to a URI, resolved
             // that URI, and managed to parse the YAML it pointed to, try to
             // resolve the data type in it.
-            let data_type = yaml_info.as_ref().and_then(|yaml_info| {
-                yaml_info.data().and_then(|data| {
-                    name.as_ref().and_then(|name| {
-                        let data_type = data.types.get(name).cloned();
-                        if data_type.is_none() {
-                            // TODO: Error, LinkMissingTypeName
-                            diagnostic!(y, Warning, NotYetImplemented, "failed to resolve data type {name:?} in {yaml_info}");
-                        }
-                        data_type
+            let resolution_result = module_ref_opt.as_ref().and_then(|module_ref| {
+                module_ref.definition.as_ref().and_then(|module| {
+                    name.as_ref().map(|_| {
+                        module
+                            .resolve_type_class(reference_data.clone())
+                            .filter_all_items()
+                            .expect_one(y, |_, _| false, |_, _| false)
                     })
                 })
-            });
-
-            // Construct a reference for this data type.
-            let reference = Arc::new(extension::Reference {
-                name: extension::NamedReference::new(name, Some(y.path_buf())),
-                uri: yaml_info.as_ref().map(|x| x.uri().clone()).unwrap_or_default(),
-                definition: data_type
+            }).unwrap_or_else(|| {
+                extension::namespace::ResolutionResult::new(reference_data)
             });
 
             // If the specified anchor is valid, insert a mapping for it.
             if let Some(anchor) = anchor {
-                if let Err((prev_data, prev_path)) = y.define_type(anchor, reference) {
+                if let Err((prev_data, prev_path)) = y.define_type(anchor, resolution_result) {
                     diagnostic!(
                         y,
                         Error,
@@ -243,36 +268,39 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionTypeVariation(x) => {
 
             // Parse the fields.
-            let yaml_info = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
             let anchor = proto_primitive_field!(x, y, type_variation_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name, parse_name).1;
 
+            // Construct an unresolved reference for this data type.
+            let reference_data = extension::reference::Data {
+                name: extension::reference::Identifier::new(name.as_ref(), Some(y.path_buf())),
+                uri: module_ref_opt.as_ref().map(|x| x.uri.clone()).unwrap_or_default(),
+                definition: None
+            };
+
             // If we successfully resolved the URI reference to a URI, resolved
             // that URI, and managed to parse the YAML it pointed to, try to
-            // resolve the type variation in it.
-            let type_variation = yaml_info.as_ref().and_then(|yaml_info| {
-                yaml_info.data().and_then(|data| {
-                    name.as_ref().and_then(|name| {
-                        let type_variation = data.type_variations.get(name).cloned();
-                        if type_variation.is_none() {
-                            // TODO: Error, LinkMissingTypeVariationName
-                            diagnostic!(y, Warning, NotYetImplemented, "failed to resolve type variation {name:?} in {yaml_info}");
-                        }
-                        type_variation
+            // resolve the type variations for it. Note that an
+            // anchor/reference pair can legally refer to multiple variations
+            // at once, as Substrait scopes them to the type class they are
+            // defined for.
+            let resolution_result = module_ref_opt.as_ref().and_then(|module_ref| {
+                module_ref.definition.as_ref().and_then(|module| {
+                    name.as_ref().map(|_| {
+                        module
+                            .resolve_type_variation(reference_data.clone())
+                            .filter_all_items()
+                            .expect_multiple(y, |_, _| false)
                     })
                 })
-            });
-
-            // Construct a reference for this type variation.
-            let reference = Arc::new(extension::Reference {
-                name: extension::NamedReference::new(name, Some(y.path_buf())),
-                uri: yaml_info.as_ref().map(|x| x.uri().clone()).unwrap_or_default(),
-                definition: type_variation
+            }).unwrap_or_else(|| {
+                extension::namespace::ResolutionResult::new(reference_data)
             });
 
             // If the specified anchor is valid, insert a mapping for it.
             if let Some(anchor) = anchor {
-                if let Err((prev_data, prev_path)) = y.define_tvar(anchor, reference) {
+                if let Err((prev_data, prev_path)) = y.define_type_variation(anchor, resolution_result) {
                     diagnostic!(
                         y,
                         Error,
@@ -287,36 +315,59 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionFunction(x) => {
 
             // Parse the fields.
-            let yaml_info = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
             let anchor = proto_primitive_field!(x, y, function_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name).1;
 
+            // Construct an unresolved reference for this data type.
+            let reference_data = extension::reference::Data {
+                name: extension::reference::Identifier::new(name.as_ref(), Some(y.path_buf())),
+                uri: module_ref_opt.as_ref().map(|x| x.uri.clone()).unwrap_or_default(),
+                definition: None
+            };
+
             // If we successfully resolved the URI reference to a URI, resolved
             // that URI, and managed to parse the YAML it pointed to, try to
-            // resolve the data type in it.
-            let function = yaml_info.as_ref().and_then(|yaml_info| {
-                yaml_info.data().and_then(|data| {
-                    name.as_ref().and_then(|name| {
-                        let function = data.functions.get(name).cloned();
-                        if function.is_none() {
-                            // TODO: Error, LinkMissingFunctionName
-                            diagnostic!(y, Warning, NotYetImplemented, "failed to resolve function {name:?} in {yaml_info}");
-                        }
-                        function
+            // resolve the type variations for it. Note that an
+            // anchor/reference pair can legally refer to multiple variations
+            // at once, as Substrait scopes them to the type class they are
+            // defined for.
+            let resolution_result = module_ref_opt.as_ref().and_then(|module_ref| {
+                module_ref.definition.as_ref().and_then(|module| {
+                    name.as_ref().map(|_| {
+                        module
+                            .resolve_function(reference_data.clone())
+                            .filter_all_items()
+                            .expect_one(
+                                y,
+                                |_, _| false,
+                                |x, y| {
+                                    if x.contains(':') {
+                                        false
+                                    } else {
+                                        diagnostic!(
+                                            y,
+                                            Error,
+                                            LinkCompoundVsSimpleFunctionName,
+                                            "this function has multiple implementations, but \
+                                            is being referred to using its simple name. Substrait \
+                                            does not allow disambiguation by means of function \
+                                            arguments; you must specify a compound name to \
+                                            disambiguate instead."
+                                        );
+                                        true
+                                    }
+                                }
+                            )
                     })
                 })
-            });
-
-            // Construct a reference for this data type.
-            let reference = Arc::new(extension::Reference {
-                name: extension::NamedReference::new(name, Some(y.path_buf())),
-                uri: yaml_info.as_ref().map(|x| x.uri().clone()).unwrap_or_default(),
-                definition: function
+            }).unwrap_or_else(|| {
+                extension::namespace::ResolutionResult::new(reference_data)
             });
 
             // If the specified anchor is valid, insert a mapping for it.
             if let Some(anchor) = anchor {
-                if let Err((prev_data, prev_path)) = y.define_fn(anchor, reference) {
+                if let Err((prev_data, prev_path)) = y.define_function(anchor, resolution_result) {
                     diagnostic!(
                         y,
                         Error,
@@ -355,7 +406,7 @@ pub fn parse_plan(x: &substrait::Plan, y: &mut context::Context) {
 /// Generate Info diagnostics for any extension definitions that weren't used.
 pub fn check_unused_definitions(y: &mut context::Context) {
     // List unused function declarations.
-    for (anchor, info, path) in y.fns().iter_unused().collect::<Vec<_>>().into_iter() {
+    for (anchor, info, path) in y.functions().iter_unused().collect::<Vec<_>>().into_iter() {
         diagnostic!(
             y,
             Info,
@@ -366,18 +417,28 @@ pub fn check_unused_definitions(y: &mut context::Context) {
     }
 
     // List unused type declarations.
-    for (anchor, info, path) in y.types().iter_unused().collect::<Vec<_>>().into_iter() {
+    for (anchor, info, path) in y
+        .type_classes()
+        .iter_unused()
+        .collect::<Vec<_>>()
+        .into_iter()
+    {
         diagnostic!(
             y,
             Info,
             RedundantTypeDeclaration,
-            "anchor {anchor} for type {info} is not present in the plan"
+            "anchor {anchor} for type class {info} is not present in the plan"
         );
         link!(y, path, "Declaration was here.");
     }
 
     // List unused type variation declarations.
-    for (anchor, info, path) in y.tvars().iter_unused().collect::<Vec<_>>().into_iter() {
+    for (anchor, info, path) in y
+        .type_variations()
+        .iter_unused()
+        .collect::<Vec<_>>()
+        .into_iter()
+    {
         diagnostic!(
             y,
             Info,

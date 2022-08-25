@@ -182,16 +182,12 @@ impl From<&tree::NodeType> for validator::node::NodeType {
                     path: Some((&node.path).into()),
                 })
             }
-            tree::NodeType::YamlReference(info) => {
-                validator::node::NodeType::YamlReference(validator::node::YamlReference {
-                    uri: info.uri.name().unwrap_or_default().to_string(),
-                })
-            }
             tree::NodeType::YamlMap => validator::node::NodeType::YamlMap(()),
             tree::NodeType::YamlArray => validator::node::NodeType::YamlArray(()),
             tree::NodeType::YamlPrimitive(data) => {
                 validator::node::NodeType::YamlPrimitive(data.into())
             }
+            tree::NodeType::ResolvedUri(uri) => validator::node::NodeType::ResolvedUri(uri.clone()),
         }
     }
 }
@@ -292,7 +288,7 @@ impl From<&data::Class> for validator::data_type::Class {
                     validator::data_type::class::Kind::Compound(compound.into())
                 }
                 data::Class::UserDefined(user_defined) => {
-                    validator::data_type::class::Kind::UserDefinedType(user_defined.as_ref().into())
+                    validator::data_type::class::Kind::UserDefinedType(user_defined.into())
                 }
                 data::Class::Unresolved => validator::data_type::class::Kind::UnresolvedType(()),
             }),
@@ -340,10 +336,8 @@ impl From<&data::class::Compound> for i32 {
     }
 }
 
-impl From<&extension::Reference<data::class::UserDefinedDefinition>>
-    for validator::data_type::UserDefinedType
-{
-    fn from(node: &extension::Reference<data::class::UserDefinedDefinition>) -> Self {
+impl From<&extension::simple::type_class::Reference> for validator::data_type::UserDefinedType {
+    fn from(node: &extension::simple::type_class::Reference) -> Self {
         Self {
             uri: node.uri.name().unwrap_or_default().to_string(),
             name: node.name.name().unwrap_or_default().to_string(),
@@ -352,10 +346,10 @@ impl From<&extension::Reference<data::class::UserDefinedDefinition>>
     }
 }
 
-impl From<&data::class::UserDefinedDefinition>
+impl From<&extension::simple::type_class::Definition>
     for validator::data_type::user_defined_type::Definition
 {
-    fn from(node: &data::class::UserDefinedDefinition) -> Self {
+    fn from(node: &extension::simple::type_class::Definition) -> Self {
         Self {
             structure: node
                 .structure
@@ -394,10 +388,10 @@ impl From<&data::Variation> for validator::data_type::Variation {
     }
 }
 
-impl From<&data::variation::UserDefinedDefinition>
+impl From<&extension::simple::type_variation::Definition>
     for validator::data_type::user_defined_variation::Definition
 {
-    fn from(node: &data::variation::UserDefinedDefinition) -> Self {
+    fn from(node: &extension::simple::type_variation::Definition) -> Self {
         Self {
             base_type: None,
             function_behavior: (&node.function_behavior).into(),
@@ -405,13 +399,13 @@ impl From<&data::variation::UserDefinedDefinition>
     }
 }
 
-impl From<&data::variation::FunctionBehavior> for i32 {
-    fn from(node: &data::variation::FunctionBehavior) -> Self {
+impl From<&extension::simple::type_variation::FunctionBehavior> for i32 {
+    fn from(node: &extension::simple::type_variation::FunctionBehavior) -> Self {
         match node {
-            data::variation::FunctionBehavior::Inherits => {
+            extension::simple::type_variation::FunctionBehavior::Inherits => {
                 validator::data_type::user_defined_variation::FunctionBehavior::Inherits
             }
-            data::variation::FunctionBehavior::Separate => {
+            extension::simple::type_variation::FunctionBehavior::Separate => {
                 validator::data_type::user_defined_variation::FunctionBehavior::Separate
             }
         }

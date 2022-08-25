@@ -54,8 +54,13 @@ pub fn parse_if_then(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(condition.into());
-        args.push(value.into());
+        args.push(expressions::functions::FunctionArgument::Value(
+            condition_type,
+            condition,
+        ));
+        args.push(expressions::functions::FunctionArgument::Value(
+            value_type, value,
+        ));
 
         Ok(())
     });
@@ -65,6 +70,7 @@ pub fn parse_if_then(
         // Parse field.
         let (n, e) = proto_boxed_required_field!(x, y, r#else, expressions::parse_expression);
         let value = e.unwrap_or_default();
+        let value_type = n.data_type();
 
         // Check that the type is the same for each branch.
         return_type = types::promote_and_assert_equal(
@@ -76,14 +82,19 @@ pub fn parse_if_then(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(value.into());
+        args.push(expressions::functions::FunctionArgument::Value(
+            value_type, value,
+        ));
     } else {
         // Allow missing else, making the type nullable.
         comment!(y, "Otherwise, yield null.");
         return_type = return_type.make_nullable();
 
         // Yield null for the else clause.
-        args.push(expressions::Expression::new_null(return_type.clone()).into());
+        args.push(expressions::functions::FunctionArgument::Value(
+            return_type.clone(),
+            expressions::Expression::new_null(return_type.clone()),
+        ));
     }
 
     // Describe node.
@@ -110,13 +121,17 @@ pub fn parse_switch(
     // Parse value to match.
     let (n, e) = proto_boxed_required_field!(x, y, r#match, expressions::parse_expression);
     let mut match_type = n.data_type();
-    args.push(e.unwrap_or_default().into());
+    args.push(expressions::functions::FunctionArgument::Value(
+        match_type.clone(),
+        e.unwrap_or_default(),
+    ));
 
     // Handle branches.
     proto_required_repeated_field!(x, y, ifs, |x, y| {
         // Parse match field.
         let (n, e) = proto_required_field!(x, y, r#if, literals::parse_literal);
         let match_value = e.unwrap_or_default();
+        let match_field_type = n.data_type();
 
         // Check that the type is the same for each branch.
         match_type = types::promote_and_assert_equal(
@@ -129,6 +144,7 @@ pub fn parse_switch(
         // Parse value field.
         let (n, e) = proto_required_field!(x, y, then, expressions::parse_expression);
         let value = e.unwrap_or_default();
+        let value_type = n.data_type();
 
         // Check that the type is the same for each branch.
         return_type = types::promote_and_assert_equal(
@@ -143,8 +159,13 @@ pub fn parse_switch(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(expressions::Expression::from(match_value).into());
-        args.push(value.into());
+        args.push(expressions::functions::FunctionArgument::Value(
+            match_field_type,
+            expressions::Expression::from(match_value),
+        ));
+        args.push(expressions::functions::FunctionArgument::Value(
+            value_type, value,
+        ));
 
         Ok(())
     });
@@ -154,6 +175,7 @@ pub fn parse_switch(
         // Parse field.
         let (n, e) = proto_boxed_required_field!(x, y, r#else, expressions::parse_expression);
         let value = e.unwrap_or_default();
+        let value_type = n.data_type();
 
         // Check that the type is the same for each branch.
         return_type = types::promote_and_assert_equal(
@@ -165,14 +187,19 @@ pub fn parse_switch(
 
         // Save to the "arguments" of the function we'll use to describe this
         // expression.
-        args.push(value.into());
+        args.push(expressions::functions::FunctionArgument::Value(
+            value_type, value,
+        ));
     } else {
         // Allow missing else, making the type nullable.
         comment!(y, "Otherwise, yield null.");
         return_type = return_type.make_nullable();
 
         // Yield null for the else clause.
-        args.push(expressions::Expression::new_null(return_type.clone()).into());
+        args.push(expressions::functions::FunctionArgument::Value(
+            return_type.clone(),
+            expressions::Expression::new_null(return_type.clone()),
+        ));
     }
 
     // Describe node.
@@ -200,13 +227,19 @@ pub fn parse_singular_or_list(
     // Parse value to match.
     let (n, e) = proto_boxed_required_field!(x, y, value, expressions::parse_expression);
     let match_type = n.data_type();
-    args.push(e.unwrap_or_default().into());
+    args.push(expressions::functions::FunctionArgument::Value(
+        match_type.clone(),
+        e.unwrap_or_default(),
+    ));
 
     // Handle allowed values.
     proto_required_repeated_field!(x, y, options, |x, y| {
         let expression = expressions::parse_expression(x, y)?;
         let value_type = y.data_type();
-        args.push(expression.into());
+        args.push(expressions::functions::FunctionArgument::Value(
+            value_type.clone(),
+            expression,
+        ));
 
         // Check that the type is the same as the value.
         types::assert_equal(
@@ -249,19 +282,19 @@ pub fn parse_multi_or_list(
     // Parse value to match.
     let (ns, es) = proto_required_repeated_field!(x, y, value, expressions::parse_expression);
     let match_types = ns.iter().map(|x| x.data_type()).collect::<Vec<_>>();
-    args.push(
-        expressions::Expression::Tuple(es.into_iter().map(|x| x.unwrap_or_default()).collect())
-            .into(),
-    );
+    args.push(expressions::functions::FunctionArgument::Value(
+        data::new_unresolved_type(),
+        expressions::Expression::Tuple(es.into_iter().map(|x| x.unwrap_or_default()).collect()),
+    ));
 
     // Handle allowed values.
     proto_required_repeated_field!(x, y, options, |x, y| {
         let (ns, es) = proto_required_repeated_field!(x, y, fields, expressions::parse_expression);
         let value_types = ns.iter().map(|x| x.data_type()).collect::<Vec<_>>();
-        args.push(
-            expressions::Expression::Tuple(es.into_iter().map(|x| x.unwrap_or_default()).collect())
-                .into(),
-        );
+        args.push(expressions::functions::FunctionArgument::Value(
+            data::new_unresolved_type(),
+            expressions::Expression::Tuple(es.into_iter().map(|x| x.unwrap_or_default()).collect()),
+        ));
 
         // Check that the type is the same as the value.
         if match_types.len() != value_types.len() {

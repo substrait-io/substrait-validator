@@ -514,11 +514,11 @@ fn format_node_tree(
             &target.path,
             None,
         ),
-        tree::NodeType::YamlReference(yaml) => {
+        tree::NodeType::ResolvedUri(uri) => {
             format!(
                 "= {} {brief} {}",
-                format_span("value", &yaml.uri),
-                format_span("type", "string, resolved to YAML")
+                format_span("value", &uri),
+                format_span("type", "string, resolved as URI")
             )
         }
         tree::NodeType::YamlMap => format!("{brief} {}", format_span("type", "YAML map")),

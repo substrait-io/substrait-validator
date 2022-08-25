@@ -53,7 +53,6 @@
 
 use crate::output::comment;
 use crate::output::diagnostic;
-use crate::output::extension;
 use crate::output::path;
 use crate::output::primitive_data;
 use crate::output::type_system::data;
@@ -196,11 +195,6 @@ pub enum NodeType {
     /// Used for anchor/reference-based references to other nodes.
     NodeReference(u64, NodeReference),
 
-    /// Used for resolved YAML URIs, in order to include the parse result and
-    /// documentation for the referenced YAML (if available), in addition to
-    /// the URI itself.
-    YamlReference(Arc<extension::YamlData>),
-
     /// The associated node represents a YAML map. The contents of the map are
     /// described using Field and UnknownField.
     YamlMap,
@@ -211,6 +205,11 @@ pub enum NodeType {
 
     /// The associated node represents a YAML primitive.
     YamlPrimitive(primitive_data::PrimitiveData),
+
+    /// Used for string primitives that were resolved as URIs. The node will
+    /// have a child named "data" with the validation tree of the resolved
+    /// data.
+    ResolvedUri(String),
 }
 
 /// Semantical information about a node.

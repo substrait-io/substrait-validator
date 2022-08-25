@@ -218,6 +218,9 @@ pub enum Classification {
     #[strum(props(Description = "invalid YAML value type"))]
     YamlInvalidType = 2008,
 
+    #[strum(props(Description = "cyclic dependency"))]
+    YamlCyclicDependency = 2009,
+
     // Link resolution diagnostics (group 3).
     #[strum(props(HiddenDescription = "link resolution diagnostic"))]
     Link = 3000,
@@ -225,20 +228,23 @@ pub enum Classification {
     #[strum(props(Description = "failed to resolve anchor"))]
     LinkMissingAnchor = 3001,
 
-    #[strum(props(Description = "failed to resolve function name"))]
-    LinkMissingFunctionName = 3002,
-
-    #[strum(props(Description = "failed to resolve type name"))]
-    LinkMissingTypeName = 3003,
-
-    #[strum(props(Description = "failed to resolve type variation name"))]
-    LinkMissingTypeVariationName = 3004,
-
     #[strum(props(HiddenDescription = "use of anchor zero"))]
     LinkAnchorZero = 3005,
 
     #[strum(props(Description = "failed to resolve type variation name & class pair"))]
     LinkMissingTypeVariationNameAndClass = 3006,
+
+    #[strum(props(Description = "unresolved name lookup"))]
+    LinkUnresolvedName = 3007,
+
+    #[strum(props(Description = "ambiguous name lookup"))]
+    LinkAmbiguousName = 3008,
+
+    #[strum(props(Description = "duplicate definition"))]
+    LinkDuplicateDefinition = 3009,
+
+    #[strum(props(HiddenDescription = "invalid compound vs. simple function name usage"))]
+    LinkCompoundVsSimpleFunctionName = 3010,
 
     // Type-related diagnostics (group 4).
     #[strum(props(HiddenDescription = "type-related diagnostics"))]

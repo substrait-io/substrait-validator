@@ -7,6 +7,7 @@ use std::sync::Arc;
 use crate::input::proto::substrait;
 use crate::output::comment;
 use crate::output::diagnostic;
+use crate::output::extension;
 use crate::output::type_system::data;
 use crate::output::type_system::data::class::ParameterInfo;
 use crate::output::type_system::meta;
@@ -917,7 +918,8 @@ fn describe_type(y: &mut context::Context, data_type: &data::Type) {
     let variation = if let data::Variation::UserDefined(u) = data_type.variation() {
         let mut variation = format!("This is the {u} variation of this type");
         if let Some(tv) = &u.definition {
-            if tv.function_behavior == data::FunctionBehavior::Inherits {
+            if tv.function_behavior == extension::simple::type_variation::FunctionBehavior::Inherits
+            {
                 variation +=
                     ", which behaves the same as the base type w.r.t. overload resolution.";
             } else {

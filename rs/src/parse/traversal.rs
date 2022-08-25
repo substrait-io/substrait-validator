@@ -15,7 +15,6 @@ use crate::input::traits::InputNode;
 use crate::input::traits::ProtoEnum;
 use crate::input::yaml;
 use crate::output::diagnostic;
-use crate::output::extension;
 use crate::output::parse_result;
 use crate::output::path;
 use crate::output::primitive_data;
@@ -648,6 +647,9 @@ macro_rules! yaml_field {
     ($input:expr, $context:expr, $field:expr, $parser:expr) => {
         crate::parse::traversal::push_yaml_field($input, $context, $field, false, $parser)
     };
+    ($input:expr, $context:expr, $field:expr, $parser:expr, $($args:expr),*) => {
+        yaml_field!($input, $context, $field, |x, y| $parser(x, y, $($args),*))
+    };
 }
 
 /// Parse and push an optional YAML field.
@@ -692,6 +694,9 @@ macro_rules! yaml_required_field {
     };
     ($input:expr, $context:expr, $field:expr, $parser:expr) => {
         crate::parse::traversal::push_yaml_required_field($input, $context, $field, false, $parser)
+    };
+    ($input:expr, $context:expr, $field:expr, $parser:expr, $($args:expr),*) => {
+        yaml_required_field!($input, $context, $field, |x, y| $parser(x, y, $($args),*))
     };
 }
 
@@ -738,6 +743,9 @@ macro_rules! yaml_array {
     ($input:expr, $context:expr, $parser:expr, $min_size:expr) => {
         crate::parse::traversal::push_yaml_array($input, $context, $min_size, false, $parser)
     };
+    ($input:expr, $context:expr, $parser:expr, $min_size:expr, $($args:expr),*) => {
+        yaml_array!($input, $context, |x, y| $parser(x, y, $($args),*), $min_size)
+    };
 }
 
 /// Convenience/shorthand macro for parsing a YAML array that must have at
@@ -748,6 +756,9 @@ macro_rules! yaml_required_array {
     };
     ($input:expr, $context:expr, $parser:expr) => {
         yaml_array!($input, $context, $parser, 1)
+    };
+    ($input:expr, $context:expr, $parser:expr, $($args:expr),*) => {
+        yaml_array!($input, $context, $parser, 1, $($args:expr),*)
     };
 }
 
@@ -844,6 +855,9 @@ macro_rules! yaml_repeated_field {
             $input, $context, $field, false, $min_size, false, $parser,
         )
     };
+    ($input:expr, $context:expr, $field:expr, $parser:expr, $min_size:expr, $($args:expr),*) => {
+        yaml_repeated_field!($input, $context, $field, |x, y| $parser(x, y, $($args),*), $min_size)
+    };
 }
 
 /// Shorthand for fields that must be arrays.
@@ -858,6 +872,9 @@ macro_rules! yaml_required_repeated_field {
         crate::parse::traversal::push_yaml_repeated_field(
             $input, $context, $field, true, $min_size, false, $parser,
         )
+    };
+    ($input:expr, $context:expr, $field:expr, $parser:expr, $min_size:expr, $($args:expr),*) => {
+        yaml_required_repeated_field!($input, $context, $field, |x, y| $parser(x, y, $($args),*), $min_size)
     };
 }
 
@@ -992,14 +1009,39 @@ pub mod yaml_primitive_parsers {
 }
 
 //=============================================================================
-// YAML root handling
+// URI resolution and YAML root handling
 //=============================================================================
 
-/// Attempts to resolve a URI.
-fn resolve_uri(
-    uri: &str,
-    context: &mut context::Context,
-) -> diagnostic::Result<config::BinaryData> {
+/// Worker for resolve_uri().
+fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::BinaryData> {
+    // Check for cyclic dependencies.
+    let uri_stack = context.uri_stack();
+    if let Some((index, _)) = uri_stack.iter().enumerate().find(|(_, x)| &x[..] == uri) {
+        let cycle = itertools::Itertools::intersperse(
+            uri_stack
+                .iter()
+                .map(|x| &x[index..])
+                .chain(std::iter::once(uri)),
+            " -> ",
+        )
+        .collect::<String>();
+        diagnostic!(context, Error, YamlCyclicDependency, "{cycle}");
+        return None;
+    }
+
+    // Check for recursion limit.
+    if let Some(max_depth) = context.config.max_uri_resolution_depth {
+        if context.uri_stack().len() >= max_depth {
+            diagnostic!(
+                context,
+                Warning,
+                YamlResolutionDisabled,
+                "configured recursion limit for URI resolution has been reached"
+            );
+            return None;
+        }
+    }
+
     // Apply yaml_uri_overrides configuration.
     let remapped_uri = context
         .config
@@ -1018,10 +1060,13 @@ fn resolve_uri(
     let remapped_uri = if let Some(remapped_uri) = remapped_uri {
         remapped_uri.to_owned()
     } else {
-        return Err(cause!(
+        diagnostic!(
+            context,
+            Warning,
             YamlResolutionDisabled,
             "YAML resolution for {uri} was disabled"
-        ));
+        );
+        return None;
     };
     if is_remapped {
         diagnostic!(context, Info, Yaml, "URI was remapped to {remapped_uri}");
@@ -1029,92 +1074,155 @@ fn resolve_uri(
 
     // If a custom download function is specified, use it to resolve.
     if let Some(ref resolver) = context.config.uri_resolver {
-        return resolver(&remapped_uri)
-            .map_err(|x| ecause!(YamlResolutionFailed, x.as_ref().to_string()));
+        return match resolver(&remapped_uri) {
+            Ok(x) => Some(x),
+            Err(e) => {
+                diagnostic!(context, Warning, YamlResolutionFailed, "{e}");
+                None
+            }
+        };
     }
 
     // Parse as a URL.
     let url = match url::Url::parse(&remapped_uri) {
         Ok(url) => url,
         Err(e) => {
-            return Err(if is_remapped {
-                cause!(
+            if is_remapped {
+                diagnostic!(
+                    context,
+                    Warning,
                     YamlResolutionFailed,
                     "configured URI remapping ({remapped_uri}) did not parse as URL: {e}"
                 )
             } else {
-                cause!(
+                diagnostic!(
+                    context,
+                    Warning,
                     YamlResolutionFailed,
                     "failed to parse {remapped_uri} as URL: {e}"
                 )
-            });
+            };
+            return None;
         }
     };
 
     // Reject anything that isn't file://-based.
     if url.scheme() != "file" {
-        return Err(if is_remapped {
-            cause!(
+        if is_remapped {
+            diagnostic!(
+                context,
+                Warning,
                 YamlResolutionFailed,
                 "configured URI remapping ({remapped_uri}) does not use file:// scheme"
             )
         } else {
-            cause!(YamlResolutionFailed, "URI does not use file:// scheme")
-        });
+            diagnostic!(
+                context,
+                Warning,
+                YamlResolutionFailed,
+                "URI does not use file:// scheme"
+            )
+        };
+        return None;
     }
 
     // Convert to path.
-    let path = match url.to_file_path() {
-        Ok(path) => path,
-        Err(_) => {
-            return Err(if is_remapped {
-                cause!(
+    let path =
+        match url.to_file_path() {
+            Ok(path) => path,
+            Err(_) => {
+                if is_remapped {
+                    diagnostic!(context, Warning,
                     YamlResolutionFailed,
                     "configured URI remapping ({remapped_uri}) could not be converted to file path"
                 )
-            } else {
-                cause!(
-                    YamlResolutionFailed,
-                    "URI could not be converted to file path"
-                )
-            });
-        }
-    };
+                } else {
+                    diagnostic!(
+                        context,
+                        Warning,
+                        YamlResolutionFailed,
+                        "URI could not be converted to file path"
+                    )
+                };
+                return None;
+            }
+        };
 
     // Read the file.
-    std::fs::read(path)
-        .map_err(|e| {
+    match std::fs::read(path) {
+        Ok(data) => Some(Box::new(data)),
+        Err(e) => {
             if is_remapped {
-                cause!(
+                diagnostic!(
+                    context,
+                    Warning,
                     YamlResolutionFailed,
                     "failed to file remapping for URI ({remapped_uri}): {e}"
-                )
+                );
             } else {
-                ecause!(YamlResolutionFailed, e)
+                ediagnostic!(context, Warning, YamlResolutionFailed, e);
             }
-        })
-        .map(|d| -> config::BinaryData { Box::new(d) })
+            None
+        }
+    }
 }
 
-/// Resolves a URI to a YAML file, parses the YAML syntax, and optionally
-/// validates it using the given JSON schema.
-fn load_yaml(
+/// Attempts to resolve a URI. If resolution fails or is disabled, None is
+/// returned and an appropriate diagnostic may be emitted. This function
+/// includes detection and prevention of recursive resolution. The reader
+/// function will first be called to convert the binary data from the
+/// resolution to a traversable tree (something that satisfied InputNode),
+/// then the parser will be called on the root of that tree.
+pub fn parse_uri<FP, FR, TF, TR>(
     uri: &str,
+    context: &mut context::Context,
+    reader: FR,
+    parser: FP,
+) -> OptionalResult<TR>
+where
+    TF: InputNode,
+    FR: FnOnce(config::BinaryData, &mut context::Context) -> Option<TF>,
+    FP: FnOnce(&TF, &mut context::Context) -> diagnostic::Result<TR>,
+{
+    // Try resolving the URI.
+    if let Some(data) = resolve_uri(uri, context) {
+        // Parse the flat file to a traversable tree.
+        if let Some(root) = reader(data, context) {
+            // Update recursion stack.
+            context.uri_stack().push(uri.to_string());
+
+            // Defer to the provided parser to handle parsing the resolved
+            // data.
+            let (field_output, result) = push_child(
+                context,
+                &root,
+                path::PathElement::Field("data".to_string()),
+                false,
+                parser,
+            );
+
+            // Revert recursion stack update.
+            context.uri_stack().pop();
+
+            // Replace node type to make clear what the child node we just
+            // added signifies.
+            context.replace_node_type(tree::NodeType::ResolvedUri(uri.to_string()));
+
+            // Success, at least to the point that a tree was formed. The
+            // tree itself might still be invalid.
+            return (Some(field_output), result);
+        }
+    }
+
+    (None, None)
+}
+
+/// Read function for YAML files, to be used with [parse_uri()].
+pub fn read_yaml(
+    binary_data: config::BinaryData,
     context: &mut context::Context,
     schema: Option<&jsonschema::JSONSchema>,
 ) -> Option<yaml::Value> {
-    // Try to resolve the YAML file. Note that failure to resolve is a warning,
-    // not an error; it means the plan isn't valid in the current environment,
-    // but it might still be valid in another one, in particular for consumers
-    // that don't need to be able to resolve the YAML files to use the plan.
-    let binary_data = match resolve_uri(uri, context) {
-        Err(e) => {
-            diagnostic!(context, Warning, e);
-            return None;
-        }
-        Ok(x) => x,
-    };
-
     // Parse as UTF-8.
     let string_data = match std::str::from_utf8(binary_data.as_ref().as_ref()) {
         Err(e) => {
@@ -1153,78 +1261,4 @@ fn load_yaml(
     }
 
     Some(json_data)
-}
-
-/// Attempt to load and parse a YAML file using the given root parse function,
-/// initial state, and configuration.
-pub fn parse_yaml<TS, FP>(
-    uri: TS,
-    context: &mut context::Context,
-    schema: Option<&jsonschema::JSONSchema>,
-    parser: FP,
-) -> Arc<extension::YamlInfo>
-where
-    TS: AsRef<str>,
-    FP: Fn(&yaml::Value, &mut context::Context) -> diagnostic::Result<()>,
-{
-    let uri = uri.as_ref();
-    let uri_reference = extension::NamedReference::new(Some(uri), context.parent_path_buf());
-
-    // Resolve the YAML file.
-    let yaml_info = Arc::new(if let Some(root_input) = load_yaml(uri, context, schema) {
-        // Create an empty YamlData object.
-        *context.yaml_data_opt() = Some(extension::YamlData::new(uri_reference));
-
-        // Create the node for the YAML data root.
-        let mut root_output = root_input.data_to_node();
-
-        // Create the path element for referring to the YAML data root.
-        let path_element = path::PathElement::Field("data".to_string());
-
-        // Create the context for the YAML data root.
-        let mut root_context = context.child(&mut root_output, path_element.clone());
-
-        // Create a PathBuf for the root node.
-        let root_path = root_context.path_buf();
-
-        // Call the provided root parser.
-        let success = parser(&root_input, &mut root_context)
-            .map_err(|cause| {
-                diagnostic!(&mut root_context, Error, cause);
-            })
-            .is_ok();
-
-        // Handle any fields not handled by the provided parse function.
-        handle_unknown_children(&root_input, &mut root_context, success);
-
-        // Push and return the completed node.
-        let root_output = Arc::new(root_output);
-        context.push(tree::NodeData::Child(tree::Child {
-            path_element,
-            node: root_output.clone(),
-            recognized: true,
-        }));
-
-        // Take the constructed YAML data object from the context.
-        let mut yaml_data = context.yaml_data_opt().take().unwrap();
-
-        // Configure the reference to the root node in the YamlData object.
-        yaml_data.data.path = root_path;
-        yaml_data.data.node = root_output;
-
-        // Wrap the completed YAML data object in an Arc.
-        let yaml_data = Arc::new(yaml_data);
-
-        // The node type will have been set as if this is a normal string
-        // primitive. We want extra information though, namely the contents of
-        // the YAML file. So we change the node type.
-        context.replace_node_type(tree::NodeType::YamlReference(yaml_data.clone()));
-
-        // Construct the YAML information object.
-        extension::YamlInfo::Resolved(yaml_data)
-    } else {
-        extension::YamlInfo::Unresolved(uri_reference)
-    });
-
-    yaml_info
 }

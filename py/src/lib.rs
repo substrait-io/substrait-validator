@@ -124,6 +124,13 @@ impl Config {
                 })
             })
     }
+
+    /// Sets the maximum recursion depth for URI resolution, in the presence of
+    /// transitive dependencies. Setting this to None disables the limit,
+    /// setting this to zero disables URI resolution entirely.
+    pub fn set_max_uri_resolution_depth(&mut self, depth: Option<usize>) {
+        self.config.set_max_uri_resolution_depth(depth);
+    }
 }
 
 /// Represents a Substrait plan parse tree, as parsed by the validator.

@@ -8,9 +8,7 @@ use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::type_system::data;
 use crate::output::type_system::meta;
-use crate::output::type_system::meta::Pattern;
 use std::collections::HashSet;
-use std::sync::Arc;
 use strum_macros::{Display, EnumString};
 
 /// Trait for checking the type parameters for a type class.
@@ -50,7 +48,7 @@ pub enum Class {
     Compound(Compound),
 
     /// User-defined type.
-    UserDefined(UserDefined),
+    UserDefined(extension::simple::type_class::Reference),
 }
 
 impl Default for Class {
@@ -354,154 +352,5 @@ impl ParameterInfo for Compound {
 
     fn has_parameters(&self) -> bool {
         true
-    }
-}
-
-/// Typedef for user-defined type class references.
-pub type UserDefined = Arc<extension::Reference<UserDefinedDefinition>>;
-
-/// User-defined type class.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct UserDefinedDefinition {
-    /// The underlying structure of the type.
-    pub structure: Vec<(String, Simple)>,
-
-    /// The parameters expected by the data type.
-    pub parameter_slots: Vec<DataTypeParameterSlot>,
-
-    /// Whether or not the last parameter slot is variadic.
-    pub parameters_variadic: bool,
-}
-
-/// A parameter slot for a user-defined data type.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct DataTypeParameterSlot {
-    /// YAML-provided name of the parameter.
-    pub name: String,
-
-    /// YAML-provided human-readable description of the parameter.
-    pub description: String,
-
-    /// Pattern for type- and bounds-checking parameters bound to this slot.
-    pub pattern: meta::pattern::Value,
-
-    /// Whether this parameter is optional. If optional, it may be skipped
-    /// using null or omitted entirely if at the end of the list.
-    pub optional: bool,
-}
-
-impl ParameterInfo for extension::Reference<UserDefinedDefinition> {
-    fn check_parameters(&self, params: &[data::Parameter]) -> diagnostic::Result<()> {
-        self.definition
-            .as_ref()
-            .map(|d| d.check_parameters(params))
-            .unwrap_or(Ok(()))
-    }
-
-    fn parameter_name(&self, index: usize) -> Option<String> {
-        self.definition
-            .as_ref()
-            .map(|d| d.parameter_name(index))
-            .unwrap_or_default()
-    }
-
-    fn has_parameters(&self) -> bool {
-        self.definition
-            .as_ref()
-            .map(|d| d.has_parameters())
-            .unwrap_or_default()
-    }
-}
-
-impl ParameterInfo for UserDefinedDefinition {
-    fn check_parameters(&self, params: &[data::Parameter]) -> diagnostic::Result<()> {
-        // Determine the minimum number of parameters and check whether we have
-        // enough.
-        let min_parameters = self
-            .parameter_slots
-            .iter()
-            .enumerate()
-            .rev()
-            .find_map(|(index, slot)| if slot.optional { None } else { Some(index + 1) })
-            .unwrap_or_default();
-        if params.len() < min_parameters {
-            return Err(cause!(
-                TypeMismatchedParameters,
-                "need at least {min_parameters} parameter(s), but only {} was/were provided",
-                params.len()
-            ));
-        }
-
-        // Match parameters to slots positionally.
-        for (index, param) in params.iter().enumerate() {
-            // Determine the slot that corresponds to this parameter.
-            let slot = self
-                .parameter_slots
-                .get(index)
-                .or_else(|| {
-                    if self.parameters_variadic {
-                        self.parameter_slots.last()
-                    } else {
-                        None
-                    }
-                })
-                .ok_or_else(|| {
-                    cause!(
-                        TypeMismatchedParameters,
-                        "type expects at most {index} parameters, but {} were provided",
-                        params.len()
-                    )
-                })?;
-
-            // Check the provided parameter against the information contained
-            // in the slot.
-            if param.name.is_some() {
-                return Err(cause!(
-                    TypeMismatchedParameters,
-                    "parameter {} cannot be named",
-                    self.parameter_name_or_index(index)
-                ));
-            }
-            if let Some(value) = &param.value {
-                if !slot.pattern.match_pattern(value) {
-                    return Err(cause!(
-                        TypeMismatchedParameters,
-                        "parameter {} does not match pattern {}",
-                        self.parameter_name_or_index(index),
-                        slot.pattern
-                    ));
-                }
-            } else if !slot.optional {
-                return Err(cause!(
-                    TypeMismatchedParameters,
-                    "parameter {} is not optional and can thus not be skipped with null",
-                    self.parameter_name_or_index(index)
-                ));
-            }
-        }
-        Ok(())
-    }
-
-    fn parameter_name(&self, index: usize) -> Option<String> {
-        if self.parameters_variadic && index + 1 >= self.parameter_slots.len() {
-            if let Some(slot) = self.parameter_slots.last() {
-                return Some(if slot.name.is_empty() {
-                    format!("{}", index)
-                } else {
-                    format!("{}.{}", slot.name, index + 1 - self.parameter_slots.len())
-                });
-            }
-        }
-        self.parameter_slots.get(index).map(|slot| {
-            if slot.name.is_empty() {
-                format!("{}", index)
-            } else {
-                slot.name.clone()
-            }
-        })
-    }
-
-    fn has_parameters(&self) -> bool {
-        !self.parameter_slots.is_empty()
     }
 }

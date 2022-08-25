@@ -4,6 +4,7 @@
 
 use crate::input::proto::substrait;
 use crate::output::diagnostic;
+use crate::output::extension;
 use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::extensions;
@@ -312,41 +313,18 @@ impl std::fmt::Display for Literal {
     }
 }
 
-/// Resolves a variation by class.
-fn resolve_variation(
-    y: &mut context::Context,
-    variations: Option<data::variation::UserDefinedByName>,
-    class: &data::Class,
-) -> data::Variation {
-    if let Some(variations) = variations {
-        let variation = data::variation::resolve_by_class(&variations, class);
-        if variations.definition.is_some() && variation.definition.is_none() {
-            diagnostic!(
-                y,
-                Error,
-                LinkMissingTypeVariationNameAndClass,
-                "the specified variation is not defined for {}",
-                class
-            )
-        }
-        data::Variation::UserDefined(variation)
-    } else {
-        data::Variation::SystemPreferred
-    }
-}
-
 /// Parses a boolean literal.
 fn parse_boolean(
     x: &bool,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Boolean(*x),
         data::class::Simple::Boolean,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Boolean),
@@ -359,7 +337,7 @@ fn parse_i8(
     x: &i32,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let x = i8::try_from(*x)
         .map_err(|_| cause!(ExpressionIllegalLiteralValue, "i8 value out of range"))?;
@@ -367,7 +345,11 @@ fn parse_i8(
         LiteralValue::Integer(x as i64),
         data::class::Simple::I8,
         nullable,
-        resolve_variation(y, variations, &data::Class::Simple(data::class::Simple::I8)),
+        extensions::simple::resolve_variation_by_class(
+            y,
+            variations,
+            &data::Class::Simple(data::class::Simple::I8),
+        ),
     )
 }
 
@@ -376,7 +358,7 @@ fn parse_i16(
     x: &i32,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let x = i16::try_from(*x)
         .map_err(|_| cause!(ExpressionIllegalLiteralValue, "i16 value out of range"))?;
@@ -384,7 +366,7 @@ fn parse_i16(
         LiteralValue::Integer(x as i64),
         data::class::Simple::I16,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::I16),
@@ -397,13 +379,13 @@ fn parse_i32(
     x: &i32,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Integer(*x as i64),
         data::class::Simple::I32,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::I32),
@@ -416,13 +398,13 @@ fn parse_i64(
     x: &i64,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Integer(*x),
         data::class::Simple::I64,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::I64),
@@ -435,13 +417,13 @@ fn parse_fp32(
     x: &f32,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Float(*x as f64),
         data::class::Simple::Fp32,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Fp32),
@@ -454,13 +436,13 @@ fn parse_fp64(
     x: &f64,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Float(*x),
         data::class::Simple::Fp64,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Fp64),
@@ -473,13 +455,13 @@ fn parse_string(
     x: &str,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::String(x.to_string()),
         data::class::Simple::String,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::String),
@@ -492,13 +474,13 @@ fn parse_binary(
     x: &[u8],
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_simple(
         LiteralValue::Binary(x.to_owned()),
         data::class::Simple::Binary,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Binary),
@@ -511,7 +493,7 @@ fn parse_timestamp(
     x: &i64,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time(*x)?;
     if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
@@ -528,7 +510,7 @@ fn parse_timestamp(
         LiteralValue::Integer(*x),
         data::class::Simple::Timestamp,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Timestamp),
@@ -541,7 +523,7 @@ fn parse_timestamp_tz(
     x: &i64,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time(*x)?;
     if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
@@ -558,7 +540,7 @@ fn parse_timestamp_tz(
         LiteralValue::Integer(*x),
         data::class::Simple::TimestampTz,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::TimestampTz),
@@ -571,7 +553,7 @@ fn parse_date(
     x: &i32,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time((*x as i64).saturating_mul(24 * 60 * 60 * 1_000_000))?;
     if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
@@ -588,7 +570,7 @@ fn parse_date(
         LiteralValue::Integer(*x as i64),
         data::class::Simple::Date,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Date),
@@ -601,7 +583,7 @@ fn parse_time(
     x: &i64,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     if *x < 0 || *x >= 24 * 60 * 60 * 1_000_000 {
         diagnostic!(
@@ -615,7 +597,7 @@ fn parse_time(
         LiteralValue::Integer(*x),
         data::class::Simple::Time,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Time),
@@ -628,7 +610,7 @@ fn parse_interval_year_to_month(
     x: &substrait::expression::literal::IntervalYearToMonth,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     proto_primitive_field!(x, y, years, |x, _| {
         if *x < -10000 || *x > 10000 {
@@ -663,7 +645,7 @@ fn parse_interval_year_to_month(
         LiteralValue::Interval(x.years.into(), x.months.into()),
         data::class::Simple::IntervalYear,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::IntervalYear),
@@ -676,7 +658,7 @@ fn parse_interval_day_to_second(
     x: &substrait::expression::literal::IntervalDayToSecond,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     proto_primitive_field!(x, y, days, |x, _| {
         if *x < -3650000 || *x > 3650000 {
@@ -698,7 +680,7 @@ fn parse_interval_day_to_second(
         ),
         data::class::Simple::IntervalDay,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::IntervalDay),
@@ -711,14 +693,14 @@ fn parse_uuid(
     x: &[u8],
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     if let Ok(x) = x.try_into() {
         Literal::new_simple(
             LiteralValue::Data16(i128::from_ne_bytes(x)),
             data::class::Simple::Uuid,
             nullable,
-            resolve_variation(
+            extensions::simple::resolve_variation_by_class(
                 y,
                 variations,
                 &data::Class::Simple(data::class::Simple::Uuid),
@@ -738,13 +720,13 @@ fn parse_fixed_char(
     x: &str,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_compound(
         LiteralValue::String(x.to_string()),
         data::class::Compound::FixedChar,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Compound(data::class::Compound::FixedChar),
@@ -758,7 +740,7 @@ fn parse_var_char(
     x: &substrait::expression::literal::VarChar,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     proto_primitive_field!(x, y, length);
     let len: u32 = x.length;
@@ -776,7 +758,7 @@ fn parse_var_char(
         LiteralValue::String(x.value.clone()),
         data::class::Compound::VarChar,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Compound(data::class::Compound::VarChar),
@@ -790,13 +772,13 @@ fn parse_fixed_binary(
     x: &[u8],
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     Literal::new_compound(
         LiteralValue::Binary(x.to_owned()),
         data::class::Compound::FixedBinary,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Compound(data::class::Compound::FixedBinary),
@@ -810,7 +792,7 @@ fn parse_decimal(
     x: &substrait::expression::literal::Decimal,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     proto_primitive_field!(x, y, precision, |x, _| {
         if *x < 0 {
@@ -850,7 +832,7 @@ fn parse_decimal(
                 LiteralValue::Data16(val),
                 data::class::Compound::Decimal,
                 nullable,
-                resolve_variation(
+                extensions::simple::resolve_variation_by_class(
                     y,
                     variations,
                     &data::Class::Compound(data::class::Compound::Decimal),
@@ -868,7 +850,7 @@ fn parse_struct_int(
     x: &substrait::expression::literal::Struct,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let (values, types): (Vec<_>, Vec<_>) = proto_repeated_field!(x, y, fields, parse_literal)
         .1
@@ -883,7 +865,7 @@ fn parse_struct_int(
         LiteralValue::Items(values),
         data::class::Compound::Struct,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Compound(data::class::Compound::Struct),
@@ -897,7 +879,7 @@ pub fn parse_struct(
     x: &substrait::expression::literal::Struct,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let literal = parse_struct_int(x, y, nullable, variations)?;
     y.set_data_type(literal.data_type().clone());
@@ -909,7 +891,7 @@ fn parse_list(
     x: &substrait::expression::literal::List,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let values: Vec<_> = proto_required_repeated_field!(x, y, values, parse_literal)
         .1
@@ -935,7 +917,7 @@ fn parse_list(
         LiteralValue::Items(values),
         data::class::Compound::List,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Compound(data::class::Compound::List),
@@ -949,7 +931,7 @@ fn parse_map(
     x: &substrait::expression::literal::Map,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let values: Vec<_> = proto_required_repeated_field!(x, y, key_values, |x, y| {
         let key = proto_required_field!(x, y, key, parse_literal)
@@ -990,7 +972,7 @@ fn parse_map(
         LiteralValue::Pairs(values),
         data::class::Compound::Map,
         nullable,
-        resolve_variation(
+        extensions::simple::resolve_variation_by_class(
             y,
             variations,
             &data::Class::Compound(data::class::Compound::Map),
@@ -1050,7 +1032,7 @@ fn parse_user_defined(
     x: &substrait::expression::literal::UserDefined,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let extension_type = proto_primitive_field!(
         x,
@@ -1065,7 +1047,7 @@ fn parse_user_defined(
     } else {
         data::Class::Unresolved
     };
-    let variation = resolve_variation(y, variations, &class);
+    let variation = extensions::simple::resolve_variation_by_class(y, variations, &class);
     Ok(Literal {
         value: LiteralValue::UserDefined,
         data_type: data::new_type(class, nullable, variation, vec![])?,
@@ -1077,7 +1059,7 @@ fn parse_literal_type(
     x: &substrait::expression::literal::LiteralType,
     y: &mut context::Context,
     nullable: bool,
-    variations: Option<data::variation::UserDefinedByName>,
+    variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     use substrait::expression::literal::LiteralType;
     match x {

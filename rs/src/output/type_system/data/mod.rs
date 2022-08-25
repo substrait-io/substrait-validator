@@ -15,7 +15,6 @@ pub use class::Class;
 pub use parameter::Parameter;
 pub use r#type::Definition as TypeDef;
 pub use r#type::Type;
-pub use variation::FunctionBehavior;
 pub use variation::Variation;
 
 /// Creates a new type.

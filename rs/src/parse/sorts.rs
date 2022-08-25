@@ -9,7 +9,6 @@ use crate::output::diagnostic;
 use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::expressions;
-use crate::parse::expressions::functions;
 use crate::parse::extensions;
 
 /// Parse a sort direction.
@@ -65,53 +64,80 @@ fn parse_comparison_function_reference(
     data_type: &data::Type,
 ) -> diagnostic::Result<&'static str> {
     // Resolve the reference as normal.
-    let function = extensions::simple::parse_function_reference(x, y)?;
+    let functions = extensions::simple::parse_function_reference(x, y)?;
 
-    // Check the function.
-    if let Some(function) = &function.definition {
-        let return_type =
-            functions::check_function(y, function, &[], &[data_type.clone(), data_type.clone()]);
-        if !matches!(
-            return_type.class(),
-            data::Class::Simple(data::class::Simple::Boolean)
-                | data::Class::Simple(data::class::Simple::I8)
-                | data::Class::Simple(data::class::Simple::I16)
-                | data::Class::Simple(data::class::Simple::I32)
-                | data::Class::Simple(data::class::Simple::I64)
-                | data::Class::Unresolved
-        ) {
-            diagnostic!(
-                y,
-                Error,
-                TypeMismatch,
-                "comparison functions must yield booleans (a < b) or integers (a ?= b), but found {}",
-                return_type
-            );
-        }
-    } else {
-        diagnostic!(
-            y,
-            Warning,
-            ExpressionFunctionDefinitionUnavailable,
-            "cannot check validity of comparison function"
-        );
-    }
+    // Try to bind the function.
+    let argument =
+        expressions::functions::FunctionArgument::Value(data_type.clone(), Default::default());
+    let context = expressions::functions::FunctionContext {
+        function_type: expressions::functions::FunctionType::Scalar,
+        arguments: vec![argument.clone(), argument],
+        return_type: data::new_unresolved_type(),
+    };
+    let binding = expressions::functions::FunctionBinding::new(Some(&functions), &context, y);
 
     // Describe how the function is to be interpreted.
-    y.push_summary(
-        comment::Comment::new()
-            .plain("Comparison function for sorting. Taking two elements as input,")
-            .plain("it must determine the correct sort order. Comparison functions")
-            .plain("may return booleans or integers, interpreted as follows:")
-            .lo()
-            .plain("f(a, b) => true or negative: a sorts before b;")
-            .li()
-            .plain("f(a, b) => false or positive: b sorts before a;")
-            .li()
-            .plain("f(a, b) => 0 or null: a and b have no defined sort order.")
-            .lc()
-            .plain("This corresponds to f: a < b or f: a ?= b."),
-    );
+    let comment = comment::Comment::new()
+        .plain("Comparison function for sorting. Taking two elements as input,")
+        .plain("it must determine the correct sort order. The return value is");
+    let comment = match binding.return_type.class() {
+        data::Class::Simple(data::class::Simple::Boolean) => {
+            let comment = comment
+                .plain("interpreted as the result of a < b, so:")
+                .lo()
+                .plain("f(a, b) => true: a sorts before b.")
+                .li()
+                .plain("f(a, b) => false: b sorts before a.");
+            if binding.return_type.nullable() {
+                comment
+                    .li()
+                    .plain("f(a, b) => null: a and b have no defined sort order.")
+            } else {
+                comment
+            }
+        }
+        data::Class::Simple(data::class::Simple::I8)
+        | data::Class::Simple(data::class::Simple::I16)
+        | data::Class::Simple(data::class::Simple::I32)
+        | data::Class::Simple(data::class::Simple::I64) => {
+            let comment = comment
+                .plain("interpreted as follows:")
+                .lo()
+                .plain("f(a, b) => negative: a sorts before b.")
+                .li()
+                .plain("f(a, b) => positive: b sorts before a.");
+            if binding.return_type.nullable() {
+                comment
+                    .li()
+                    .plain("f(a, b) => zero or null: a and b have no defined sort order.")
+            } else {
+                comment
+                    .li()
+                    .plain("f(a, b) => null: a and b have no defined sort order.")
+            }
+        }
+        _ => {
+            if !binding.return_type.is_unresolved() {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeMismatch,
+                    "comparison functions must yield booleans (a < b) or integers (a ?= b), but found {}",
+                    binding.return_type
+                );
+            }
+            comment
+                .plain("interpreted as follows:")
+                .lo()
+                .plain("f(a, b) => true or negative: a sorts before b;")
+                .li()
+                .plain("f(a, b) => false or positive: b sorts before a;")
+                .li()
+                .plain("f(a, b) => 0 or null: a and b have no defined sort order.")
+                .lc()
+        }
+    };
+    y.push_summary(comment);
 
     Ok("Custom sort")
 }
