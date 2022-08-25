@@ -212,6 +212,125 @@ fn analyze_object(
     )
 }
 
+/// Analyzes a type variation suffix.
+fn analyze_variation(
+    x: &VariationContextAll,
+    _y: &mut context::Context,
+) -> Result<meta::pattern::Variation> {
+    Ok(if let Some(x) = x.variationBody() {
+        match x.as_ref() {
+            VariationBodyContextAll::VarAnyContext(_) => meta::pattern::Variation::Any,
+            VariationBodyContextAll::VarSystemPreferredContext(_) => {
+                meta::pattern::Variation::Exactly(data::Variation::SystemPreferred)
+            }
+            VariationBodyContextAll::VarUserDefinedContext(_) => todo!(),
+            VariationBodyContextAll::Error(_) => meta::pattern::Variation::Any,
+        }
+    } else {
+        meta::pattern::Variation::Any
+    })
+}
+
+/// Analyzes a pattern that can end up being either a data type pattern, a
+/// binding, or an enum constant, depending on name resolution.
+fn analyze_dtbc(
+    x: &DatatypeBindingOrConstantContext,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Value> {
+    let object = antlr_hidden_child!(x, y, analyze_object)
+        .ok_or_else(|| cause!(TypeDerivationInvalid, "failed to resolve identifier"))?;
+    match object {
+        context::IdentifiedObject::Binding(name) => {
+            if x.variation().is_some() {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeParseError,
+                    "variation cannot be specified for bindings"
+                );
+            }
+            if x.parameters().is_some() {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeParseError,
+                    "parameters cannot be specified for bindings"
+                );
+            }
+            if let Some(qst) = x.nullability() {
+                if qst.pattern().is_some() {
+                    diagnostic!(
+                        y,
+                        Error,
+                        TypeParseError,
+                        "nullability pattern cannot be specified for bindings"
+                    );
+                }
+                Ok(meta::pattern::Value::ImplicitOrBinding(name))
+            } else {
+                Ok(meta::pattern::Value::Binding(name))
+            }
+        }
+        context::IdentifiedObject::EnumLiteral(name) => {
+            if x.nullability().is_some() {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeParseError,
+                    "nullability cannot be specified for enum literals"
+                );
+            }
+            if x.variation().is_some() {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeParseError,
+                    "variation cannot be specified for enum literals"
+                );
+            }
+            if x.parameters().is_some() {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeParseError,
+                    "parameters cannot be specified for enum literals"
+                );
+            }
+            Ok(meta::pattern::Value::Enum(Some(vec![name])))
+        }
+        context::IdentifiedObject::NamedDependency(_) => Err(cause!(
+            TypeDerivationInvalid,
+            "identifier resolves to dependency namespace, which cannot be used as such"
+        )),
+        context::IdentifiedObject::TypeClass(class) => {
+            let nullable = if let Some(qst) = x.nullability() {
+                if let Some(pattern) = antlr_child!(qst.as_ref(), y, nullability, analyze_pattern).1
+                {
+                    pattern
+                } else {
+                    meta::pattern::Value::Boolean(Some(true))
+                }
+            } else {
+                meta::pattern::Value::Boolean(Some(false))
+            };
+            let variation = antlr_child!(x, y, variation, analyze_variation)
+                .1
+                .unwrap_or(meta::pattern::Variation::Compatible);
+            if x.parameters().is_some() {
+                todo!()
+            }
+            Ok(meta::pattern::Value::DataType(Some(
+                meta::pattern::DataType {
+                    class,
+                    nullable: std::sync::Arc::new(nullable),
+                    variation,
+                    parameters: None,
+                },
+            )))
+        }
+    }
+}
+
 /// Analyzes miscellaneous pattern types.
 fn analyze_pattern_misc(
     x: &PatternMiscContextAll,
@@ -339,101 +458,7 @@ fn analyze_pattern_misc(
                 arguments,
             ))
         }
-        PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => {
-            let object = antlr_hidden_child!(x, y, analyze_object)
-                .ok_or_else(|| cause!(TypeDerivationInvalid, "failed to resolve identifier"))?;
-            match object {
-                context::IdentifiedObject::Binding(name) => {
-                    if x.variation().is_some() {
-                        diagnostic!(
-                            y,
-                            Error,
-                            TypeParseError,
-                            "variation cannot be specified for bindings"
-                        );
-                    }
-                    if x.parameters().is_some() {
-                        diagnostic!(
-                            y,
-                            Error,
-                            TypeParseError,
-                            "parameters cannot be specified for bindings"
-                        );
-                    }
-                    if let Some(qst) = x.nullability() {
-                        if qst.pattern().is_some() {
-                            diagnostic!(
-                                y,
-                                Error,
-                                TypeParseError,
-                                "nullability pattern cannot be specified for bindings"
-                            );
-                        }
-                        Ok(meta::pattern::Value::ImplicitOrBinding(name))
-                    } else {
-                        Ok(meta::pattern::Value::Binding(name))
-                    }
-                }
-                context::IdentifiedObject::EnumLiteral(name) => {
-                    if x.nullability().is_some() {
-                        diagnostic!(
-                            y,
-                            Error,
-                            TypeParseError,
-                            "nullability cannot be specified for enum literals"
-                        );
-                    }
-                    if x.variation().is_some() {
-                        diagnostic!(
-                            y,
-                            Error,
-                            TypeParseError,
-                            "variation cannot be specified for enum literals"
-                        );
-                    }
-                    if x.parameters().is_some() {
-                        diagnostic!(
-                            y,
-                            Error,
-                            TypeParseError,
-                            "parameters cannot be specified for enum literals"
-                        );
-                    }
-                    Ok(meta::pattern::Value::Enum(Some(vec![name])))
-                }
-                context::IdentifiedObject::NamedDependency(_) => Err(cause!(
-                    TypeDerivationInvalid,
-                    "identifier resolves to dependency namespace, which cannot be used as such"
-                )),
-                context::IdentifiedObject::TypeClass(class) => {
-                    let nullable = if let Some(qst) = x.nullability() {
-                        if let Some(pattern) =
-                            antlr_child!(qst.as_ref(), y, nullability, analyze_pattern).1
-                        {
-                            pattern
-                        } else {
-                            meta::pattern::Value::Boolean(Some(true))
-                        }
-                    } else {
-                        meta::pattern::Value::Boolean(Some(false))
-                    };
-                    if x.variation().is_some() {
-                        todo!()
-                    }
-                    if x.parameters().is_some() {
-                        todo!()
-                    }
-                    Ok(meta::pattern::Value::DataType(Some(
-                        meta::pattern::DataType {
-                            class,
-                            nullable: std::sync::Arc::new(nullable),
-                            variation: meta::pattern::Variation::Any,
-                            parameters: None,
-                        },
-                    )))
-                }
-            }
-        }
+        PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => analyze_dtbc(x, y),
         PatternMiscContextAll::Error(_) => Ok(meta::pattern::Value::Unresolved),
     }
 }
