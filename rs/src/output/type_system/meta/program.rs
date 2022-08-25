@@ -132,7 +132,10 @@ impl Statement {
             .rhs_expression
             .evaluate_with_context(context)
             .map_err(|e| e.prefix("while evaluating RHS"))?;
-        if self.lhs_pattern.match_pattern_with_context(context, &value) {
+        if self
+            .lhs_pattern
+            .match_pattern_with_context(context, &value)?
+        {
             Ok(())
         } else {
             Err(cause!(

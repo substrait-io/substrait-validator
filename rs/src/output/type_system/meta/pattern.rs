@@ -22,13 +22,17 @@ pub trait Pattern {
     fn exactly(value: Self::Value) -> Self;
 
     /// Matches this pattern without any provided context.
-    fn match_pattern(&self, value: &Self::Value) -> bool {
+    fn match_pattern(&self, value: &Self::Value) -> diagnostic::Result<bool> {
         let mut context = meta::Context::default();
         self.match_pattern_with_context(&mut context, value)
     }
 
     /// Matches this pattern with a provided context.
-    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool;
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        value: &Self::Value,
+    ) -> diagnostic::Result<bool>;
 
     /// Evaluates this pattern without any provided context.
     fn evaluate(&self) -> diagnostic::Result<Self::Value> {
@@ -188,14 +192,18 @@ impl Value {
     /// result with true if so; unresolved values should always match
     /// everything in order to avoid flooding the user with error messages
     /// when the validator is confused due to a previous error.
-    fn match_strictly(&self, context: &mut meta::Context, value: &meta::Value) -> bool {
-        match self {
+    fn match_strictly(
+        &self,
+        context: &mut meta::Context,
+        value: &meta::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(match self {
             Value::Unresolved => true,
             Value::Any => true,
             Value::Binding(name) => {
                 if let Some(expected) = context.bindings.get(name) {
                     if value != expected {
-                        return false;
+                        return Ok(false);
                     }
                 } else {
                     context
@@ -211,7 +219,7 @@ impl Value {
                         if let Some(current) = expected.get_boolean() {
                             value |= current;
                         } else {
-                            return false;
+                            return Ok(false);
                         }
                     }
                     context.bindings.insert(name.clone(), value.into()).unwrap();
@@ -265,7 +273,7 @@ impl Value {
             Value::DataType(expected) => {
                 if let Some(value) = value.get_data_type() {
                     if let Some(expected) = expected {
-                        expected.match_pattern_with_context(context, &value)
+                        expected.match_pattern_with_context(context, &value)?
                     } else {
                         true
                     }
@@ -273,8 +281,9 @@ impl Value {
                     false
                 }
             }
-            Value::Function(_, _) => false,
-        }
+            Value::Function(func, args) => Value::exactly(func.evaluate(context, args)?)
+                .match_pattern_with_context(context, value)?,
+        })
     }
 
     /// Returns a pattern that matches the given type exactly.
@@ -304,8 +313,12 @@ impl Pattern for Value {
         }
     }
 
-    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool {
-        self.match_strictly(context, value) || value.is_unresolved()
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        value: &Self::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(self.match_strictly(context, value)? || value.is_unresolved())
     }
 
     fn evaluate_with_context(
@@ -467,31 +480,35 @@ impl DataType {
     /// result with true if so; unresolved values should always match
     /// everything in order to avoid flooding the user with error messages
     /// when the validator is confused due to a previous error.
-    fn match_strictly(&self, context: &mut meta::Context, value: &data::Type) -> bool {
+    fn match_strictly(
+        &self,
+        context: &mut meta::Context,
+        value: &data::Type,
+    ) -> diagnostic::Result<bool> {
         if !value.class().weak_equals(&self.class) {
-            return false;
+            return Ok(false);
         }
         if self
             .nullable
-            .match_pattern_with_context(context, &value.nullable().into())
+            .match_pattern_with_context(context, &value.nullable().into())?
         {
-            return false;
+            return Ok(false);
         }
-        if self.variation.match_pattern(value.variation()) {
-            return false;
+        if self.variation.match_pattern(value.variation())? {
+            return Ok(false);
         }
         if let Some(expected) = &self.parameters {
             let parameters = value.parameters();
             if parameters.len() != expected.len() {
-                return false;
+                return Ok(false);
             }
             for (parameter, expected) in parameters.iter().zip(expected.iter()) {
-                if !expected.match_pattern_with_context(context, parameter) {
-                    return false;
+                if !expected.match_pattern_with_context(context, parameter)? {
+                    return Ok(false);
                 }
             }
         }
-        true
+        Ok(true)
     }
 }
 
@@ -514,8 +531,12 @@ impl Pattern for DataType {
         }
     }
 
-    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool {
-        self.match_strictly(context, value) || value.is_unresolved()
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        value: &Self::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(self.match_strictly(context, value)? || value.is_unresolved())
     }
 
     fn evaluate_with_context(
@@ -586,12 +607,12 @@ impl Pattern for Variation {
         &self,
         _context: &mut meta::Context,
         value: &Self::Value,
-    ) -> bool {
-        match self {
+    ) -> diagnostic::Result<bool> {
+        Ok(match self {
             Variation::Any => true,
             Variation::Compatible => value.is_compatible_with_system_preferred(),
             Variation::Exactly(expected) => value == expected,
-        }
+        })
     }
 
     fn evaluate_with_context(
@@ -670,8 +691,12 @@ impl Pattern for Parameter {
 
     /// Matches this pattern. Note the special case to let the ? pattern match
     /// nulls, and note that names are ignored.
-    fn match_pattern_with_context(&self, context: &mut meta::Context, param: &Self::Value) -> bool {
-        match &self.value {
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        param: &Self::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(match &self.value {
             None => {
                 // The null pattern only matches nulls.
                 param.value.is_none()
@@ -681,9 +706,9 @@ impl Pattern for Parameter {
                     // Special case for nulls and ? to make ? match null.
                     matches!(pattern, Value::Any)
                 }
-                Some(value) => pattern.match_pattern_with_context(context, value),
+                Some(value) => pattern.match_pattern_with_context(context, value)?,
             },
-        }
+        })
     }
 
     fn evaluate_with_context(

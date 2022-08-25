@@ -38,6 +38,10 @@ Whitespace    : [ \t]+ -> channel(HIDDEN) ;
 // Type derivations are newline-sensitive, so they're not ignored.
 Newline       : [\r\n]+ ;
 
+// Newlines can be embedded by escaping the newline character itself with a
+// backslash.
+EscNewline    : '\\' [\r\n]+ -> channel(HIDDEN) ;
+
 
 //=============================================================================
 // Keyword tokens
@@ -293,8 +297,20 @@ patternMisc
   // Matches any data type.
   | Typename #dtAny
 
-  // Evaluates a function. Cannot be matched. The following functions are
-  // currently available:
+  // Evaluates a function. When a function is used in match context, the
+  // function (and its arguments) will be *evaluated* instead, and the incoming
+  // value is matched against the result. This means that it is legal to define
+  // a function like f(VARCHAR(x), VARCHAR(y), VARCHAR(x + y)) because the x
+  // and y bindings are captured before x + y is evaluated, but it is NOT legal
+  // to define it like f(VARCHAR(x + y), VARCHAR(x), VARCHAR(y)) because x and
+  // y are not yet bound when x + y is evaluated.
+  // f(VARCHAR(x), VARCHAR(x + y), VARCHAR(y)) is also NOT legal, again because
+  // some of the function bindings have not yet been captured, even though
+  // mathematically this could be rewritten from x + y <- input to
+  // y <= input - x (the evaluator is not smart enough for this, and this
+  // rewriting cannot be generalized over all functions).
+  //
+  // The following functions are currently available:
   //
   //  - "not(metabool) -> metabool": boolean NOT.
   //  - "and(metabool*) -> metabool": boolean AND. Evaluated lazily from left
@@ -326,8 +342,12 @@ patternMisc
   //    integer is less than or equal to the right.
   //  - "covers(value, pattern) -> metabool": return whether the left value
   //    matches the pattern. The pattern may make use of bindings that were
-  //    previously defined, but it does NOT capture new bindings regardless
-  //    of whether the pattern match succeeded.
+  //    previously defined. New bindings are captured if and only if covers
+  //    returns true. This allows for patterns like
+  //      assert if covers(x, struct<a>) then a < 10 \
+  //        else if covers(x, struct<a, b>) then a + b < 10 \
+  //        else false;
+  //    to be written and work as expected.
   //  - "if_then_else(metabool, T, T) -> T": if-then-else expression. Evaluated
   //    lazily.
   //

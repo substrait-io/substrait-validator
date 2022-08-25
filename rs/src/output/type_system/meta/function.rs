@@ -381,10 +381,20 @@ impl Function {
                     ))
                 } else {
                     let value = args[0].evaluate_with_context(context)?;
+                    // It's possible for a match to capture bindings even if it
+                    // fails in the end, in case of a partial match. However, a
+                    // failing covers() call should not capture anything. So we
+                    // have to make a copy of the context here.
                     let mut context_copy = context.clone();
-                    Ok(args[1]
-                        .match_pattern_with_context(&mut context_copy, &value)
-                        .into())
+                    Ok(
+                        if args[1].match_pattern_with_context(&mut context_copy, &value)? {
+                            *context = context_copy;
+                            true
+                        } else {
+                            false
+                        }
+                        .into(),
+                    )
                 }
             }
             Function::IfThenElse => {
