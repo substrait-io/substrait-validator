@@ -614,15 +614,29 @@ fn enter_parameter(&mut self, _ctx: &ParameterContext<'input>) { }
  */
 fn exit_parameter(&mut self, _ctx: &ParameterContext<'input>) { }
 /**
- * Enter a parse tree produced by {@link SubstraitTypeParser#parameterValue}.
+ * Enter a parse tree produced by the {@code Null}
+ * labeled alternative in {@link SubstraitTypeParser#parameterValue}.
  * @param ctx the parse tree
  */
-fn enter_parameterValue(&mut self, _ctx: &ParameterValueContext<'input>) { }
+fn enter_Null(&mut self, _ctx: &NullContext<'input>) { }
 /**
- * Exit a parse tree produced by {@link SubstraitTypeParser#parameterValue}.
+ * Exit a parse tree produced by the {@code Null}
+ * labeled alternative in {@link SubstraitTypeParser#parameterValue}.
  * @param ctx the parse tree
  */
-fn exit_parameterValue(&mut self, _ctx: &ParameterValueContext<'input>) { }
+fn exit_Null(&mut self, _ctx: &NullContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Specified}
+ * labeled alternative in {@link SubstraitTypeParser#parameterValue}.
+ * @param ctx the parse tree
+ */
+fn enter_Specified(&mut self, _ctx: &SpecifiedContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Specified}
+ * labeled alternative in {@link SubstraitTypeParser#parameterValue}.
+ * @param ctx the parse tree
+ */
+fn exit_Specified(&mut self, _ctx: &SpecifiedContext<'input>) { }
 /**
  * Enter a parse tree produced by {@link SubstraitTypeParser#integer}.
  * @param ctx the parse tree
@@ -644,15 +658,29 @@ fn enter_identifierPath(&mut self, _ctx: &IdentifierPathContext<'input>) { }
  */
 fn exit_identifierPath(&mut self, _ctx: &IdentifierPathContext<'input>) { }
 /**
- * Enter a parse tree produced by {@link SubstraitTypeParser#identifierOrString}.
+ * Enter a parse tree produced by the {@code Str}
+ * labeled alternative in {@link SubstraitTypeParser#identifierOrString}.
  * @param ctx the parse tree
  */
-fn enter_identifierOrString(&mut self, _ctx: &IdentifierOrStringContext<'input>) { }
+fn enter_Str(&mut self, _ctx: &StrContext<'input>) { }
 /**
- * Exit a parse tree produced by {@link SubstraitTypeParser#identifierOrString}.
+ * Exit a parse tree produced by the {@code Str}
+ * labeled alternative in {@link SubstraitTypeParser#identifierOrString}.
  * @param ctx the parse tree
  */
-fn exit_identifierOrString(&mut self, _ctx: &IdentifierOrStringContext<'input>) { }
+fn exit_Str(&mut self, _ctx: &StrContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code Ident}
+ * labeled alternative in {@link SubstraitTypeParser#identifierOrString}.
+ * @param ctx the parse tree
+ */
+fn enter_Ident(&mut self, _ctx: &IdentContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code Ident}
+ * labeled alternative in {@link SubstraitTypeParser#identifierOrString}.
+ * @param ctx the parse tree
+ */
+fn exit_Ident(&mut self, _ctx: &IdentContext<'input>) { }
 
 }
 

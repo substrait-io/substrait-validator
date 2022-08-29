@@ -299,6 +299,9 @@ pub enum Classification {
     ))]
     TypeResolutionError = 4012,
 
+    #[strum(props(Description = "invalid field name"))]
+    TypeInvalidFieldName = 4013,
+
     // Relation-related diagnostics (group 5).
     #[strum(props(HiddenDescription = "relation-related diagnostics"))]
     Relation = 5000,

@@ -68,6 +68,23 @@ where
     Ok(object)
 }
 
+/// Resolves an identifier path used in type variation scope for the given type
+/// class.
+fn resolve_type_variation_identifier<S, I>(
+    _x: I,
+    _y: &mut context::Context,
+    _class: &data::Class,
+) -> Result<data::variation::UserDefined>
+where
+    S: AsRef<str>,
+    I: Iterator<Item = S>,
+{
+    Err(cause!(
+        NotYetImplemented,
+        "type variation name resolution is not yet implemented"
+    ))
+}
+
 /// Error listener that just collects error messages into a vector, such that
 /// they can be obtained when parsing completes.
 #[derive(Default, Clone)]
@@ -202,7 +219,7 @@ fn analyze_integer(x: &IntegerContextAll, y: &mut context::Context) -> Result<i6
 }
 
 /// Analyzes and resolves an identifier path.
-fn analyze_object(
+fn analyze_object_identifier(
     x: &IdentifierPathContextAll,
     y: &mut context::Context,
 ) -> Result<context::IdentifiedObject> {
@@ -212,32 +229,13 @@ fn analyze_object(
     )
 }
 
-/// Analyzes a type variation suffix.
-fn analyze_variation(
-    x: &VariationContextAll,
-    _y: &mut context::Context,
-) -> Result<meta::pattern::Variation> {
-    Ok(if let Some(x) = x.variationBody() {
-        match x.as_ref() {
-            VariationBodyContextAll::VarAnyContext(_) => meta::pattern::Variation::Any,
-            VariationBodyContextAll::VarSystemPreferredContext(_) => {
-                meta::pattern::Variation::Exactly(data::Variation::SystemPreferred)
-            }
-            VariationBodyContextAll::VarUserDefinedContext(_) => todo!(),
-            VariationBodyContextAll::Error(_) => meta::pattern::Variation::Any,
-        }
-    } else {
-        meta::pattern::Variation::Any
-    })
-}
-
 /// Analyzes a pattern that can end up being either a data type pattern, a
 /// binding, or an enum constant, depending on name resolution.
 fn analyze_dtbc(
     x: &DatatypeBindingOrConstantContext,
     y: &mut context::Context,
 ) -> Result<meta::pattern::Value> {
-    let object = antlr_hidden_child!(x, y, analyze_object)
+    let object = antlr_hidden_child!(x, y, analyze_object_identifier)
         .ok_or_else(|| cause!(TypeDerivationInvalid, "failed to resolve identifier"))?;
     match object {
         context::IdentifiedObject::Binding(name) => {
@@ -313,22 +311,118 @@ fn analyze_dtbc(
             } else {
                 meta::pattern::Value::Boolean(Some(false))
             };
-            let variation = antlr_child!(x, y, variation, analyze_variation)
+            let variation = antlr_child!(x, y, variation, 0, analyze_type_variation, &class)
                 .1
                 .unwrap_or(meta::pattern::Variation::Compatible);
-            if x.parameters().is_some() {
-                todo!()
-            }
+            let parameters = antlr_child!(x, y, parameters, analyze_type_parameters).1;
             Ok(meta::pattern::Value::DataType(Some(
                 meta::pattern::DataType {
                     class,
                     nullable: std::sync::Arc::new(nullable),
                     variation,
-                    parameters: None,
+                    parameters,
                 },
             )))
         }
     }
+}
+
+/// Analyzes a type variation suffix.
+fn analyze_type_variation_identifier(
+    x: &IdentifierPathContextAll,
+    y: &mut context::Context,
+    class: &data::Class,
+) -> Result<data::variation::UserDefined> {
+    resolve_type_variation_identifier(
+        x.Identifier_all().iter().map(|x| x.symbol.text.to_string()),
+        y,
+        class,
+    )
+}
+
+/// Analyzes a type variation suffix.
+fn analyze_type_variation(
+    x: &VariationContextAll,
+    y: &mut context::Context,
+    class: &data::Class,
+) -> Result<meta::pattern::Variation> {
+    Ok(if let Some(x) = x.variationBody() {
+        match x.as_ref() {
+            VariationBodyContextAll::VarAnyContext(_) => meta::pattern::Variation::Any,
+            VariationBodyContextAll::VarSystemPreferredContext(_) => {
+                meta::pattern::Variation::Exactly(data::Variation::SystemPreferred)
+            }
+            VariationBodyContextAll::VarUserDefinedContext(x) => {
+                meta::pattern::Variation::Exactly(data::Variation::UserDefined(
+                    antlr_child!(x, y, variation, 0, analyze_type_variation_identifier, class)
+                        .1
+                        .unwrap_or_default(),
+                ))
+            }
+            VariationBodyContextAll::Error(_) => meta::pattern::Variation::Any,
+        }
+    } else {
+        meta::pattern::Variation::Any
+    })
+}
+
+/// Analyzes a single type parameter.
+fn analyze_type_parameter(
+    x: &ParameterContextAll,
+    y: &mut context::Context,
+) -> Result<meta::pattern::Parameter> {
+    let name = x.identifierOrString().and_then(|name| {
+        let name = match name.as_ref() {
+            IdentifierOrStringContextAll::StrContext(x) => x
+                .String()
+                .and_then(|x| analyze_string(&x.symbol.text, y))
+                .unwrap_or_default(),
+            IdentifierOrStringContextAll::IdentContext(x) => x
+                .Identifier()
+                .map(|x| x.symbol.text.to_string())
+                .unwrap_or_default(),
+            IdentifierOrStringContextAll::Error(_) => String::from(""),
+        };
+        if name.is_empty() {
+            diagnostic!(
+                y,
+                Error,
+                TypeInvalidFieldName,
+                "parameter names (if specified) cannot be empty"
+            );
+            None
+        } else {
+            Some(name)
+        }
+    });
+
+    let value = if let Some(value) = x.parameterValue() {
+        match value.as_ref() {
+            ParameterValueContextAll::SpecifiedContext(x) => Some(
+                antlr_child!(x, y, pattern, analyze_pattern)
+                    .1
+                    .unwrap_or_default(),
+            ),
+            ParameterValueContextAll::NullContext(_) => None,
+            ParameterValueContextAll::Error(_) => Some(meta::pattern::Value::Unresolved),
+        }
+    } else {
+        Some(meta::pattern::Value::Unresolved)
+    };
+
+    Ok(meta::pattern::Parameter { name, value })
+}
+
+/// Analyzes a type parameter pack.
+fn analyze_type_parameters(
+    x: &ParametersContextAll,
+    y: &mut context::Context,
+) -> Result<Vec<meta::pattern::Parameter>> {
+    Ok(antlr_children!(x, y, argument, analyze_type_parameter)
+        .1
+        .into_iter()
+        .map(|x| x.unwrap_or_default())
+        .collect())
 }
 
 /// Analyzes miscellaneous pattern types.

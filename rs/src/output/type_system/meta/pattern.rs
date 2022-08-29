@@ -679,6 +679,15 @@ impl std::fmt::Display for Parameter {
     }
 }
 
+impl Default for Parameter {
+    fn default() -> Self {
+        Self {
+            name: None,
+            value: Some(Value::Unresolved),
+        }
+    }
+}
+
 impl Pattern for Parameter {
     type Value = data::Parameter;
 

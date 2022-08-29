@@ -112,7 +112,7 @@ impl ParameterInfo for Definition {
                 ));
             }
             if let Some(value) = &param.value {
-                if !slot.pattern.match_pattern(value) {
+                if !slot.pattern.match_pattern(value)? {
                     return Err(cause!(
                         TypeMismatchedParameters,
                         "parameter {} does not match pattern {}",

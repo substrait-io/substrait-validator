@@ -452,7 +452,7 @@ parameter : ( identifierOrString Colon )? parameterValue ;
 // used to match or evaluate to explicitly-skipped optional parameters;
 // otherwise, the given pattern is used for the parameter value. The "?" (any)
 // pattern is special-cased to also match explicitly-skipped parameter slots.
-parameterValue : Null | pattern ;
+parameterValue : Null #Null | pattern #Specified;
 
 // Integer literals.
 integer : ( Plus | Minus )? ( Zero | Nonzero ) ;
@@ -464,4 +464,4 @@ identifierPath : ( Identifier Period )* Identifier ;
 // The names of parameters (i.e. NSTRUCT field names) can be specified using
 // both identifiers and strings. The latter is idiomatic only when the field
 // name is not a valid Substrait identifier.
-identifierOrString : String | Identifier ;
+identifierOrString : String #Str | Identifier #Ident;
