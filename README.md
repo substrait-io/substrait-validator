@@ -27,7 +27,7 @@ older version. Refer to the table below for the version compatibility matrix.
 
 | Substrait...   | ... is supported by validator ...    |
 | -------------- | ------------------------------------ |
-| 0.9.x - 0.10.x | current version                      |
+| 0.9.x - 0.12.x | current version                      |
 | 0.7.x - 0.8.x  | 0.0.7                                |
 | 0.5.x - 0.6.x  | 0.0.6                                |
 | 0.3.x - 0.4.x  | 0.0.4 - 0.0.5                        |
@@ -84,7 +84,10 @@ relations:
 When you save that as a `.yaml` file and pass it to the validator, it will
 simply exit with code 0 without printing anything. Of course, it's more
 interesting to try a plan that *isn't* valid, but we'll leave that as an
-excercise to the reader.
+excercise to the reader. Note that the validator supports other file types as
+well, including JSON, [JDOT](https://github.com/saulpw/jdot), and binary
+protobuf files, distinguishing between them using the file extension by
+default. You can also specify the format manually using `--in-type`.
 
 It's also more interesting to have the validator tell you how it interpreted
 the plan. Let's change the command line to do that:
@@ -94,32 +97,33 @@ user@host:~$ substrait-validator input.yaml --out-file output.html --mode ignore
 ```
 
 This generates `output.html`, a self-contained HTML file describing the plan.
-
 Just like the input file, the output file format is derived from the file
-extension, so the `.html` part is significant. If you don't want to rely on
-this, you can also just specify the formats you want manually using `--in-type`
-and `--out-type`.
+extension, so the `.html` part is significant.
 
-`--mode ignore` tells the validator to emit a file and exit with code 0
-regardless of the validation result. The full list of modes is:
+The validator only emits an output file if it exits with code 0, and exits
+with code 1 if validation fails, to play nicely with build systems like `make`.
+`--mode ignore` just tells the validator to ignore the validation result, so it
+always emits the file. The full list of modes is:
 
  - `strict`: fail unless the plan was proven to be valid;
  - `loose` (default): fail if the plan was proven to be invalid;
- - `ignore`: ignore the validation result, though the plan still needs some
-   level of sanity to succeed; for example, the file must exist, and must
-   decode according to the specified file format.
- - `convert`: don't run validation at all; simply convert between different
-   representations of the given `substrait.Plan` message. For example, you
-   can use this to convert between the binary protobuf serialization format
-   and any of the text-based formats supported by the validator.
+ - `ignore`: ignore the validation result (the plan still needs some level of
+   sanity for the validator to succeed; for example, the file must exist, and
+   must decode according to the specified file format);
+ - `convert`: don't run validation at all; instead, only convert between
+   different representations of the given `substrait.Plan` message. For
+   example, you can use this to convert between the binary protobuf
+   serialization format and any of the text-based formats supported by the
+   validator.
 
 Note that, without `--mode convert`, the output message type will be
-`subtrait.validator.ParseResult` rather than `substrait.Plan` if you use any
-of the protobuf-like serialization formats. This message type is a meta
+`subtrait.validator.ParseResult` rather than `substrait.Plan` if you use any of
+the protobuf-like serialization formats. This message type is a meta
 description of the incoming `substrait.Plan` message, with all the information
 gathered by the validator annotated to the nodes. The HTML format is pretty
 much just a pretty-printed version of this format. More information about this
-type is available in the associated `.proto` file.
+type is available in
+[the associated `.proto` file](proto/substrait/validator/validator.proto).
 
 For more information, use the `--help` option.
 
@@ -159,12 +163,18 @@ sense that they are validation results; they simply indicate that the CLI
 returned a non-zero exit code and why.
 
 Severity levels can be clamped to a certain range, distinguished by their
-classification. This allows you to, for example, disable warnings of a certain
-type by clamping them down to info when you know that those particular warnings
-are not of interest to your application, or raise severity to error if you want
-the validator to be extra pedantic about something. Because the validator
-derives its verdict from the highest-severity diagnostic encountered, clamping
-severity levels may also change the verdict.
+classification. On the command line, the syntax for this is
+`--diagnostic-level <code> <min-severity> <max-severity>`, where the severity
+levels can be `info`, `warning`, or `error`. This allows you to, for example,
+disable warnings of a certain type by clamping them down to `info` when you
+know that those particular warnings are not of interest to your application
+(`--diagnostic-level <code> info info`), raise severity to `error` if you
+want the validator to be extra pedantic about something
+(`--diagnostic-level <code> error error`), or reduce the severity of errors to
+warnings without affecting info messages
+(`--diagnostic-level <code> info warning`). Because the validator derives its
+verdict from the highest-severity diagnostic encountered, clamping severity
+levels may also change the verdict.
 
 You can request the list of diagnostic codes from the command-line interface
 using the `--help-diagnostics` flag:
