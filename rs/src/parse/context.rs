@@ -17,7 +17,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::sync::Arc;
 
 /// Parse/validation context and output node, passed to parser functions along
 /// with a reference to the to-be-parsed input node.
@@ -260,8 +259,16 @@ impl<'a> Context<'a> {
         &self.output.data
     }
 
+    /// Returns the URI -> simple extension module map. This includes
+    /// transitive dependencies that don't have an anchor.
+    pub fn extension_modules(
+        &mut self,
+    ) -> &mut HashMap<String, extension::simple::module::Reference> {
+        &mut self.state.extension_modules
+    }
+
     /// Returns the resolver for URI anchors and references.
-    pub fn extension_uris(&mut self) -> &mut Resolver<u32, Arc<extension::YamlInfo>> {
+    pub fn extension_uris(&mut self) -> &mut Resolver<u32, extension::simple::module::Reference> {
         &mut self.state.extension_uris
     }
 
@@ -270,39 +277,37 @@ impl<'a> Context<'a> {
     pub fn define_extension_uri(
         &mut self,
         anchor: u32,
-        uri: Arc<extension::YamlInfo>,
-    ) -> Result<(), (Arc<extension::YamlInfo>, path::PathBuf)> {
+        uri: extension::simple::module::Reference,
+    ) -> Result<(), (extension::simple::module::Reference, path::PathBuf)> {
         self.state
             .extension_uris
             .define(anchor, uri, self.breadcrumb.path.to_path_buf())
     }
 
     /// Returns the resolver for function anchors and references.
-    pub fn fns(&mut self) -> &mut Resolver<u32, Arc<extension::Reference<extension::Function>>> {
+    pub fn functions(
+        &mut self,
+    ) -> &mut Resolver<u32, extension::simple::function::ResolutionResult> {
         &mut self.state.functions
     }
 
     /// Registers a function definition. Shorthand for fns().define(), using
     /// the current path as the registration path.
-    pub fn define_fn(
+    pub fn define_function(
         &mut self,
         anchor: u32,
-        function: Arc<extension::Reference<extension::Function>>,
-    ) -> Result<
-        (),
-        (
-            Arc<extension::Reference<extension::Function>>,
-            path::PathBuf,
-        ),
-    > {
+        function: extension::simple::function::ResolutionResult,
+    ) -> Result<(), (extension::simple::function::ResolutionResult, path::PathBuf)> {
         self.state
             .functions
             .define(anchor, function, self.breadcrumb.path.to_path_buf())
     }
 
     /// Returns the resolver for type anchors and references.
-    pub fn types(&mut self) -> &mut Resolver<u32, data::class::UserDefined> {
-        &mut self.state.types
+    pub fn type_classes(
+        &mut self,
+    ) -> &mut Resolver<u32, extension::simple::type_class::ResolutionResult> {
+        &mut self.state.type_classes
     }
 
     /// Registers a type definition. Shorthand for types().define(), using the
@@ -310,25 +315,39 @@ impl<'a> Context<'a> {
     pub fn define_type(
         &mut self,
         anchor: u32,
-        class: data::class::UserDefined,
-    ) -> Result<(), (data::class::UserDefined, path::PathBuf)> {
+        class: extension::simple::type_class::ResolutionResult,
+    ) -> Result<
+        (),
+        (
+            extension::simple::type_class::ResolutionResult,
+            path::PathBuf,
+        ),
+    > {
         self.state
-            .types
+            .type_classes
             .define(anchor, class, self.breadcrumb.path.to_path_buf())
     }
 
     /// Returns the resolver for type variation anchors and references.
-    pub fn tvars(&mut self) -> &mut Resolver<u32, data::variation::UserDefinedByName> {
+    pub fn type_variations(
+        &mut self,
+    ) -> &mut Resolver<u32, extension::simple::type_variation::ResolutionResult> {
         &mut self.state.type_variations
     }
 
     /// Registers a type definition. Shorthand for tvars().define(), using the
     /// current path as the registration path.
-    pub fn define_tvar(
+    pub fn define_type_variation(
         &mut self,
         anchor: u32,
-        variation: data::variation::UserDefinedByName,
-    ) -> Result<(), (data::variation::UserDefinedByName, path::PathBuf)> {
+        variation: extension::simple::type_variation::ResolutionResult,
+    ) -> Result<
+        (),
+        (
+            extension::simple::type_variation::ResolutionResult,
+            path::PathBuf,
+        ),
+    > {
         self.state
             .type_variations
             .define(anchor, variation, self.breadcrumb.path.to_path_buf())
@@ -372,18 +391,6 @@ impl<'a> Context<'a> {
         (allowed, path)
     }
 
-    /// Returns a mutable reference to the Option that possibly contains the
-    /// YAML data object under construction.
-    pub fn yaml_data_opt(&mut self) -> &mut Option<extension::YamlData> {
-        &mut self.state.yaml_data
-    }
-
-    /// Returns a mutable reference to the YAML data object under construction.
-    /// Panics if we're not currently constructing YAML data.
-    pub fn yaml_data(&mut self) -> &mut extension::YamlData {
-        self.state.yaml_data.as_mut().unwrap()
-    }
-
     /// Returns the path leading up to the current node.
     pub fn path(&self) -> &path::Path<'a> {
         &self.breadcrumb.path
@@ -416,13 +423,21 @@ impl<'a> Context<'a> {
     pub fn field_parsed<S: AsRef<str>>(&mut self, field: S) -> bool {
         self.breadcrumb.fields_parsed.contains(field.as_ref())
     }
+
+    /// Provides access to the URI recursion stack. When a URI is about to be
+    /// parsed, it is pushed into the vec; when parsing completes, it is popped
+    /// off the stack. The URI resolution function uses this to check for
+    /// duplicates and recursion depth.
+    pub fn uri_stack(&mut self) -> &mut Vec<String> {
+        &mut self.state.uri_stack
+    }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Resolver<K, V>
 where
-    K: Clone + Debug + Default + Eq + Hash,
-    V: Clone + Debug + Default,
+    K: Eq + Hash + Clone,
+    V: Clone,
 {
     /// Map of keys that have been registered thus far to their value and to
     /// the path from which they were registered.
@@ -433,10 +448,23 @@ where
     used: HashSet<K>,
 }
 
+impl<K, V> Default for Resolver<K, V>
+where
+    K: Eq + Hash + Clone,
+    V: Clone,
+{
+    fn default() -> Self {
+        Self {
+            map: Default::default(),
+            used: Default::default(),
+        }
+    }
+}
+
 impl<K, V> Resolver<K, V>
 where
-    K: Clone + Debug + Default + Eq + Hash,
-    V: Clone + Debug + Default,
+    K: Eq + Hash + Clone,
+    V: Clone,
 {
     /// Creates a new resolver.
     pub fn new() -> Self {
@@ -483,17 +511,21 @@ where
 /// Global state information tracked by the validation logic.
 #[derive(Default)]
 pub struct State {
+    /// List of all resolved simple extension modules by URI, including
+    /// transitive dependencies.
+    pub extension_modules: HashMap<String, extension::simple::module::Reference>,
+
     /// URI anchor resolver.
-    pub extension_uris: Resolver<u32, Arc<extension::YamlInfo>>,
+    pub extension_uris: Resolver<u32, extension::simple::module::Reference>,
 
     /// YAML-defined function anchor resolver.
-    pub functions: Resolver<u32, Arc<extension::Reference<extension::Function>>>,
+    pub functions: Resolver<u32, extension::simple::function::ResolutionResult>,
 
     /// YAML-defined data type anchor resolver.
-    pub types: Resolver<u32, data::class::UserDefined>,
+    pub type_classes: Resolver<u32, extension::simple::type_class::ResolutionResult>,
 
     /// YAML-defined type variation anchor resolver.
-    pub type_variations: Resolver<u32, data::variation::UserDefinedByName>,
+    pub type_variations: Resolver<u32, extension::simple::type_variation::ResolutionResult>,
 
     /// Protobuf Any type URL resolver.
     pub proto_any_types: Resolver<String, ()>,
@@ -508,8 +540,8 @@ pub struct State {
     /// stream).
     pub schema_stack: Vec<Option<data::Type>>,
 
-    /// The YAML data object under construction, if any.
-    pub yaml_data: Option<extension::YamlData>,
+    /// Stack for URIs being parsed. Used to detect recursion and limit depth.
+    pub uri_stack: Vec<String>,
 }
 
 /// Breadcrumbs structure. Each breadcrumb is associated with a node, and

@@ -57,11 +57,6 @@ message Node {
     // elsewhere in the plan.
     NodeReference node_reference = 4;
 
-    // Special case for proto_primitive for references to YAML files via a URI.
-    // If resolved, the keys in the toplevel YAML map are represented using
-    // Field messages in data.
-    YamlReference yaml_reference = 5;
-
     // This node represents a YAML map/object. The keys are represented using
     // Field messages in data.
     google.protobuf.Empty yaml_map = 6;
@@ -72,6 +67,14 @@ message Node {
 
     // This node represents a YAML primitive.
     PrimitiveData yaml_primitive = 8;
+
+    // Special case for string primitives that were interpreted and resolved as
+    // a URI. These nodes will have a single child node with path `data` that
+    // represents the parse result of the referred file.
+    string resolved_uri = 9;
+
+    // No longer used. The more generic ResolvedUri type is used instead.
+    YamlReference yaml_reference = 5 [deprecated = true];
   }
 
   // Semantic classification of this node.
@@ -178,6 +181,8 @@ message Node {
 
   // Information about a reference to a YAML file.
   message YamlReference {
+    option deprecated = true;
+
     // URI to the YAML file.
     string uri = 1;
   }

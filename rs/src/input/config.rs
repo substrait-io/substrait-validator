@@ -39,7 +39,6 @@ fn resolve_with_curl(uri: &str) -> Result<Vec<u8>, curl::Error> {
 }
 
 /// Configuration structure.
-#[derive(Default)]
 pub struct Config {
     /// When set, do not generate warnings for unknown protobuf fields that are
     /// set to their protobuf-defined default value.
@@ -80,6 +79,26 @@ pub struct Config {
     /// error. If no downloader is specified, only file:// URLs with an
     /// absolute path are supported.
     pub uri_resolver: Option<UriResolver>,
+
+    /// Optional URI resolution depth. If specified, dependencies are only
+    /// resolved this many levels deep. Setting this to zero effectively
+    /// disables extension URI resolution altogether.
+    pub max_uri_resolution_depth: Option<usize>,
+}
+
+// TODO: enable URI resolution by default once all that works. Then this can
+// be derived again. Also still need to expose the depth option in extensions.
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            ignore_unknown_fields: Default::default(),
+            allowed_proto_any_urls: Default::default(),
+            diagnostic_level_overrides: Default::default(),
+            uri_overrides: Default::default(),
+            uri_resolver: Default::default(),
+            max_uri_resolution_depth: Some(0),
+        }
+    }
 }
 
 impl Config {
@@ -151,5 +170,12 @@ impl Config {
     #[cfg(feature = "curl")]
     pub fn add_curl_uri_resolver(&mut self) {
         self.add_uri_resolver(resolve_with_curl)
+    }
+
+    /// Sets the maximum recursion depth for URI resolution, in the presence of
+    /// transitive dependencies. Setting this to None disables the limit,
+    /// setting this to zero disables URI resolution entirely.
+    pub fn set_max_uri_resolution_depth(&mut self, depth: Option<usize>) {
+        self.max_uri_resolution_depth = depth;
     }
 }

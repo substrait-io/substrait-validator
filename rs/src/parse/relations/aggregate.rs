@@ -54,13 +54,13 @@ fn parse_measure(
     let (n, e) = proto_required_field!(x, y, measure, functions::parse_aggregate_function);
     let data_type = n.data_type();
     let expression = e.unwrap_or_default();
-    y.set_data_type(data_type);
+    y.set_data_type(data_type.clone());
 
     // Parse the filter and describe the node.
     if x.filter.is_some() {
-        let filter = proto_required_field!(x, y, filter, expressions::parse_predicate)
-            .1
-            .unwrap_or_default();
+        let (n, e) = proto_required_field!(x, y, filter, expressions::parse_predicate);
+        let filter = e.unwrap_or_default();
+        let filter_type = n.data_type();
         summary!(
             y,
             "Applies aggregate function {expression:#} to all rows for \
@@ -68,7 +68,10 @@ fn parse_measure(
         );
         let filtered_expression = expressions::Expression::Function(
             String::from("filter"),
-            vec![filter.into(), expression.into()],
+            vec![
+                expressions::functions::FunctionArgument::Value(filter_type, filter),
+                expressions::functions::FunctionArgument::Value(data_type, expression),
+            ],
         );
         describe!(
             y,

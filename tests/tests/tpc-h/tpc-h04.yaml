@@ -26,8 +26,7 @@ name: TPC-H04
 diags:
 - { code: 0001, max: i } # Suppress "not yet implemented" warnings
 - { code: 0006, max: i } # Suppress deprecation warnings
-- { code: 3002, max: i } # Suppress function name resolution errors (function parsing isn't implemented yet)
-- { code: 6003, max: i } # Suppress function definition check warnings (function parsing isn't implemented yet)
+- { code: 2001, max: i } # Suppress YAML resolution disabled warnings (not implemented yet)
 plan:
   __test:
   - level: i

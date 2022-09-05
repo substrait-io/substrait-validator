@@ -11,9 +11,10 @@ use crate::output::diagnostic;
 pub fn is_identifier(s: &str) -> bool {
     // Note:
     //  - $ seems to be legal in type names;
-    //  - ! and : are used within function names/signatures.
+    //  - ! and : are used within function names/signatures;
+    //  - . is used for namespaced paths.
     static IDENTIFIER_RE: once_cell::sync::Lazy<regex::Regex> =
-        once_cell::sync::Lazy::new(|| regex::Regex::new("[a-zA-Z_$][a-zA-Z0-9_$!:]*").unwrap());
+        once_cell::sync::Lazy::new(|| regex::Regex::new("[a-zA-Z_$][a-zA-Z0-9_$!:\\.]*").unwrap());
     IDENTIFIER_RE.is_match(s)
 }
 

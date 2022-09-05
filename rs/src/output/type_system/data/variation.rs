@@ -3,8 +3,6 @@
 //! Module for representing type [`Variation`]s.
 
 use crate::output::extension;
-use crate::output::type_system::data;
-use std::sync::Arc;
 
 /// A type variation.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -13,7 +11,7 @@ pub enum Variation {
     SystemPreferred,
 
     /// Reference to a user-defined variation.
-    UserDefined(UserDefined),
+    UserDefined(extension::simple::type_variation::Reference),
 }
 
 impl Default for Variation {
@@ -53,63 +51,11 @@ impl Variation {
             Variation::UserDefined(x) => x
                 .definition
                 .as_ref()
-                .map(|x| x.function_behavior == FunctionBehavior::Inherits)
+                .map(|x| {
+                    x.function_behavior
+                        == extension::simple::type_variation::FunctionBehavior::Inherits
+                })
                 .unwrap_or(true),
         }
     }
-}
-
-/// A reference to a user-defined type variation.
-pub type UserDefined = Arc<extension::Reference<UserDefinedDefinition>>;
-
-/// Type variation extension.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct UserDefinedDefinition {
-    /// The base type for this variation.
-    pub base: data::Class,
-
-    /// Function behavior for this variation.
-    pub function_behavior: FunctionBehavior,
-}
-
-/// Type variation function behavior.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum FunctionBehavior {
-    Inherits,
-    Separate,
-}
-
-impl Default for FunctionBehavior {
-    fn default() -> Self {
-        FunctionBehavior::Inherits
-    }
-}
-
-/// A reference to one or more user-defined type variations going by the same
-/// name, distinguished by their base type class.
-pub type UserDefinedByName = Arc<extension::Reference<UserDefinedDefinitions>>;
-
-/// A group of one or more variation definitions using a single name. Note:
-/// multiple variations can be defined with the same name, because names are
-/// scoped to the type class they are defined for. See
-/// <https://github.com/substrait-io/substrait/issues/268>.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct UserDefinedDefinitions {
-    pub variations: Vec<Arc<UserDefinedDefinition>>,
-}
-
-/// Resolve a reference to a set of variations going by the same name to a
-/// single variation indexed by its base class. Returns an unresolved reference
-/// if it does not exist.
-pub fn resolve_by_class(variations: &UserDefinedByName, base: &data::Class) -> UserDefined {
-    let definition = variations
-        .definition
-        .as_ref()
-        .and_then(|x| x.variations.iter().find(|x| &x.base == base))
-        .cloned();
-    Arc::new(extension::Reference {
-        name: variations.name.clone(),
-        uri: variations.uri.clone(),
-        definition,
-    })
 }

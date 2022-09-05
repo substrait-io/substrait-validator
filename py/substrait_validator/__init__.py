@@ -406,6 +406,17 @@ def substrait_version() -> str:
     ),
 )
 @click.option(
+    "--uri-depth",
+    type=int,
+    default=None,
+    help=(
+        "Sets the maximum recursion depth for resolving transitive "
+        "dependencies. You can specify a negative number to disable "
+        "the limit, or set this to zero to disable URI resolution "
+        "entirely."
+    ),
+)
+@click.option(
     "--help-diagnostics",
     is_flag=True,
     help=("Show a list of all known diagnostic codes and exit."),
@@ -437,6 +448,7 @@ def cli(  # noqa: C901
     diagnostic_level,
     override_uri,
     use_urllib,
+    uri_depth,
     help_diagnostics,
     print_version,
     print_substrait_version,
@@ -758,6 +770,11 @@ def cli(  # noqa: C901
             fatal(e)
     if use_urllib:
         config.add_urllib_resolver()
+    if uri_depth is not None:
+        if uri_depth < 0:
+            config.set_max_uri_resolution_depth(None)
+        else:
+            config.set_max_uri_resolution_depth(uri_depth)
 
     # Run the parser/validator.
     result = plan_to_result_handle(in_plan, config)

@@ -127,6 +127,10 @@ def test_resolver_callback():
     # Disable missing root relation error, so we don't have to supply one.
     config.override_diagnostic_level(5001, "info", "info")
 
+    # Explicitly disable the resolution depth limit, to opt in to URI
+    # resolution.
+    config.set_max_uri_resolution_depth(None)
+
     # Add the resolver.
     config.add_uri_resolver(resolver)
 
