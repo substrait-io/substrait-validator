@@ -73,6 +73,10 @@ message Node {
     // represents the parse result of the referred file.
     string resolved_uri = 9;
 
+    // This node represents an abstract syntax tree node, used for representing
+    // complex YAML string parse results.
+    google.protobuf.Empty ast_node = 10;
+
     // No longer used. The more generic ResolvedUri type is used instead.
     YamlReference yaml_reference = 5 [deprecated = true];
   }

@@ -274,6 +274,34 @@ pub enum Classification {
     #[strum(props(Description = "mismatched nullability"))]
     TypeMismatchedNullability = 4008,
 
+    #[strum(props(Description = "invalid type pattern or derivation expression"))]
+    TypeDerivationInvalid = 4009,
+
+    // Note the difference between above and below! Above should be used when
+    // the derivation itself is invalid due to syntax or metatype errors, or in
+    // other words, when it could *never* match or evaluate, regardless of
+    // context. Below is used when the derivation itself appears to be sane,
+    // but it does not apply to the given context. From a user perspective,
+    // above means that the YAML is wrong, while below means that a function
+    // is used incorrectly in a plan. Note that we cannot detect all problems
+    // with type derivation expressions without evaluating them because they
+    // are dynamically typed.
+    #[strum(props(
+        Description = "type pattern or derivation expression failed to match or evaluate"
+    ))]
+    TypeDerivationFailed = 4010,
+
+    #[strum(props(Description = "parse error in type pattern or derivation expression"))]
+    TypeParseError = 4011,
+
+    #[strum(props(
+        Description = "name resolution error in type pattern or derivation expression"
+    ))]
+    TypeResolutionError = 4012,
+
+    #[strum(props(Description = "invalid field name"))]
+    TypeInvalidFieldName = 4013,
+
     // Relation-related diagnostics (group 5).
     #[strum(props(HiddenDescription = "relation-related diagnostics"))]
     Relation = 5000,
@@ -330,28 +358,8 @@ pub enum Classification {
     #[strum(props(Description = "redundant field"))]
     RedundantField = 7007,
 
-    // Type derivations (group 8).
-    #[strum(props(
-        HiddenDescription = "diagnostics for type derivation patterns and expressions"
-    ))]
-    Derivation = 8000,
-
-    #[strum(props(Description = "invalid type derivation pattern or expression"))]
-    DerivationInvalid = 8001,
-
-    // Note the difference between above and below! Above should be used when
-    // the derivation itself is invalid due to syntax or metatype errors, or in
-    // other words, when it could *never* match or evaluate, regardless of
-    // context. Below is used when the derivation itself appears to be sane,
-    // but it does not apply to the given context. From a user perspective,
-    // above means that the YAML is wrong, while below means that a function
-    // is used incorrectly in a plan. Note that we cannot detect all problems
-    // with type derivation expressions without evaluating them because they
-    // are dynamically typed.
-    #[strum(props(
-        Description = "type derivation pattern or expression failed to match or evaluate"
-    ))]
-    DerivationFailed = 8002,
+    #[strum(props(Description = "redundant enum variant"))]
+    RedundantEnumVariant = 7008,
 }
 
 impl Default for Classification {

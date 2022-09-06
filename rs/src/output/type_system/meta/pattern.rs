@@ -8,6 +8,7 @@ use crate::output::diagnostic;
 use crate::output::type_system::data;
 use crate::output::type_system::meta;
 use crate::util;
+use crate::util::string::describe_identifier;
 use crate::util::string::Describe;
 use std::fmt::Write;
 use std::sync::Arc;
@@ -22,13 +23,17 @@ pub trait Pattern {
     fn exactly(value: Self::Value) -> Self;
 
     /// Matches this pattern without any provided context.
-    fn match_pattern(&self, value: &Self::Value) -> bool {
+    fn match_pattern(&self, value: &Self::Value) -> diagnostic::Result<bool> {
         let mut context = meta::Context::default();
         self.match_pattern_with_context(&mut context, value)
     }
 
     /// Matches this pattern with a provided context.
-    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool;
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        value: &Self::Value,
+    ) -> diagnostic::Result<bool>;
 
     /// Evaluates this pattern without any provided context.
     fn evaluate(&self) -> diagnostic::Result<Self::Value> {
@@ -52,28 +57,17 @@ pub trait Pattern {
 /// [meta::Value].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
-    /// Accepts any meta::Value. Syntax: `?`. Also used when a pattern is unknown
-    /// due to validator-specific error recovery. Cannot be evaluated.
+    /// Used when a pattern is unknown due to validator-specific error
+    /// recovery. Matches all values, and evaluates to an unresolved value.
+    /// Syntax (only for printing): `!`.
+    Unresolved,
+
+    /// Accepts any meta::Value. Cannot be evaluated. Syntax: `?`.
     Any,
 
-    /// A binding. These act sort of like variables in a given context. When
-    /// the binding is first matched against a value, it acts like Any and
-    /// assumes that value. When it is matched again in the same context later,
-    /// it only matches meta::Values that are exactly equal to the previous
-    /// match. When evaluated, it evaluates to the value that the binding was
-    /// bound to, or fails if it was not bound. Syntax: any identifier that
-    /// isn't recognized as anything else.
-    Binding(String),
-
-    /// A special binding that accepts any boolean. When the binding is first
-    /// matched against a value, the binding assumes the value. When it is
-    /// matched again in the same context later, the binding assumes the
-    /// boolean OR of the previous value of the binding and the matched value.
-    /// This is used to handle MIRROR nullability behavior. When evaluated, it
-    /// evaluates to the value that the binding was bound to, or to false if
-    /// it was not found. Syntax: any identifier that isn't recognized as
-    /// anything else, followed by a `?`.
-    ImplicitOrBinding(String),
+    /// A binding. These act sort of like variables in a given context. Four
+    /// variations on the matching and evaluation rules exist; see [Binding].
+    Binding(Binding),
 
     /// Pattern for booleans.
     ///  - None: both true and false match the pattern. Cannot be evaluated.
@@ -131,12 +125,9 @@ impl Describe for Value {
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         match self {
+            Value::Unresolved => write!(f, "!"),
             Value::Any => write!(f, "?"),
-            Value::Binding(name) => util::string::describe_identifier(f, name, limit),
-            Value::ImplicitOrBinding(name) => {
-                util::string::describe_identifier(f, name, limit)?;
-                write!(f, "?")
-            }
+            Value::Binding(binding) => binding.describe(f, limit),
             Value::Boolean(None) => write!(f, "metabool"),
             Value::Boolean(Some(true)) => write!(f, "true"),
             Value::Boolean(Some(false)) => write!(f, "false"),
@@ -155,10 +146,8 @@ impl Describe for Value {
             Value::DataType(None) => write!(f, "typename"),
             Value::DataType(Some(pattern)) => pattern.describe(f, limit),
             Value::Function(func, args) => {
-                let (a, b) = limit.split(20);
-                func.describe(f, a)?;
-                write!(f, "(")?;
-                util::string::describe_sequence(f, args, b, 10, |f, arg, _, limit| {
+                write!(f, "{func}(")?;
+                util::string::describe_sequence(f, args, limit, 10, |f, arg, _, limit| {
                     arg.describe(f, limit)
                 })
             }
@@ -172,6 +161,12 @@ impl std::fmt::Display for Value {
     }
 }
 
+impl Default for Value {
+    fn default() -> Self {
+        Value::Unresolved
+    }
+}
+
 impl Value {
     /// Match the given value without being lenient about unresolved values.
     /// Whenever this returns false, the public match_pattern_with_context()
@@ -179,37 +174,15 @@ impl Value {
     /// result with true if so; unresolved values should always match
     /// everything in order to avoid flooding the user with error messages
     /// when the validator is confused due to a previous error.
-    fn match_strictly(&self, context: &mut meta::Context, value: &meta::Value) -> bool {
-        match self {
+    fn match_strictly(
+        &self,
+        context: &mut meta::Context,
+        value: &meta::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(match self {
+            Value::Unresolved => true,
             Value::Any => true,
-            Value::Binding(name) => {
-                if let Some(expected) = context.bindings.get(name) {
-                    if value != expected {
-                        return false;
-                    }
-                } else {
-                    context
-                        .bindings
-                        .insert(name.clone(), value.clone())
-                        .unwrap();
-                }
-                true
-            }
-            Value::ImplicitOrBinding(name) => {
-                if let Some(mut value) = value.get_boolean() {
-                    if let Some(expected) = context.bindings.get(name) {
-                        if let Some(current) = expected.get_boolean() {
-                            value |= current;
-                        } else {
-                            return false;
-                        }
-                    }
-                    context.bindings.insert(name.clone(), value.into()).unwrap();
-                    true
-                } else {
-                    false
-                }
-            }
+            Value::Binding(binding) => binding.match_strictly(context, value)?,
             Value::Boolean(expected) => {
                 if let Some(value) = value.get_boolean() {
                     if let Some(expected) = expected {
@@ -255,7 +228,7 @@ impl Value {
             Value::DataType(expected) => {
                 if let Some(value) = value.get_data_type() {
                     if let Some(expected) = expected {
-                        expected.match_pattern_with_context(context, &value)
+                        expected.match_pattern_with_context(context, &value)?
                     } else {
                         true
                     }
@@ -263,7 +236,20 @@ impl Value {
                     false
                 }
             }
-            Value::Function(_, _) => false,
+            Value::Function(func, args) => Value::exactly(func.evaluate(context, args)?)
+                .match_pattern_with_context(context, value)?,
+        })
+    }
+
+    /// Returns a pattern that matches the given type exactly.
+    pub fn exactly_type(meta_type: meta::Type) -> Self {
+        match meta_type {
+            meta::Type::Unresolved => Value::Any,
+            meta::Type::Boolean => Value::Boolean(None),
+            meta::Type::Integer => Value::Integer(i64::MIN, i64::MAX),
+            meta::Type::Enum => Value::Enum(None),
+            meta::Type::String => Value::String(None),
+            meta::Type::DataType => Value::DataType(None),
         }
     }
 }
@@ -273,7 +259,7 @@ impl Pattern for Value {
 
     fn exactly(value: Self::Value) -> Self {
         match value {
-            meta::Value::Unresolved => Value::Any,
+            meta::Value::Unresolved => Value::Unresolved,
             meta::Value::Boolean(x) => Value::Boolean(Some(x)),
             meta::Value::Integer(x) => Value::Integer(x, x),
             meta::Value::Enum(x) => Value::Enum(Some(vec![x])),
@@ -282,8 +268,12 @@ impl Pattern for Value {
         }
     }
 
-    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool {
-        self.match_strictly(context, value) || value.is_unresolved()
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        value: &Self::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(self.match_strictly(context, value)? || value.is_unresolved())
     }
 
     fn evaluate_with_context(
@@ -291,34 +281,18 @@ impl Pattern for Value {
         context: &mut meta::Context,
     ) -> diagnostic::Result<Self::Value> {
         match self {
-            Value::Any => Err(cause!(DerivationInvalid, "? patterns cannot be evaluated")),
-            Value::Binding(name) => {
-                if let Some(value) = context.bindings.get(name) {
-                    Ok(value.clone())
-                } else {
-                    Err(cause!(DerivationInvalid, "{name} was never bound"))
-                }
-            }
-            Value::ImplicitOrBinding(name) => {
-                if let Some(value) = context.bindings.get(name) {
-                    if value.get_boolean().is_none() {
-                        Err(cause!(
-                            DerivationInvalid,
-                            "cannot evaluate {name}? because {name} was not bound to a boolean"
-                        ))
-                    } else {
-                        Ok(value.clone())
-                    }
-                } else {
-                    Ok(false.into())
-                }
-            }
+            Value::Unresolved => Ok(meta::Value::Unresolved),
+            Value::Any => Err(cause!(
+                TypeDerivationInvalid,
+                "? patterns cannot be evaluated"
+            )),
+            Value::Binding(binding) => binding.evaluate_with_context(context),
             Value::Boolean(value) => {
                 if let Some(value) = value {
                     Ok((*value).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate boolean with unknown value"
                     ))
                 }
@@ -328,7 +302,7 @@ impl Pattern for Value {
                     Ok((*low).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate integer with unknown value"
                     ))
                 }
@@ -339,12 +313,15 @@ impl Pattern for Value {
                         Ok(meta::Value::Enum(values[0].clone()))
                     } else {
                         Err(cause!(
-                            DerivationInvalid,
+                            TypeDerivationInvalid,
                             "cannot evaluate enum with unknown value"
                         ))
                     }
                 } else {
-                    Err(cause!(DerivationInvalid, "cannot evaluate undefined enum"))
+                    Err(cause!(
+                        TypeDerivationInvalid,
+                        "cannot evaluate undefined enum"
+                    ))
                 }
             }
             Value::String(value) => {
@@ -352,7 +329,7 @@ impl Pattern for Value {
                     Ok(value.clone().into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate string with unknown value"
                     ))
                 }
@@ -362,7 +339,7 @@ impl Pattern for Value {
                     value.evaluate_with_context(context).map(meta::Value::from)
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "cannot evaluate undefined data type"
                     ))
                 }
@@ -372,16 +349,212 @@ impl Pattern for Value {
     }
 }
 
-impl Value {
-    /// Returns a pattern that matches the given type exactly.
-    pub fn exactly_type(meta_type: meta::Type) -> Self {
-        match meta_type {
-            meta::Type::Unresolved => Value::Any,
-            meta::Type::Boolean => Value::Boolean(None),
-            meta::Type::Integer => Value::Integer(i64::MIN, i64::MAX),
-            meta::Type::Enum => Value::Enum(None),
-            meta::Type::String => Value::String(None),
-            meta::Type::DataType => Value::DataType(None),
+/// Binding matching structure. Four variations exist, as detailed below.
+///
+/// ## Normal bindings
+///
+/// (inconsistent = false, nullability = None)
+///
+/// When the binding is first matched against a value, it acts like Any and
+/// assumes that value. When it is matched again in the same context later,
+/// it only matches meta::Values that are exactly equal to the previous
+/// match. When evaluated, it evaluates to the value that the binding was
+/// bound to, or fails if it was not bound. Syntax: any identifier that
+/// isn't recognized as anything else.
+///
+/// ## Inconsistent bindings
+///
+/// (inconsistent = true, nullability = None)
+///
+/// A special binding that always accepts any metavalue. When the binding
+/// is first matched against a value, the binding assumes the value. When
+/// it is matched again in the same context later, the binding assumes the
+/// boolean OR of the previous value of the binding and the matched value
+/// if both values happen to be booleans; this is used to handle MIRROR
+/// nullability behavior. If one or neither of the values is not a boolean,
+/// the binding is not modified; this is used to handle inconsistent
+/// variadic function arguments. When evaluated, it evaluates to the value
+/// that the binding was bound to, or to false if it was not found; this,
+/// again, is used for MIRROR nullability behavior (in the return
+/// derivation this time). Syntax: a `?` followed by any identifier.
+///    
+/// ## Normal bindings with nullability override
+///
+/// (inconsistent = false, nullability = Some(pattern))
+///
+/// A normal binding, but with overrides for nullability. Both the incoming
+/// and (if any) previously bound value must be typenames. When matching
+/// against a previously bound value, the nullability field of the type is
+/// ignored; instead, the nullability of the incoming type is always
+/// matched against the contained pattern. When evaluating, the nullability
+/// of the previously bound value is overridden with the nullability as
+/// evaluated by the contained pattern. Otherwise, the rules are the same
+/// as for normal bindings.
+///
+/// ## Inconsistent bindings with nullability override
+///
+/// (inconsistent = true, nullability = Some(pattern))
+///
+/// An inconsistent binding, but with overrides for nullability. Both the
+/// incoming and (if any) previously bound value must be typenames. When
+/// matching, the nullability of the incoming type is matched against the
+/// contained pattern. When evaluating, the nullability of the previously
+/// bound value is overridden with the nullability as evaluated by the
+/// contained pattern. Unlike for normal inconsistent bindings, the binding
+/// must have been previously bound for evaluation to succeed. Otherwise,
+/// the rules are the same as for normal inconsistent bindings.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Binding {
+    /// The name of the binding, using its original case convention. Note that
+    /// bindings are matched case-insensitively.
+    pub name: String,
+
+    /// Whether the binding uses consistent or inconsistent matching rules.
+    pub inconsistent: bool,
+
+    /// Whether this is a normal binding or a binding with nullability
+    /// override, and if the latter, the nullability pattern.
+    pub nullability: Option<Arc<Value>>,
+}
+
+impl Describe for Binding {
+    fn describe(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        limit: util::string::Limit,
+    ) -> std::fmt::Result {
+        if self.inconsistent {
+            write!(f, "?")?;
+        }
+        if let Some(nullability) = &self.nullability {
+            let (a, b) = limit.split(self.name.len());
+            describe_identifier(f, &self.name, a)?;
+            match nullability.as_ref() {
+                Value::Boolean(Some(false)) => write!(f, "!")?,
+                Value::Boolean(Some(true)) => write!(f, "?")?,
+                Value::Boolean(None) => write!(f, "??")?,
+                x => {
+                    write!(f, "?")?;
+                    x.describe(f, b)?;
+                }
+            }
+        } else {
+            describe_identifier(f, &self.name, limit)?;
+        }
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for Binding {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.display().fmt(f)
+    }
+}
+
+impl Binding {
+    /// Match the given binding without being lenient about unresolved values.
+    /// Whenever this returns false, the public match_pattern_with_context()
+    /// function will check if the value was unresolved, and override the
+    /// result with true if so; unresolved values should always match
+    /// everything in order to avoid flooding the user with error messages
+    /// when the validator is confused due to a previous error.
+    pub fn match_strictly(
+        &self,
+        context: &mut meta::Context,
+        value: &meta::Value,
+    ) -> diagnostic::Result<bool> {
+        // If nullability is specified, the value must be a data type and its
+        // nullability must match the pattern.
+        if let Some(nullability) = &self.nullability {
+            if let meta::Value::DataType(dt) = value {
+                if !nullability.match_pattern(&dt.nullable().into())? {
+                    return Ok(false);
+                }
+            } else {
+                return Ok(false);
+            }
+        }
+
+        // Handle the rest of the matching process.
+        if let Some(current) = context.bindings.get(&self.name.to_ascii_lowercase()) {
+            if self.inconsistent {
+                // Handle the special rule for handling MIRROR nullability.
+                if current == &meta::Value::Boolean(false) && value == &meta::Value::Boolean(true) {
+                    context
+                        .bindings
+                        .insert(self.name.to_ascii_lowercase(), meta::Value::Boolean(true));
+                }
+
+                // Match anything.
+                Ok(true)
+            } else if self.nullability.is_some() {
+                // Match all parts of the metavalue *except* nullability.
+                if let meta::Value::DataType(current) = current {
+                    DataType::exactly(current.clone()).match_strictly(
+                        context,
+                        &value.get_data_type().unwrap_or_default(),
+                        true,
+                    )
+                } else {
+                    Ok(false)
+                }
+            } else {
+                // Match the complete metavalues exactly.
+                Value::exactly(current.clone()).match_strictly(context, value)
+            }
+        } else {
+            // Bind the incoming value to the binding.
+            context
+                .bindings
+                .insert(self.name.to_ascii_lowercase(), value.clone());
+
+            // Match anything.
+            Ok(true)
+        }
+    }
+
+    pub fn evaluate_with_context(
+        &self,
+        context: &mut meta::Context,
+    ) -> diagnostic::Result<meta::Value> {
+        if let Some(nullability) = &self.nullability {
+            // Yield the current value of the binding, augmented with the
+            // nullability field.
+            if let Some(current) = context.bindings.get(&self.name.to_ascii_lowercase()) {
+                if let meta::Value::DataType(current) = current {
+                    let nullability = nullability.evaluate()?;
+                    if let meta::Value::Boolean(nullability) = nullability {
+                        Ok(current.override_nullable(nullability).into())
+                    } else {
+                        Err(cause!(
+                            TypeDerivationInvalid,
+                            "nullability pattern must yield a metabool, but yielded {nullability}"
+                        ))
+                    }
+                } else {
+                    Err(cause!(
+                        TypeDerivationInvalid,
+                        "{} must be a data type, but was bound to {current}",
+                        &self.name
+                    ))
+                }
+            } else {
+                Err(cause!(
+                    TypeDerivationInvalid,
+                    "{} was never bound",
+                    &self.name
+                ))
+            }
+        } else if let Some(current) = context.bindings.get(&self.name.to_ascii_lowercase()) {
+            Ok(current.clone())
+        } else if self.inconsistent {
+            Ok(false.into())
+        } else {
+            Err(cause!(
+                TypeDerivationInvalid,
+                "{} was never bound",
+                &self.name
+            ))
         }
     }
 }
@@ -396,10 +569,11 @@ pub struct DataType {
 
     /// Nullability, defined using a (boolean) Pattern. Syntax:
     ///  - no suffix: Boolean(Some(false))
+    ///  - `!` suffix: Boolean(Some(false))
     ///  - `?` suffix: Boolean(Some(true))
     ///  - `??` suffix: Boolean(None)
     ///  - `?<identifier>` suffix: Binding(_)
-    ///  - `?<identifier>?` suffix: ImplicitOrBinding(_)
+    ///  - `??<identifier>` suffix: InconsistentBinding(_)
     pub nullable: Arc<Value>,
 
     /// Type variation pattern.
@@ -422,11 +596,14 @@ impl Describe for DataType {
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         let mut non_recursive = String::new();
-        write!(
-            &mut non_recursive,
-            "{}{}{}",
-            self.class, self.nullable, self.variation
-        )?;
+        write!(&mut non_recursive, "{}", self.class)?;
+        match self.nullable.as_ref() {
+            Value::Boolean(Some(false)) => (),
+            Value::Boolean(Some(true)) => write!(&mut non_recursive, "?")?,
+            Value::Boolean(None) => write!(&mut non_recursive, "??")?,
+            x => write!(&mut non_recursive, "?{x}")?,
+        }
+        write!(&mut non_recursive, "{}", self.variation)?;
         write!(f, "{}", non_recursive)?;
         if let Some(parameters) = &self.parameters {
             write!(f, "<")?;
@@ -452,31 +629,37 @@ impl DataType {
     /// result with true if so; unresolved values should always match
     /// everything in order to avoid flooding the user with error messages
     /// when the validator is confused due to a previous error.
-    fn match_strictly(&self, context: &mut meta::Context, value: &data::Type) -> bool {
+    fn match_strictly(
+        &self,
+        context: &mut meta::Context,
+        value: &data::Type,
+        ignore_nullability: bool,
+    ) -> diagnostic::Result<bool> {
         if !value.class().weak_equals(&self.class) {
-            return false;
+            return Ok(false);
         }
-        if self
-            .nullable
-            .match_pattern_with_context(context, &value.nullable().into())
+        if !ignore_nullability
+            && self
+                .nullable
+                .match_pattern_with_context(context, &value.nullable().into())?
         {
-            return false;
+            return Ok(false);
         }
-        if self.variation.match_pattern(value.variation()) {
-            return false;
+        if self.variation.match_pattern(value.variation())? {
+            return Ok(false);
         }
         if let Some(expected) = &self.parameters {
             let parameters = value.parameters();
             if parameters.len() != expected.len() {
-                return false;
+                return Ok(false);
             }
             for (parameter, expected) in parameters.iter().zip(expected.iter()) {
-                if !expected.match_pattern_with_context(context, parameter) {
-                    return false;
+                if !expected.match_pattern_with_context(context, parameter)? {
+                    return Ok(false);
                 }
             }
         }
-        true
+        Ok(true)
     }
 }
 
@@ -499,8 +682,12 @@ impl Pattern for DataType {
         }
     }
 
-    fn match_pattern_with_context(&self, context: &mut meta::Context, value: &Self::Value) -> bool {
-        self.match_strictly(context, value) || value.is_unresolved()
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        value: &Self::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(self.match_strictly(context, value, false)? || value.is_unresolved())
     }
 
     fn evaluate_with_context(
@@ -514,7 +701,7 @@ impl Pattern for DataType {
             .get_boolean()
             .ok_or_else(|| {
                 cause!(
-                    DerivationInvalid,
+                    TypeDerivationInvalid,
                     "nullability pattern evaluated to non-boolean"
                 )
             })?;
@@ -539,7 +726,8 @@ pub enum Variation {
 
     /// Matches any variation that is compatible with the system-preferred
     /// variation; that is, matches the system-preferred variation and any
-    /// variation declared with INHERITS function behavior.
+    /// variation declared with INHERITS function behavior. Syntax: no
+    /// suffix.
     Compatible,
 
     /// Matches exactly the given variation, regardless of INHERITS function
@@ -570,12 +758,12 @@ impl Pattern for Variation {
         &self,
         _context: &mut meta::Context,
         value: &Self::Value,
-    ) -> bool {
-        match self {
+    ) -> diagnostic::Result<bool> {
+        Ok(match self {
             Variation::Any => true,
             Variation::Compatible => value.is_compatible_with_system_preferred(),
             Variation::Exactly(expected) => value == expected,
-        }
+        })
     }
 
     fn evaluate_with_context(
@@ -584,7 +772,7 @@ impl Pattern for Variation {
     ) -> diagnostic::Result<Self::Value> {
         match self {
             Variation::Any => Err(cause!(
-                DerivationInvalid,
+                TypeDerivationInvalid,
                 "cannot evaluate undefined variation"
             )),
             Variation::Compatible => Ok(data::Variation::SystemPreferred),
@@ -642,6 +830,15 @@ impl std::fmt::Display for Parameter {
     }
 }
 
+impl Default for Parameter {
+    fn default() -> Self {
+        Self {
+            name: None,
+            value: Some(Value::Unresolved),
+        }
+    }
+}
+
 impl Pattern for Parameter {
     type Value = data::Parameter;
 
@@ -654,8 +851,12 @@ impl Pattern for Parameter {
 
     /// Matches this pattern. Note the special case to let the ? pattern match
     /// nulls, and note that names are ignored.
-    fn match_pattern_with_context(&self, context: &mut meta::Context, param: &Self::Value) -> bool {
-        match &self.value {
+    fn match_pattern_with_context(
+        &self,
+        context: &mut meta::Context,
+        param: &Self::Value,
+    ) -> diagnostic::Result<bool> {
+        Ok(match &self.value {
             None => {
                 // The null pattern only matches nulls.
                 param.value.is_none()
@@ -665,9 +866,9 @@ impl Pattern for Parameter {
                     // Special case for nulls and ? to make ? match null.
                     matches!(pattern, Value::Any)
                 }
-                Some(value) => pattern.match_pattern_with_context(context, value),
+                Some(value) => pattern.match_pattern_with_context(context, value)?,
             },
-        }
+        })
     }
 
     fn evaluate_with_context(

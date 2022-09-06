@@ -9,7 +9,9 @@ use crate::output::extension;
 use crate::output::type_system::data;
 use crate::output::type_system::meta;
 use std::collections::HashSet;
-use strum_macros::{Display, EnumString};
+use strum_macros::Display;
+use strum_macros::EnumIter;
+use strum_macros::EnumString;
 
 /// Trait for checking the type parameters for a type class.
 pub trait ParameterInfo {
@@ -116,7 +118,7 @@ impl Class {
 }
 
 /// Enumeration of simple types defined by Substrait.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Display, EnumString)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display, EnumString, EnumIter)]
 #[strum(ascii_case_insensitive, serialize_all = "snake_case")]
 pub enum Simple {
     Boolean,
@@ -138,7 +140,7 @@ pub enum Simple {
 }
 
 /// Enumeration of compound types defined by Substrait.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Display, EnumString)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display, EnumString, EnumIter)]
 #[strum(ascii_case_insensitive, serialize_all = "UPPERCASE")]
 pub enum Compound {
     FixedChar,

@@ -9,6 +9,7 @@ use crate::output::type_system::meta;
 #[derive(Clone, Debug, Default)]
 pub struct Context {
     /// Named bindings that have been previously assigned or matched via
-    /// patterns.
+    /// patterns. The keys are stored in lower-case for case-insensitive
+    /// matching.
     pub bindings: std::collections::HashMap<String, meta::Value>,
 }

@@ -1262,3 +1262,203 @@ pub fn read_yaml(
 
     Some(json_data)
 }
+
+//=============================================================================
+// ANTLR syntax tree node handling
+//=============================================================================
+
+/// Wrapper type to satisfy push_child()'s InputNode trait bound on the input
+/// node type.
+struct AntlrContextWrapper<'a, T>(&'a T);
+
+impl<'a, T> InputNode for AntlrContextWrapper<'a, T> {
+    fn type_to_node() -> tree::Node {
+        tree::NodeType::AstNode.into()
+    }
+
+    fn data_to_node(&self) -> tree::Node {
+        tree::NodeType::AstNode.into()
+    }
+
+    fn oneof_variant(&self) -> Option<&'static str> {
+        None
+    }
+
+    fn parse_unknown(&self, _: &mut context::Context<'_>) -> bool {
+        false
+    }
+}
+
+/// Convenience/shorthand macro for traversing into a syntax tree node by node.
+macro_rules! antlr_child {
+    ($input:expr, $context:expr, $field:ident, $analyzer:expr) => {
+        antlr_child!($input, $context, $field, 0, $analyzer)
+    };
+    ($input:expr, $context:expr, $field:ident, $index:expr, $analyzer:expr) => {
+        crate::parse::traversal::push_antlr_child(
+            $context,
+            $input,
+            $index,
+            stringify!($field),
+            $analyzer,
+        )
+    };
+    ($input:expr, $context:expr, $field:ident, $index:expr, $analyzer:expr, $($args:expr),*) => {
+        antlr_child!($input, $context, $field, $index, |x, y| $analyzer(x, y, $($args),*))
+    };
+}
+
+/// Parse and push a child of an ANTLR syntax tree node.
+pub fn push_antlr_child<'input, TP, TC, TR, FA>(
+    context: &mut context::Context,
+    parent: &TP,
+    index: usize,
+    field: &'static str,
+    analyzer: FA,
+) -> OptionalResult<TR>
+where
+    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    FA: FnOnce(&TC, &mut context::Context) -> diagnostic::Result<TR>,
+    TC: antlr_rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
+        + 'input,
+{
+    if let Some(child) = parent.child_of_type::<TC>(index) {
+        let (field_output, result) = push_child(
+            context,
+            &AntlrContextWrapper(child.as_ref()),
+            path::PathElement::Field(field.to_string()),
+            false,
+            |x: &AntlrContextWrapper<TC>, y| analyzer(x.0, y),
+        );
+        (Some(field_output), result)
+    } else {
+        (None, None)
+    }
+}
+
+/// Convenience/shorthand macro for traversing into a syntax tree node by node.
+/// Contrary to antlr_child! and most other traversal macros, this does NOT
+/// make a child node in the resulting tree. It can be used to hide unobvious
+/// grammar constructs, such rules related to avoiding left recursion.
+macro_rules! antlr_hidden_child {
+    ($input:expr, $context:expr, $analyzer:expr) => {
+        antlr_hidden_child!($input, $context, 0, $analyzer)
+    };
+    ($input:expr, $context:expr, $index:expr, $analyzer:expr) => {
+        crate::parse::traversal::push_antlr_hidden_child(
+            $context,
+            $input,
+            $index,
+            $analyzer,
+        )
+    };
+    ($input:expr, $context:expr, $index:expr, $analyzer:expr, $($args:expr),*) => {
+        antlr_hidden_child!($input, $context, $index, |x, y| $analyzer(x, y, $($args),*))
+    };
+}
+
+/// Parse and push a child of an ANTLR syntax tree node, without making a
+/// corresponding child node in the output tree.
+pub fn push_antlr_hidden_child<'input, TP, TC, TR, FA>(
+    context: &mut context::Context,
+    parent: &TP,
+    index: usize,
+    analyzer: FA,
+) -> Option<TR>
+where
+    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    FA: FnOnce(&TC, &mut context::Context) -> diagnostic::Result<TR>,
+    TC: antlr_rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
+        + 'input,
+{
+    parent.child_of_type::<TC>(index).and_then(|child| {
+        analyzer(child.as_ref(), context)
+            .map_err(|cause| {
+                diagnostic!(context, Error, cause);
+            })
+            .ok()
+    })
+}
+
+/// This does more or less the opposite of pushing a hidden child: it creates a
+/// child node in the output tree without traversing deeper into the input
+/// tree. It can be used to hide unobvious grammar constructs, such rules
+/// related to avoiding left recursion.
+macro_rules! antlr_recurse {
+    ($input:expr, $context:expr, $field:ident, $analyzer:expr) => {
+        crate::parse::traversal::push_antlr_recurse(
+            $context,
+            $input,
+            stringify!($field),
+            $analyzer,
+        )
+    };
+    ($input:expr, $context:expr, $field:ident, $analyzer:expr, $($args:expr),*) => {
+        antlr_recurse!($input, $context, $field, |x, y| $analyzer(x, y, $($args),*))
+    };
+}
+
+/// Parse and push a child of an ANTLR syntax tree node.
+pub fn push_antlr_recurse<'input, TP, TR, FA>(
+    context: &mut context::Context,
+    parent: &TP,
+    field: &'static str,
+    analyzer: FA,
+) -> RequiredResult<TR>
+where
+    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    FA: FnOnce(&TP, &mut context::Context) -> diagnostic::Result<TR>,
+{
+    push_child(
+        context,
+        &AntlrContextWrapper(parent),
+        path::PathElement::Field(field.to_string()),
+        false,
+        |x: &AntlrContextWrapper<TP>, y| analyzer(x.0, y),
+    )
+}
+
+/// Convenience/shorthand macro for traversing into all children of a certain
+/// type in a syntax tree.
+macro_rules! antlr_children {
+    ($input:expr, $context:expr, $rule:ident, $analyzer:expr) => {
+        crate::parse::traversal::push_antlr_children(
+            $context,
+            $input,
+            stringify!($rule),
+            $analyzer,
+        )
+    };
+    ($input:expr, $context:expr, $rule:ident, $analyzer:expr, $($args:expr),*) => {
+        antlr_children!($input, $context, $rule, |x, y| $analyzer(x, y, $($args),*))
+    };
+}
+
+/// Parse and push a child of an ANTLR syntax tree node.
+pub fn push_antlr_children<'input, TP, TC, TR, FA>(
+    context: &mut context::Context,
+    parent: &TP,
+    field: &'static str,
+    mut analyzer: FA,
+) -> RepeatedResult<TR>
+where
+    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    FA: FnMut(&TC, &mut context::Context) -> diagnostic::Result<TR>,
+    TC: antlr_rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
+        + 'input,
+{
+    parent
+        .children_of_type::<TC>()
+        .into_iter()
+        .enumerate()
+        .map(|(index, child)| {
+            push_child(
+                context,
+                &AntlrContextWrapper(child.as_ref()),
+                path::PathElement::Repeated(field.to_string(), index),
+                false,
+                |x: &AntlrContextWrapper<TC>, y| analyzer(x.0, y),
+            )
+        })
+        .unzip()
+}

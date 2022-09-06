@@ -4,14 +4,18 @@
 
 use crate::output::diagnostic;
 use crate::output::type_system::meta;
-use crate::util;
-use crate::util::string::Describe;
 
 use super::Pattern;
 
 /// A function that operates on zero or more values.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, strum_macros::Display, strum_macros::EnumString)]
+#[strum(serialize_all = "snake_case")]
 pub enum Function {
+    /// Used for unknown functions. Takes any number of arguments, doesn't
+    /// evaluate them, and yields an unresolved value.
+    #[strum(serialize = "!")]
+    Unresolved,
+
     /// Boolean not: `not(metabool) -> metabool`
     Not,
 
@@ -72,38 +76,9 @@ pub enum Function {
     IfThenElse,
 }
 
-impl Describe for Function {
-    fn describe(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        _limit: util::string::Limit,
-    ) -> std::fmt::Result {
-        match self {
-            Function::Not => write!(f, "not"),
-            Function::And => write!(f, "and"),
-            Function::Or => write!(f, "or"),
-            Function::Negate => write!(f, "negate"),
-            Function::Add => write!(f, "add"),
-            Function::Subtract => write!(f, "subtract"),
-            Function::Multiply => write!(f, "multiply"),
-            Function::Divide => write!(f, "divide"),
-            Function::Min => write!(f, "min"),
-            Function::Max => write!(f, "max"),
-            Function::Equal => write!(f, "equal"),
-            Function::NotEqual => write!(f, "not_equal"),
-            Function::GreaterThan => write!(f, "greater_than"),
-            Function::LessThan => write!(f, "less_than"),
-            Function::GreaterEqual => write!(f, "greater_equal"),
-            Function::LessEqual => write!(f, "less_equal"),
-            Function::Covers => write!(f, "covers"),
-            Function::IfThenElse => write!(f, "if_then_else"),
-        }
-    }
-}
-
-impl std::fmt::Display for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.display().fmt(f)
+impl Default for Function {
+    fn default() -> Self {
+        Function::Unresolved
     }
 }
 
@@ -115,17 +90,18 @@ impl Function {
         args: &[meta::pattern::Value],
     ) -> diagnostic::Result<meta::Value> {
         match self {
+            Function::Unresolved => Ok(meta::Value::Unresolved),
             Function::Not => {
                 if args.len() != 1 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects a single argument"
                     ))
                 } else if let Some(value) = args[0].evaluate_with_context(context)?.get_boolean() {
                     Ok((!value).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metabools"
                     ))
                 }
@@ -137,7 +113,7 @@ impl Function {
                         Some(false) => return Ok(false.into()),
                         None => {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metabools"
                             ))
                         }
@@ -152,7 +128,7 @@ impl Function {
                         Some(true) => return Ok(true.into()),
                         None => {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metabools"
                             ))
                         }
@@ -163,18 +139,18 @@ impl Function {
             Function::Negate => {
                 if args.len() != 1 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects a single argument"
                     ))
                 } else if let Some(value) = args[0].evaluate_with_context(context)?.get_integer() {
                     if let Some(value) = value.checked_neg() {
                         Ok(value.into())
                     } else {
-                        Err(cause!(DerivationFailed, "integer overflow in {self}()"))
+                        Err(cause!(TypeDerivationFailed, "integer overflow in {self}()"))
                     }
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -184,11 +160,11 @@ impl Function {
                 for arg in args.iter() {
                     if let Some(value) = arg.evaluate_with_context(context)?.get_integer() {
                         accumulator = accumulator.checked_add(value).ok_or_else(|| {
-                            cause!(DerivationFailed, "integer overflow in {self}()")
+                            cause!(TypeDerivationFailed, "integer overflow in {self}()")
                         })?;
                     } else {
                         return Err(cause!(
-                            DerivationInvalid,
+                            TypeDerivationInvalid,
                             "{self}() can only be applied to metaints"
                         ));
                     }
@@ -198,7 +174,7 @@ impl Function {
             Function::Subtract => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -208,11 +184,11 @@ impl Function {
                     if let Some(value) = lhs.checked_sub(rhs) {
                         Ok(value.into())
                     } else {
-                        Err(cause!(DerivationFailed, "integer overflow in {self}()"))
+                        Err(cause!(TypeDerivationFailed, "integer overflow in {self}()"))
                     }
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -222,11 +198,11 @@ impl Function {
                 for arg in args.iter() {
                     if let Some(value) = arg.evaluate_with_context(context)?.get_integer() {
                         accumulator = accumulator.checked_mul(value).ok_or_else(|| {
-                            cause!(DerivationFailed, "integer overflow in {self}()")
+                            cause!(TypeDerivationFailed, "integer overflow in {self}()")
                         })?;
                     } else {
                         return Err(cause!(
-                            DerivationInvalid,
+                            TypeDerivationInvalid,
                             "{self}() can only be applied to metaints"
                         ));
                     }
@@ -236,7 +212,7 @@ impl Function {
             Function::Divide => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -246,11 +222,11 @@ impl Function {
                     if let Some(value) = lhs.checked_div(rhs) {
                         Ok(value.into())
                     } else {
-                        Err(cause!(DerivationFailed, "division by zero in {self}()"))
+                        Err(cause!(TypeDerivationFailed, "division by zero in {self}()"))
                     }
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -258,7 +234,7 @@ impl Function {
             Function::Min => {
                 if args.is_empty() {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects at least one argument"
                     ))
                 } else {
@@ -270,7 +246,7 @@ impl Function {
                             }
                         } else {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metaints"
                             ));
                         }
@@ -281,7 +257,7 @@ impl Function {
             Function::Max => {
                 if args.is_empty() {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects at least one argument"
                     ))
                 } else {
@@ -293,7 +269,7 @@ impl Function {
                             }
                         } else {
                             return Err(cause!(
-                                DerivationInvalid,
+                                TypeDerivationInvalid,
                                 "{self}() can only be applied to metaints"
                             ));
                         }
@@ -304,7 +280,7 @@ impl Function {
             Function::Equal => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else {
@@ -316,7 +292,7 @@ impl Function {
             Function::NotEqual => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else {
@@ -328,7 +304,7 @@ impl Function {
             Function::GreaterThan => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -338,7 +314,7 @@ impl Function {
                     Ok((lhs > rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -346,7 +322,7 @@ impl Function {
             Function::LessThan => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -356,7 +332,7 @@ impl Function {
                     Ok((lhs < rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -364,7 +340,7 @@ impl Function {
             Function::GreaterEqual => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -374,7 +350,7 @@ impl Function {
                     Ok((lhs >= rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -382,7 +358,7 @@ impl Function {
             Function::LessEqual => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else if let (Some(lhs), Some(rhs)) = (
@@ -392,7 +368,7 @@ impl Function {
                     Ok((lhs <= rhs).into())
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() can only be applied to metaints"
                     ))
                 }
@@ -400,21 +376,31 @@ impl Function {
             Function::Covers => {
                 if args.len() != 2 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly two arguments"
                     ))
                 } else {
                     let value = args[0].evaluate_with_context(context)?;
+                    // It's possible for a match to capture bindings even if it
+                    // fails in the end, in case of a partial match. However, a
+                    // failing covers() call should not capture anything. So we
+                    // have to make a copy of the context here.
                     let mut context_copy = context.clone();
-                    Ok(args[1]
-                        .match_pattern_with_context(&mut context_copy, &value)
-                        .into())
+                    Ok(
+                        if args[1].match_pattern_with_context(&mut context_copy, &value)? {
+                            *context = context_copy;
+                            true
+                        } else {
+                            false
+                        }
+                        .into(),
+                    )
                 }
             }
             Function::IfThenElse => {
                 if args.len() != 3 {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "{self}() expects exactly three arguments"
                     ))
                 } else if let Some(condition) =
@@ -423,7 +409,7 @@ impl Function {
                     args[if condition { 1 } else { 2 }].evaluate_with_context(context)
                 } else {
                     Err(cause!(
-                        DerivationInvalid,
+                        TypeDerivationInvalid,
                         "the first argument of {self}() must be a metabool"
                     ))
                 }

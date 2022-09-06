@@ -169,7 +169,10 @@ pub enum NullabilityHandling {
     /// for its arguments. If and only if none of the arguments are nullable,
     /// will output types be non-nullable. This is captured in the patterns by
     /// replacing all top-level nullability specifiers with an inconsistent
-    /// binding named with something not yet used anywhere.
+    /// binding named with something not yet used for anything else. Toplevel
+    /// bindings that were not yet overriding nullability are furthermore
+    /// promoted to bindings that do override nullability, using the same
+    /// inconsistent binding for the nullability specifier.
     Mirror,
 
     /// Specifies that a function can capture any combination of nullability

@@ -6,10 +6,12 @@
 use crate::input::proto::substrait;
 use crate::output::diagnostic::Result;
 use crate::output::extension;
+use crate::output::extension::simple::module::Scope;
 use crate::output::type_system::data;
 use crate::parse::context;
 
 mod builder;
+mod derivations;
 mod function_decls;
 mod type_decls;
 mod type_variation_decls;

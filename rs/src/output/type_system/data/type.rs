@@ -115,6 +115,17 @@ impl Definition {
         })
     }
 
+    /// Returns a variant of this type with the nullability overridden as
+    /// specified.
+    pub fn override_nullable(&self, nullable: bool) -> Arc<Definition> {
+        Arc::new(Definition {
+            class: self.class.clone(),
+            nullable,
+            variation: self.variation.clone(),
+            parameters: self.parameters.clone(),
+        })
+    }
+
     /// Returns the type class.
     pub fn class(&self) -> &data::Class {
         &self.class

@@ -54,6 +54,15 @@ impl From<String> for Identifier {
     }
 }
 
+impl From<&str> for Identifier {
+    fn from(name: &str) -> Self {
+        Identifier {
+            name: Some(name.to_string()),
+            anchor_path: None,
+        }
+    }
+}
+
 impl Identifier {
     /// Create a new anchor-based reference.
     pub fn new<S: ToString>(
@@ -152,6 +161,16 @@ impl<T> std::fmt::Display for Data<T> {
 
 impl<T> From<String> for Data<T> {
     fn from(name: String) -> Self {
+        Data {
+            name: Arc::new(name.into()),
+            uri: Arc::default(),
+            definition: None,
+        }
+    }
+}
+
+impl<T> From<&str> for Data<T> {
+    fn from(name: &str) -> Self {
         Data {
             name: Arc::new(name.into()),
             uri: Arc::default(),
