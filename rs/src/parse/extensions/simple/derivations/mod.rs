@@ -367,19 +367,27 @@ fn analyze_dtbc(
                     "parameters cannot be specified for bindings"
                 );
             }
-            if let Some(qst) = x.nullability() {
-                if qst.pattern().is_some() {
-                    diagnostic!(
-                        y,
-                        Error,
-                        TypeParseError,
-                        "nullability pattern cannot be specified for bindings"
-                    );
-                }
-                Ok(meta::pattern::Value::ImplicitOrBinding(name))
-            } else {
-                Ok(meta::pattern::Value::Binding(name))
-            }
+            let nullability = x.nullability().map(|nullability| {
+                Arc::new(match nullability.as_ref() {
+                    NullabilityContextAll::NullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(true))
+                    }
+                    NullabilityContextAll::NonNullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(false))
+                    }
+                    NullabilityContextAll::NullableIfContext(x) => {
+                        antlr_child!(x, y, nullability, 0, analyze_pattern, z)
+                            .1
+                            .unwrap_or_default()
+                    }
+                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
+                })
+            });
+            Ok(meta::pattern::Value::Binding(meta::pattern::Binding {
+                name,
+                inconsistent: false,
+                nullability,
+            }))
         }
         PatternObject::EnumVariant(name) => {
             if x.nullability().is_some() {
@@ -409,13 +417,20 @@ fn analyze_dtbc(
             Ok(meta::pattern::Value::Enum(Some(vec![name])))
         }
         PatternObject::TypeClass(class) => {
-            let nullable = if let Some(qst) = x.nullability() {
-                if let Some(pattern) =
-                    antlr_child!(qst.as_ref(), y, nullability, 0, analyze_pattern, z).1
-                {
-                    pattern
-                } else {
-                    meta::pattern::Value::Boolean(Some(true))
+            let nullable = if let Some(nullability) = x.nullability() {
+                match nullability.as_ref() {
+                    NullabilityContextAll::NullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(true))
+                    }
+                    NullabilityContextAll::NonNullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(false))
+                    }
+                    NullabilityContextAll::NullableIfContext(x) => {
+                        antlr_child!(x, y, nullability, 0, analyze_pattern, z)
+                            .1
+                            .unwrap_or_default()
+                    }
+                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
                 }
             } else {
                 meta::pattern::Value::Boolean(Some(false))
@@ -677,6 +692,55 @@ fn analyze_pattern_misc(
             ))
         }
         PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => analyze_dtbc(x, y, z),
+        PatternMiscContextAll::InconsistentContext(x) => {
+            let name = x
+                .Identifier()
+                .map(|x| x.symbol.text.to_string())
+                .unwrap_or_else(|| "!".to_string());
+
+            // Check that the name actually maps to a binding.
+            match z.resolve_pattern(std::iter::once(&name), y) {
+                PatternObject::NamedBinding(_) => (),
+                PatternObject::EnumVariant(x) => {
+                    diagnostic!(
+                        y,
+                        Error,
+                        TypeDerivationInvalid,
+                        "{name} cannot be used as a binding; it maps to enum variant {x}"
+                    );
+                }
+                PatternObject::TypeClass(x) => {
+                    diagnostic!(
+                        y,
+                        Error,
+                        TypeDerivationInvalid,
+                        "{name} cannot be used as a binding; it maps to type class {x}"
+                    );
+                }
+            }
+
+            let nullability = x.nullability().map(|nullability| {
+                Arc::new(match nullability.as_ref() {
+                    NullabilityContextAll::NullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(true))
+                    }
+                    NullabilityContextAll::NonNullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(false))
+                    }
+                    NullabilityContextAll::NullableIfContext(x) => {
+                        antlr_child!(x, y, nullability, 0, analyze_pattern, z)
+                            .1
+                            .unwrap_or_default()
+                    }
+                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
+                })
+            });
+            Ok(meta::pattern::Value::Binding(meta::pattern::Binding {
+                name,
+                inconsistent: true,
+                nullability,
+            }))
+        }
         PatternMiscContextAll::Error(_) => Ok(meta::pattern::Value::Unresolved),
     }
 }

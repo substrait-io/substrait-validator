@@ -55,16 +55,16 @@ use std::ops::{Deref, DerefMut};
 	pub const Colon:isize=21; 
 	pub const Semicolon:isize=22; 
 	pub const Question:isize=23; 
-	pub const OpenParen:isize=24; 
-	pub const CloseParen:isize=25; 
-	pub const OpenCurly:isize=26; 
-	pub const CloseCurly:isize=27; 
-	pub const OpenSquare:isize=28; 
-	pub const CloseSquare:isize=29; 
-	pub const Assign:isize=30; 
-	pub const BooleanOr:isize=31; 
-	pub const BooleanAnd:isize=32; 
-	pub const BooleanNot:isize=33; 
+	pub const Bang:isize=24; 
+	pub const OpenParen:isize=25; 
+	pub const CloseParen:isize=26; 
+	pub const OpenCurly:isize=27; 
+	pub const CloseCurly:isize=28; 
+	pub const OpenSquare:isize=29; 
+	pub const CloseSquare:isize=30; 
+	pub const Assign:isize=31; 
+	pub const BooleanOr:isize=32; 
+	pub const BooleanAnd:isize=33; 
 	pub const Equal:isize=34; 
 	pub const NotEqual:isize=35; 
 	pub const LessThan:isize=36; 
@@ -94,8 +94,8 @@ use std::ops::{Deref, DerefMut};
 		"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Assert", 
 		"Matches", "If", "Then", "Else", "Null", "True", "False", "Metabool", 
 		"Metaint", "Metaenum", "Metastr", "Typename", "Period", "Comma", "Colon", 
-		"Semicolon", "Question", "OpenParen", "CloseParen", "OpenCurly", "CloseCurly", 
-		"OpenSquare", "CloseSquare", "Assign", "BooleanOr", "BooleanAnd", "BooleanNot", 
+		"Semicolon", "Question", "Bang", "OpenParen", "CloseParen", "OpenCurly", 
+		"CloseCurly", "OpenSquare", "CloseSquare", "Assign", "BooleanOr", "BooleanAnd", 
 		"Equal", "NotEqual", "LessThan", "LessEqual", "GreaterThan", "GreaterEqual", 
 		"Plus", "Minus", "Multiply", "Divide", "Range", "Nonzero", "Zero", "String", 
 		"Identifier"
@@ -105,8 +105,8 @@ use std::ops::{Deref, DerefMut};
 	pub const _LITERAL_NAMES: [Option<&'static str>;47] = [
 		None, None, None, None, None, None, None, None, None, None, None, None, 
 		None, None, None, None, None, None, None, Some("'.'"), Some("','"), Some("':'"), 
-		Some("';'"), Some("'?'"), Some("'('"), Some("')'"), Some("'{'"), Some("'}'"), 
-		Some("'['"), Some("']'"), Some("'='"), Some("'||'"), Some("'&&'"), Some("'!'"), 
+		Some("';'"), Some("'?'"), Some("'!'"), Some("'('"), Some("')'"), Some("'{'"), 
+		Some("'}'"), Some("'['"), Some("']'"), Some("'='"), Some("'||'"), Some("'&&'"), 
 		Some("'=='"), Some("'!='"), Some("'<'"), Some("'<='"), Some("'>'"), Some("'>='"), 
 		Some("'+'"), Some("'-'"), Some("'*'"), Some("'/'"), Some("'..'"), None, 
 		Some("'0'")
@@ -117,9 +117,9 @@ use std::ops::{Deref, DerefMut};
 		Some("Else"), Some("Null"), Some("True"), Some("False"), Some("Metabool"), 
 		Some("Metaint"), Some("Metaenum"), Some("Metastr"), Some("Typename"), 
 		Some("Period"), Some("Comma"), Some("Colon"), Some("Semicolon"), Some("Question"), 
-		Some("OpenParen"), Some("CloseParen"), Some("OpenCurly"), Some("CloseCurly"), 
-		Some("OpenSquare"), Some("CloseSquare"), Some("Assign"), Some("BooleanOr"), 
-		Some("BooleanAnd"), Some("BooleanNot"), Some("Equal"), Some("NotEqual"), 
+		Some("Bang"), Some("OpenParen"), Some("CloseParen"), Some("OpenCurly"), 
+		Some("CloseCurly"), Some("OpenSquare"), Some("CloseSquare"), Some("Assign"), 
+		Some("BooleanOr"), Some("BooleanAnd"), Some("Equal"), Some("NotEqual"), 
 		Some("LessThan"), Some("LessEqual"), Some("GreaterThan"), Some("GreaterEqual"), 
 		Some("Plus"), Some("Minus"), Some("Multiply"), Some("Divide"), Some("Range"), 
 		Some("Nonzero"), Some("Zero"), Some("String"), Some("Identifier")
@@ -307,7 +307,7 @@ impl<'input, Input:CharStream<From<'input> >> TokenSource<'input> for SubstraitT
 		\x2d\x03\x2d\x03\x2d\x03\x2e\x03\x2e\x03\x2f\x03\x2f\x03\x30\x03\x30\x03\
 		\x31\x03\x31\x03\x32\x03\x32\x03\x33\x03\x33\x03\x34\x03\x34\x03\x35\x03\
 		\x35\x03\x36\x03\x36\x03\x37\x03\x37\x03\x38\x03\x38\x03\x39\x03\x39\x03\
-		\x3a\x03\x3a\x03\x3a\x03\x3b\x03\x3b\x03\x3b\x03\x3c\x03\x3c\x03\x3d\x03\
+		\x3a\x03\x3a\x03\x3b\x03\x3b\x03\x3b\x03\x3c\x03\x3c\x03\x3c\x03\x3d\x03\
 		\x3d\x03\x3d\x03\x3e\x03\x3e\x03\x3e\x03\x3f\x03\x3f\x03\x40\x03\x40\x03\
 		\x40\x03\x41\x03\x41\x03\x42\x03\x42\x03\x42\x03\x43\x03\x43\x03\x44\x03\
 		\x44\x03\x45\x03\x45\x03\x46\x03\x46\x03\x47\x03\x47\x03\x47\x03\x48\x03\
@@ -371,8 +371,8 @@ impl<'input, Input:CharStream<From<'input> >> TokenSource<'input> for SubstraitT
 		\u{15e}\x03\x02\x02\x02\x63\u{160}\x03\x02\x02\x02\x65\u{162}\x03\x02\x02\
 		\x02\x67\u{164}\x03\x02\x02\x02\x69\u{166}\x03\x02\x02\x02\x6b\u{168}\x03\
 		\x02\x02\x02\x6d\u{16a}\x03\x02\x02\x02\x6f\u{16c}\x03\x02\x02\x02\x71\
-		\u{16e}\x03\x02\x02\x02\x73\u{170}\x03\x02\x02\x02\x75\u{173}\x03\x02\x02\
-		\x02\x77\u{176}\x03\x02\x02\x02\x79\u{178}\x03\x02\x02\x02\x7b\u{17b}\x03\
+		\u{16e}\x03\x02\x02\x02\x73\u{170}\x03\x02\x02\x02\x75\u{172}\x03\x02\x02\
+		\x02\x77\u{175}\x03\x02\x02\x02\x79\u{178}\x03\x02\x02\x02\x7b\u{17b}\x03\
 		\x02\x02\x02\x7d\u{17e}\x03\x02\x02\x02\x7f\u{180}\x03\x02\x02\x02\u{81}\
 		\u{183}\x03\x02\x02\x02\u{83}\u{185}\x03\x02\x02\x02\u{85}\u{188}\x03\x02\
 		\x02\x02\u{87}\u{18a}\x03\x02\x02\x02\u{89}\u{18c}\x03\x02\x02\x02\u{8b}\
@@ -461,15 +461,15 @@ impl<'input, Input:CharStream<From<'input> >> TokenSource<'input> for SubstraitT
 		\u{15b}\x07\x2e\x02\x02\u{15b}\x5e\x03\x02\x02\x02\u{15c}\u{15d}\x07\x3c\
 		\x02\x02\u{15d}\x60\x03\x02\x02\x02\u{15e}\u{15f}\x07\x3d\x02\x02\u{15f}\
 		\x62\x03\x02\x02\x02\u{160}\u{161}\x07\x41\x02\x02\u{161}\x64\x03\x02\x02\
-		\x02\u{162}\u{163}\x07\x2a\x02\x02\u{163}\x66\x03\x02\x02\x02\u{164}\u{165}\
-		\x07\x2b\x02\x02\u{165}\x68\x03\x02\x02\x02\u{166}\u{167}\x07\x7d\x02\x02\
-		\u{167}\x6a\x03\x02\x02\x02\u{168}\u{169}\x07\x7f\x02\x02\u{169}\x6c\x03\
-		\x02\x02\x02\u{16a}\u{16b}\x07\x5d\x02\x02\u{16b}\x6e\x03\x02\x02\x02\u{16c}\
-		\u{16d}\x07\x5f\x02\x02\u{16d}\x70\x03\x02\x02\x02\u{16e}\u{16f}\x07\x3f\
-		\x02\x02\u{16f}\x72\x03\x02\x02\x02\u{170}\u{171}\x07\x7e\x02\x02\u{171}\
-		\u{172}\x07\x7e\x02\x02\u{172}\x74\x03\x02\x02\x02\u{173}\u{174}\x07\x28\
-		\x02\x02\u{174}\u{175}\x07\x28\x02\x02\u{175}\x76\x03\x02\x02\x02\u{176}\
-		\u{177}\x07\x23\x02\x02\u{177}\x78\x03\x02\x02\x02\u{178}\u{179}\x07\x3f\
+		\x02\u{162}\u{163}\x07\x23\x02\x02\u{163}\x66\x03\x02\x02\x02\u{164}\u{165}\
+		\x07\x2a\x02\x02\u{165}\x68\x03\x02\x02\x02\u{166}\u{167}\x07\x2b\x02\x02\
+		\u{167}\x6a\x03\x02\x02\x02\u{168}\u{169}\x07\x7d\x02\x02\u{169}\x6c\x03\
+		\x02\x02\x02\u{16a}\u{16b}\x07\x7f\x02\x02\u{16b}\x6e\x03\x02\x02\x02\u{16c}\
+		\u{16d}\x07\x5d\x02\x02\u{16d}\x70\x03\x02\x02\x02\u{16e}\u{16f}\x07\x5f\
+		\x02\x02\u{16f}\x72\x03\x02\x02\x02\u{170}\u{171}\x07\x3f\x02\x02\u{171}\
+		\x74\x03\x02\x02\x02\u{172}\u{173}\x07\x7e\x02\x02\u{173}\u{174}\x07\x7e\
+		\x02\x02\u{174}\x76\x03\x02\x02\x02\u{175}\u{176}\x07\x28\x02\x02\u{176}\
+		\u{177}\x07\x28\x02\x02\u{177}\x78\x03\x02\x02\x02\u{178}\u{179}\x07\x3f\
 		\x02\x02\u{179}\u{17a}\x07\x3f\x02\x02\u{17a}\x7a\x03\x02\x02\x02\u{17b}\
 		\u{17c}\x07\x23\x02\x02\u{17c}\u{17d}\x07\x3f\x02\x02\u{17d}\x7c\x03\x02\
 		\x02\x02\u{17e}\u{17f}\x07\x3e\x02\x02\u{17f}\x7e\x03\x02\x02\x02\u{180}\

@@ -526,6 +526,18 @@ fn enter_datatypeBindingOrConstant(&mut self, _ctx: &DatatypeBindingOrConstantCo
  */
 fn exit_datatypeBindingOrConstant(&mut self, _ctx: &DatatypeBindingOrConstantContext<'input>) { }
 /**
+ * Enter a parse tree produced by the {@code inconsistent}
+ * labeled alternative in {@link SubstraitTypeParser#patternMisc}.
+ * @param ctx the parse tree
+ */
+fn enter_inconsistent(&mut self, _ctx: &InconsistentContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code inconsistent}
+ * labeled alternative in {@link SubstraitTypeParser#patternMisc}.
+ * @param ctx the parse tree
+ */
+fn exit_inconsistent(&mut self, _ctx: &InconsistentContext<'input>) { }
+/**
  * Enter a parse tree produced by the {@code unaryNegate}
  * labeled alternative in {@link SubstraitTypeParser#patternMisc}.
  * @param ctx the parse tree
@@ -538,15 +550,41 @@ fn enter_unaryNegate(&mut self, _ctx: &UnaryNegateContext<'input>) { }
  */
 fn exit_unaryNegate(&mut self, _ctx: &UnaryNegateContext<'input>) { }
 /**
- * Enter a parse tree produced by {@link SubstraitTypeParser#nullability}.
+ * Enter a parse tree produced by the {@code nonNullable}
+ * labeled alternative in {@link SubstraitTypeParser#nullability}.
  * @param ctx the parse tree
  */
-fn enter_nullability(&mut self, _ctx: &NullabilityContext<'input>) { }
+fn enter_nonNullable(&mut self, _ctx: &NonNullableContext<'input>) { }
 /**
- * Exit a parse tree produced by {@link SubstraitTypeParser#nullability}.
+ * Exit a parse tree produced by the {@code nonNullable}
+ * labeled alternative in {@link SubstraitTypeParser#nullability}.
  * @param ctx the parse tree
  */
-fn exit_nullability(&mut self, _ctx: &NullabilityContext<'input>) { }
+fn exit_nonNullable(&mut self, _ctx: &NonNullableContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code nullable}
+ * labeled alternative in {@link SubstraitTypeParser#nullability}.
+ * @param ctx the parse tree
+ */
+fn enter_nullable(&mut self, _ctx: &NullableContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code nullable}
+ * labeled alternative in {@link SubstraitTypeParser#nullability}.
+ * @param ctx the parse tree
+ */
+fn exit_nullable(&mut self, _ctx: &NullableContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code nullableIf}
+ * labeled alternative in {@link SubstraitTypeParser#nullability}.
+ * @param ctx the parse tree
+ */
+fn enter_nullableIf(&mut self, _ctx: &NullableIfContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code nullableIf}
+ * labeled alternative in {@link SubstraitTypeParser#nullability}.
+ * @param ctx the parse tree
+ */
+fn exit_nullableIf(&mut self, _ctx: &NullableIfContext<'input>) { }
 /**
  * Enter a parse tree produced by {@link SubstraitTypeParser#variation}.
  * @param ctx the parse tree

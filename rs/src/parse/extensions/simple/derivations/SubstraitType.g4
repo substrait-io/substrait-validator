@@ -91,7 +91,8 @@ Period          : '.' ;   // identifier paths
 Comma           : ',' ;   // separator for pattern lists
 Colon           : ':' ;   // separator for named parameters
 Semicolon       : ';' ;   // separator for statements
-Question        : '?' ;   // matches anything & data type nullability suffix
+Question        : '?' ;   // any, inconsistent bindings & nullable type suffix
+Bang            : '!' ;   // boolean NOT & explicitly non-nullable type suffix
 OpenParen       : '(' ;   // precedence override & function call args (open)
 CloseParen      : ')' ;   // precedence override & function call args (close)
 OpenCurly       : '{' ;   // enum set patterns (open)
@@ -101,7 +102,6 @@ CloseSquare     : ']' ;   // data type variation suffix (close)
 Assign          : '=' ;   // assignment statements
 BooleanOr       : '||' ;  // boolean OR expression
 BooleanAnd      : '&&' ;  // boolean AND expression
-BooleanNot      : '!' ;   // boolean NOT expression
 Equal           : '==' ;  // equality expression
 NotEqual        : '!=' ;  // not-equals expression
 LessThan        : '<' ;   // less-than expression & data type parameter pack
@@ -238,7 +238,7 @@ patternMisc
 
   // Unary not function. Can only be evaluated and can only be applied to
   // booleans.
-  | BooleanNot pattern #unaryNot
+  | Bang pattern #unaryNot
 
   // The "anything" pattern. This matches everything, and cannot be evaluated.
   // It's primarily intended for matching (parts of) argument types, when you
@@ -359,38 +359,157 @@ patternMisc
   // to distinguish at this time:
   //
   //  - a data type pattern;
-  //  - a binding; or
-  //  - an enum constant.
+  //  - an enum constant;
+  //  - a normal binding; or
+  //  - a binding with nullability override.
   //
-  // The type depends on the identifier path, and must be disambiguated in a
-  // three-step process:
+  // The type depends on the identifier path, and must be disambiguated as
+  // follows during name resolution:
   //
-  //  - Gather all identifiers that match a builtin type class or an in-scope
-  //    user-defined type class.
-  //  - Gather all enumeration parameter constants that these types declare.
-  //  - Now disambiguate as follows: if an identifier path matches a type
-  //    class, it's a type pattern; if it matches an enumeration parameter
-  //    constant, it's an enum constant pattern; otherwise, it's a binding.
+  //  - Keep track of a case-insensitive mapping from name to binding, enum
+  //    constant, or type class while analyzing the parse tree. It will be
+  //    empty initially.
+  //  - Whenever this pattern appears, resolve the name using this mapping:
+  //     - If resolution fails, resolve the name as a type class instead (it
+  //       could be the name of a builtin type class, a type class defined
+  //       in the current extension, or a type class defined in a dependency
+  //       if appropriately prefixed with the dependency namespace):
+  //        - If this succeeds, add an entry to the name mapping, mapping the
+  //          incoming identifier path to the type class. If the type class is
+  //          user-defined, and the type class has enum parameter slots, also
+  //          add entries to the name mapping for all the enum variants; if a
+  //          name was already defined, do NOT update the mapping. Finally,
+  //          disambiguate the pattern as a data type pattern.
+  //        - If this fails and the identifier path consists of only a single
+  //          element, map the incoming identifier path to a binding, and
+  //          disambiguate the pattern as a normal binding or a binding
+  //          with nullability override, depending on the presence of the
+  //          nullability field.
+  //        - If the above fails and the identifier path consists of multiple
+  //          elements, analysis should fail.
+  //     - If resolution yields a binding, disambiguate the pattern as a
+  //       normal binding or a binding with nullability override, depending on
+  //       the presence of the nullability field.
+  //     - If resolution yields an enum constant, disambiguate the pattern as
+  //       an enum constant.
+  //     - If resolution yields a type class, disambiguate the pattern as a
+  //       data type pattern.
   //
-  // Two types of bindings exist, with different behavior:
+  // If the optional nullability, variation, or parameters fields are non-empty
+  // when they can't be according to the rules of the disambiguated pattern
+  // type, analysis should fail.
   //
-  //  - Normal bindings. The subset of the data type pattern syntax used for
-  //    these is just a single identifier with no suffix. When matched the
-  //    first time, this matches anything and binds the identifier to the
-  //    matched value. The next time it will only match the previously bound
-  //    value, and once bound, it will evaluate to the bound value.
-  //  - Implicit-OR bindings. The subset of the data type pattern syntax used
-  //    for these is just a single identifier with exactly and only a "?"
-  //    suffix. These will always match both true and false, and will evaluate
-  //    to whether any true value was matched. This is useful to model
-  //    nullability behavior. For example, `add(i8?n?, i8?n?) -> i8?n?` will
-  //    match any combination of nullabilities for the arguments, and return
-  //    a nullable type if and only if either argument is nullable.
+  // Note that the `!` suffix disambiguates between a normal binding and a
+  // binding with a non-nullable nullability override. For a data type pattern,
+  // non-nullable is the default, so something like `i32` is exactly the same
+  // as `i32!`.
   //
-  // Enum constants only match a single identifier. If a dt-binding-constant
-  // AST node resolves to a binding or an enum constant, an error should be
-  // emitted if illegal syntax was used.
+  // The behavior for the resolved pattern types is:
+  //  - Data type pattern:
+  //     - Matches a metavalue if and only if:
+  //        - the metavalue is a typename;
+  //        - the type class matches the identified class;
+  //        - the nullability of the type matches the rules detailed in the
+  //          comments of the nullability rule;
+  //        - the variation of the type matches the rules detailed in the
+  //          comments of the variation rule; and
+  //        - the parameter pack matches the rules detailed in the comments
+  //          of the parameters rule.
+  //     - Evaluates to a data type with the specified type class and the
+  //       evaluation result of the nullability, variation, and parameters
+  //       fields. If any of those things cannot be evaluated, the data type
+  //       pattern cannot be evaluated. If any parameter pack constraint
+  //       violations result from this, they are treated as pattern match
+  //       failures (i.e., if this happens in a return type derivation of
+  //       a function, the function is said to not match the given arguments).
+  //
+  //  - Enum constant:
+  //     - Matches a metavalue if and only if it is exactly the specified enum
+  //       variant.
+  //     - Evaluates to the specified enum variant.
+  //     - The nullability, variation, and parameters fields are illegal and
+  //       must be blank.
+  //
+  //  - Normal binding:
+  //     - If this is the first use of the binding, matches any value. The
+  //       incoming metavalue is bound to the binding as a side effect.
+  //     - If the binding was previously bound, matches only if the incoming
+  //       metavalue is exactly equal to the previous binding.
+  //     - Can only be evaluated if the binding was previously bound, in which
+  //       case it yields the bound value exactly.
+  //     - The variation and parameters fields are illegal and must be blank.
+  //
+  //  - Binding with nullability override:
+  //     - If this is the first use of the binding, matches if and only if:
+  //        - the incoming metavalue is a typename; and
+  //        - the nullability of the incoming type matches the nullability
+  //          field.
+  //       If the above rules match, the incoming type is bound to the
+  //       binding as a side effect.
+  //     - If the binding was previously bound, matches if and only if:
+  //        - the incoming metavalue is a typename;
+  //        - the nullability of the incoming type matches the nullability
+  //          field;
+  //        - the previously bound metavalue is a typename; and
+  //        - the incoming type matches the previously bound type, ignoring
+  //          nullability.
+  //     - Can only be evaluated if the binding was previously bound. If the
+  //       previously bound metavalue is not a typename, this is treated as a
+  //       pattern match failure. The returned type is the previously bound
+  //       type, with its nullability adjusted according to the nullability
+  //       field evaluation rules.
+  //     - The variation and parameters fields are illegal and must be blank.
   | identifierPath nullability? variation? parameters? #datatypeBindingOrConstant
+
+  // Pattern for inconsistent bindings. Inconsistent bindings are variations
+  // of normal bindings and bindings with nullability override with looser
+  // matching and extended evaluation rules. These rules are designed
+  // specifically for matching inconsistent variadic arguments and for
+  // modelling MIRROR nullability behavior. Specifically:
+  //
+  //  - Use `?T` instead of `T` for a variadic argument slot to capture the
+  //    value of the first argument and ignore the rest, thus rendering it
+  //    inconsistent.
+  //  - Use `type??nullable` instead of `type` for argument slots and the
+  //    return type to match both nullable and non-nullable data types for
+  //    the argument, and yield a nullable return type only if any of the
+  //    bound arguments are nullable.
+  //
+  // The exacty behavior for the pattern types is as follows. Rules that differ
+  // from the consistent binding rules are highlighted with (!).
+  //
+  //  - Normal inconsistent binding:
+  //     - If this is the first use of the binding, matches any value. The
+  //       incoming metavalue is bound to the binding as a side effect.
+  //     - (!) If the binding was previously bound, matches any value. If the
+  //       incoming metavalue is boolean true, and the currently bound
+  //       metavalue is boolean false, update the binding to boolean true.
+  //       Otherwise, leave it unchanged.
+  //     - (!) If this is the first use of the binding, evaluation yields
+  //       the metabool `false` (for the nullability of the return type in
+  //       a MIRROR function).
+  //     - If the binding was previously bound, evaluation yields the bound
+  //       value exactly.
+  //
+  //  - Inconsistent binding with nullability override:
+  //     - If this is the first use of the binding, matches if and only if:
+  //        - the incoming metavalue is a typename; and
+  //        - the nullability of the incoming type matches the nullability
+  //          field.
+  //       If the above rules match, the incoming type is bound to the
+  //       binding as a side effect.
+  //     - (!) If the binding was previously bound, matches if and only if:
+  //        - the incoming metavalue is a typename; and
+  //        - the nullability of the incoming type matches the nullability
+  //          field.
+  //       The binding is not modified.
+  //     - Can only be evaluated if the binding was previously bound. If the
+  //       previously bound metavalue is not a typename, this is treated as a
+  //       pattern match failure. The returned type is the previously bound
+  //       type, with its nullability adjusted according to the nullability
+  //       field evaluation rules.
+  //     - The variation and parameters fields are illegal and must be blank.
+  | Question Identifier nullability? #inconsistent
 
   // Unary negation function. Can only be evaluated and can only be applied to
   // integers. Note that this is all the way at the back because signed integer
@@ -401,8 +520,11 @@ patternMisc
 
 // Nullability suffix for a data type pattern.
 //
-//  - If there is no such suffix, the pattern matches only non-nullable types,
-//    and also evaluates to a non-nullable type if applicable.
+//  - If there is no such suffix, or the suffix is "!", the pattern matches
+//    only non-nullable types, and also evaluates to a non-nullable type if
+//    applicable. The "!" suffix is necessary to distinguish between normal
+//    bindings and bindings with nullability override, but is otherwise
+//    optional and normally not written.
 //  - If this suffix is just "?", the pattern matches only nullable types,
 //    and also evaluates to a nullable type if applicable.
 //  - If this suffix is a "?" followed by a pattern, the pattern is matched
@@ -411,7 +533,11 @@ patternMisc
 //    non-nullable, if it evaluates to true it will be nullable.
 //
 // The "?" is also used for implicit-OR bindings.
-nullability : Question pattern? ;
+nullability
+  : Bang #nonNullable
+  | Question #nullable
+  | Question pattern #nullableIf
+  ;
 
 // Type variation suffix.
 //
