@@ -11,6 +11,7 @@ mod substraittypeparser;
 
 use crate::output::diagnostic::Result;
 use crate::output::extension;
+use crate::output::extension::simple::module::DynScope;
 use crate::output::type_system::data;
 use crate::output::type_system::meta;
 use crate::output::type_system::meta::Pattern;
@@ -18,71 +19,164 @@ use crate::parse::context;
 use antlr_rust::Parser;
 use itertools::Itertools;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
+use std::sync::Arc;
+use strum::IntoEnumIterator;
 use substraittypeparser::*;
 
-/// Resolves an identifier path used in pattern scope.
-fn resolve_pattern_identifier<S, I>(
-    x: I,
-    y: &mut context::Context,
-) -> Result<context::IdentifiedObject>
-where
-    S: AsRef<str>,
-    I: Iterator<Item = S>,
-{
-    // Reconstruct the full identifier path for use in error messages.
-    let path = x.collect::<Vec<_>>();
-    let ident = path.iter().map(|x| x.as_ref()).join(".");
-    let mut path = path.into_iter();
+/// Enum for objects that are defined locally in analysis scope.
+#[derive(Clone, Debug)]
+enum PatternObject {
+    /// A named binding.
+    NamedBinding(String),
 
-    // Resolve the first element.
-    let mut object = y
-        .type_ident_map_resolve(
-            path.next()
-                .ok_or_else(|| cause!(TypeResolutionError, "empty identifier path"))?,
-        )
-        .clone();
+    /// A variant name of an enumeration defined as a parameter of a
+    /// user-defined type class that is within scope (type has been
+    /// used).
+    EnumVariant(String),
 
-    // Resolve the rest of the elements iteratively.
-    for element in path {
-        object = match object {
-            context::IdentifiedObject::NamedDependency(dep) => {
-                if let extension::YamlInfo::Resolved(dep) = dep {
-                    let reference = dep.resolve_type(element.as_ref());
-                    if reference.definition.is_none() {
-                        diagnostic!(y, Error, TypeResolutionError, "could not resolve {ident}: type class {} is not defined in this scope", element.as_ref());
-                    }
-                    Ok(context::IdentifiedObject::TypeClass(data::Class::UserDefined(reference)))
-                } else {
-                    diagnostic!(y, Warning, TypeResolutionError, "could not resolve {ident}: the extension it should be defined in could not be resolved");
-                    Ok(context::IdentifiedObject::TypeClass(data::Class::Unresolved))
-                }
-            }
-            context::IdentifiedObject::Binding(_) => Err(cause!(TypeResolutionError, "could not resolve {ident}: prefix resolves to a binding, which does not have members")),
-            context::IdentifiedObject::EnumLiteral(_) => Err(cause!(TypeResolutionError, "could not resolve {ident}: prefix resolves to an enum parameter literal, which does not have members")),
-            context::IdentifiedObject::TypeClass(_) => Err(cause!(TypeResolutionError, "could not resolve {ident}: prefix resolves to a type class, which does not have members")),
-        }?;
-    }
-
-    Ok(object)
+    /// A type class.
+    TypeClass(data::Class),
 }
 
-/// Resolves an identifier path used in type variation scope for the given type
-/// class.
-fn resolve_type_variation_identifier<S, I>(
-    _x: I,
-    _y: &mut context::Context,
-    _class: &data::Class,
-) -> Result<data::variation::UserDefined>
-where
-    S: AsRef<str>,
-    I: Iterator<Item = S>,
-{
-    Err(cause!(
-        NotYetImplemented,
-        "type variation name resolution is not yet implemented"
-    ))
+/// Context/state information used while analyzing type patterns and
+/// derivations. The lifetime of the context should match the lifetime of
+/// the evaluation context; for functions, for example, this means that the
+/// same context must be used for all argument patterns, the intermediate
+/// type derivation (if any), and the return type derivation.
+pub struct AnalysisContext<'a> {
+    /// The scope that we ultimately use to resolve names while analyzing.
+    scope: Option<&'a dyn DynScope>,
+
+    /// Names defined locally. This namespace can reference type classes,
+    /// type parameter enumeration names, and named bindings. The keys are
+    /// stored in lowercase for case insensitive matching.
+    pattern_names: HashMap<String, PatternObject>,
+}
+
+impl<'a> Clone for AnalysisContext<'a> {
+    fn clone(&self) -> Self {
+        Self {
+            scope: self.scope,
+            pattern_names: self.pattern_names.clone(),
+        }
+    }
+}
+
+impl<'a> AnalysisContext<'a> {
+    /// Makes a new analysis context from the given resolver, representing the
+    /// scope in which the type patterns/derivations are analyzed.
+    pub fn new(scope: Option<&'a dyn DynScope>) -> Self {
+        // Declare built-in type classes.
+        let mut pattern_names = HashMap::new();
+        for simple in data::class::Simple::iter() {
+            pattern_names.insert(
+                simple.to_string().to_ascii_lowercase(),
+                PatternObject::TypeClass(data::Class::Simple(simple)),
+            );
+        }
+        for compound in data::class::Compound::iter() {
+            pattern_names.insert(
+                compound.to_string().to_ascii_lowercase(),
+                PatternObject::TypeClass(data::Class::Compound(compound)),
+            );
+        }
+
+        Self {
+            scope,
+            pattern_names,
+        }
+    }
+
+    /// Resolve a local identifier path. This always succeeds, because if the
+    /// name wasn't already defined, it will implicitly become a named binding.
+    /// Resolving a path to a type class may also have side effects; if the
+    /// type class is user-defined and has enumeration type parameters, those
+    /// names will be implicitly defined as being enum variants.
+    fn resolve_pattern<S, I>(&mut self, x: I, y: &mut context::Context) -> PatternObject
+    where
+        S: AsRef<str>,
+        I: Iterator<Item = S>,
+    {
+        let path = x.collect::<Vec<_>>();
+        let name = path.iter().map(|x| x.as_ref()).join(".");
+        let key = name.to_ascii_lowercase();
+
+        // If this object was used before, return it as it was originally
+        // implicitly declared.
+        if let Some(object) = self.pattern_names.get(&key) {
+            return object.clone();
+        }
+
+        // Try resolving as a user-definded type class.
+        let object = if let Some(type_class) = self.scope.as_ref().and_then(|x| {
+            x.resolve_type_class_from_ref(name.clone().into())
+                .expect_not_ambiguous(y, |_, _| false)
+                .as_opt_item()
+        }) {
+            // If the type class is known to have enum parameters, declare
+            // references to the variant names so we can use them.
+            if let Some(def) = &type_class.definition {
+                for slot in def.parameter_slots.iter() {
+                    if let meta::pattern::Value::Enum(Some(variants)) = &slot.pattern {
+                        for variant in variants {
+                            self.pattern_names.insert(
+                                variant.to_ascii_lowercase(),
+                                PatternObject::EnumVariant(variant.clone()),
+                            );
+                        }
+                    }
+                }
+            }
+
+            PatternObject::TypeClass(data::Class::UserDefined(type_class))
+        } else {
+            PatternObject::NamedBinding(name)
+        };
+
+        // Declare the new reference and return the referred object.
+        self.pattern_names.insert(key, object.clone());
+        object
+    }
+
+    /// Resolve a type variation identifier path.
+    pub fn resolve_type_variation<S, I>(
+        &mut self,
+        x: I,
+        y: &mut context::Context,
+        class: &data::Class,
+    ) -> extension::simple::type_variation::Reference
+    where
+        S: AsRef<str>,
+        I: Iterator<Item = S>,
+    {
+        let path = x.collect::<Vec<_>>();
+        let name = path.iter().map(|x| x.as_ref()).join(".");
+
+        self.scope
+            .as_ref()
+            .map(|x| {
+                x.resolve_type_variation_from_ref(name.clone().into())
+                    .filter_items(|x| &x.base == class)
+                    .expect_one(
+                        y,
+                        |x, y| {
+                            diagnostic!(
+                                y,
+                                Error,
+                                LinkMissingTypeVariationNameAndClass,
+                                "{x} exists, but is not a variation of {class} data types"
+                            );
+                            true
+                        },
+                        |_, _| false,
+                    )
+                    .as_item()
+            })
+            .unwrap_or_else(|| Arc::new(name.into()))
+    }
 }
 
 /// Error listener that just collects error messages into a vector, such that
@@ -141,37 +235,49 @@ macro_rules! antlr_parse {
 // Boilerplate code for converting the awkward left-recursion-avoidance rules
 // for expressions into a normal expression tree.
 macro_rules! antlr_reduce_left_recursion {
-    ($x:expr, $y:expr, $x_typ:ty, $all_operands:ident, $next_analyzer:expr, $one_operator:ident, $operator_match:tt) => {{
+    (
+        $x:expr, $y:expr, $z:expr, $x_typ:ty,
+        $all_operands:ident, $next_analyzer:expr,
+        $one_operator:ident, $operator_match:tt
+    ) => {{
         fn left_recursive(
             x: &$x_typ,
             y: &mut context::Context,
+            z: &mut AnalysisContext,
             start: usize,
         ) -> Result<meta::pattern::Value> {
             if start == 0 {
                 // Only one operand remaining.
-                Ok(antlr_hidden_child!(x, y, $next_analyzer).unwrap_or_default())
+                Ok(antlr_hidden_child!(x, y, 0, $next_analyzer, z).unwrap_or_default())
             } else {
                 // We're traversing the tree bottom-up, so start with the last
                 // operation. The operations are evaluated left-to-right, so that's
                 // the rightmost operation.
-                let lhs = antlr_recurse!(x, y, lhs, left_recursive, start - 1)
+                let lhs = antlr_recurse!(x, y, lhs, left_recursive, z, start - 1)
                     .1
                     .unwrap_or_default();
-                let rhs = antlr_child!(x, y, rhs, start, $next_analyzer)
+                let rhs = antlr_child!(x, y, rhs, start, $next_analyzer, z)
                     .1
                     .unwrap_or_default();
-                let function = x.$one_operator(start - 1).map(|x| match x.as_ref() $operator_match).unwrap_or_default();
+                let function = x
+                    .$one_operator(start - 1)
+                    .map(|x| match x.as_ref() $operator_match)
+                    .unwrap_or_default();
                 Ok(meta::pattern::Value::Function(function, vec![lhs, rhs]))
             }
         }
 
         let total_operands = $x.$all_operands().len();
-        left_recursive($x, $y, total_operands - 1)
+        left_recursive($x, $y, $z, total_operands - 1)
     }};
 }
 
 /// Analyzes a string literal.
-fn analyze_string<S: AsRef<str>>(x: S, _y: &mut context::Context) -> Option<String> {
+fn analyze_string<S: AsRef<str>>(
+    x: S,
+    _y: &mut context::Context,
+    _z: &mut AnalysisContext,
+) -> Option<String> {
     let x = x.as_ref();
     if !x.starts_with('"') || !x.ends_with('"') || x.len() < 2 {
         None
@@ -181,7 +287,11 @@ fn analyze_string<S: AsRef<str>>(x: S, _y: &mut context::Context) -> Option<Stri
 }
 
 /// Analyzes an integer literal.
-fn analyze_integer(x: &IntegerContextAll, y: &mut context::Context) -> Result<i64> {
+fn analyze_integer(
+    x: &IntegerContextAll,
+    y: &mut context::Context,
+    _z: &mut AnalysisContext,
+) -> Result<i64> {
     let value = if let Some(value) = x.Nonzero() {
         value.symbol.text.parse().unwrap_or(i128::MAX)
     } else {
@@ -202,7 +312,7 @@ fn analyze_integer(x: &IntegerContextAll, y: &mut context::Context) -> Result<i6
             }
         }
     } else {
-        match i64::try_from(-value) {
+        match i64::try_from(value) {
             Ok(val) => val,
             Err(_) => {
                 diagnostic!(
@@ -222,11 +332,12 @@ fn analyze_integer(x: &IntegerContextAll, y: &mut context::Context) -> Result<i6
 fn analyze_object_identifier(
     x: &IdentifierPathContextAll,
     y: &mut context::Context,
-) -> Result<context::IdentifiedObject> {
-    resolve_pattern_identifier(
+    z: &mut AnalysisContext,
+) -> Result<PatternObject> {
+    Ok(z.resolve_pattern(
         x.Identifier_all().iter().map(|x| x.symbol.text.to_string()),
         y,
-    )
+    ))
 }
 
 /// Analyzes a pattern that can end up being either a data type pattern, a
@@ -234,11 +345,12 @@ fn analyze_object_identifier(
 fn analyze_dtbc(
     x: &DatatypeBindingOrConstantContext,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
-    let object = antlr_hidden_child!(x, y, analyze_object_identifier)
+    let object = antlr_hidden_child!(x, y, 0, analyze_object_identifier, z)
         .ok_or_else(|| cause!(TypeDerivationInvalid, "failed to resolve identifier"))?;
     match object {
-        context::IdentifiedObject::Binding(name) => {
+        PatternObject::NamedBinding(name) => {
             if x.variation().is_some() {
                 diagnostic!(
                     y,
@@ -269,7 +381,7 @@ fn analyze_dtbc(
                 Ok(meta::pattern::Value::Binding(name))
             }
         }
-        context::IdentifiedObject::EnumLiteral(name) => {
+        PatternObject::EnumVariant(name) => {
             if x.nullability().is_some() {
                 diagnostic!(
                     y,
@@ -296,13 +408,10 @@ fn analyze_dtbc(
             }
             Ok(meta::pattern::Value::Enum(Some(vec![name])))
         }
-        context::IdentifiedObject::NamedDependency(_) => Err(cause!(
-            TypeDerivationInvalid,
-            "identifier resolves to dependency namespace, which cannot be used as such"
-        )),
-        context::IdentifiedObject::TypeClass(class) => {
+        PatternObject::TypeClass(class) => {
             let nullable = if let Some(qst) = x.nullability() {
-                if let Some(pattern) = antlr_child!(qst.as_ref(), y, nullability, analyze_pattern).1
+                if let Some(pattern) =
+                    antlr_child!(qst.as_ref(), y, nullability, 0, analyze_pattern, z).1
                 {
                     pattern
                 } else {
@@ -311,10 +420,10 @@ fn analyze_dtbc(
             } else {
                 meta::pattern::Value::Boolean(Some(false))
             };
-            let variation = antlr_child!(x, y, variation, 0, analyze_type_variation, &class)
+            let variation = antlr_child!(x, y, variation, 0, analyze_type_variation, z, &class)
                 .1
                 .unwrap_or(meta::pattern::Variation::Compatible);
-            let parameters = antlr_child!(x, y, parameters, analyze_type_parameters).1;
+            let parameters = antlr_child!(x, y, parameters, 0, analyze_type_parameters, z).1;
             Ok(meta::pattern::Value::DataType(Some(
                 meta::pattern::DataType {
                     class,
@@ -331,19 +440,21 @@ fn analyze_dtbc(
 fn analyze_type_variation_identifier(
     x: &IdentifierPathContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
     class: &data::Class,
-) -> Result<data::variation::UserDefined> {
-    resolve_type_variation_identifier(
+) -> Result<extension::simple::type_variation::Reference> {
+    Ok(z.resolve_type_variation(
         x.Identifier_all().iter().map(|x| x.symbol.text.to_string()),
         y,
         class,
-    )
+    ))
 }
 
 /// Analyzes a type variation suffix.
 fn analyze_type_variation(
     x: &VariationContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
     class: &data::Class,
 ) -> Result<meta::pattern::Variation> {
     Ok(if let Some(x) = x.variationBody() {
@@ -354,9 +465,17 @@ fn analyze_type_variation(
             }
             VariationBodyContextAll::VarUserDefinedContext(x) => {
                 meta::pattern::Variation::Exactly(data::Variation::UserDefined(
-                    antlr_child!(x, y, variation, 0, analyze_type_variation_identifier, class)
-                        .1
-                        .unwrap_or_default(),
+                    antlr_child!(
+                        x,
+                        y,
+                        variation,
+                        0,
+                        analyze_type_variation_identifier,
+                        z,
+                        class
+                    )
+                    .1
+                    .unwrap_or_default(),
                 ))
             }
             VariationBodyContextAll::Error(_) => meta::pattern::Variation::Any,
@@ -370,12 +489,13 @@ fn analyze_type_variation(
 fn analyze_type_parameter(
     x: &ParameterContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Parameter> {
     let name = x.identifierOrString().and_then(|name| {
         let name = match name.as_ref() {
             IdentifierOrStringContextAll::StrContext(x) => x
                 .String()
-                .and_then(|x| analyze_string(&x.symbol.text, y))
+                .and_then(|x| analyze_string(&x.symbol.text, y, z))
                 .unwrap_or_default(),
             IdentifierOrStringContextAll::IdentContext(x) => x
                 .Identifier()
@@ -399,7 +519,7 @@ fn analyze_type_parameter(
     let value = if let Some(value) = x.parameterValue() {
         match value.as_ref() {
             ParameterValueContextAll::SpecifiedContext(x) => Some(
-                antlr_child!(x, y, pattern, analyze_pattern)
+                antlr_child!(x, y, pattern, 0, analyze_pattern, z)
                     .1
                     .unwrap_or_default(),
             ),
@@ -417,8 +537,9 @@ fn analyze_type_parameter(
 fn analyze_type_parameters(
     x: &ParametersContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<Vec<meta::pattern::Parameter>> {
-    Ok(antlr_children!(x, y, argument, analyze_type_parameter)
+    Ok(antlr_children!(x, y, argument, analyze_type_parameter, z)
         .1
         .into_iter()
         .map(|x| x.unwrap_or_default())
@@ -429,19 +550,20 @@ fn analyze_type_parameters(
 fn analyze_pattern_misc(
     x: &PatternMiscContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
     match x {
         PatternMiscContextAll::ParenthesesContext(x) => {
-            Ok(antlr_hidden_child!(x, y, analyze_pattern).unwrap_or_default())
+            Ok(antlr_hidden_child!(x, y, 0, analyze_pattern, z).unwrap_or_default())
         }
         PatternMiscContextAll::IfThenElseContext(x) => {
-            let condition = antlr_child!(x, y, condition, 0, analyze_pattern)
+            let condition = antlr_child!(x, y, condition, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            let if_true = antlr_child!(x, y, if_true, 1, analyze_pattern)
+            let if_true = antlr_child!(x, y, if_true, 1, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            let if_false = antlr_child!(x, y, if_false, 2, analyze_pattern)
+            let if_false = antlr_child!(x, y, if_false, 2, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
             Ok(meta::pattern::Value::Function(
@@ -450,7 +572,7 @@ fn analyze_pattern_misc(
             ))
         }
         PatternMiscContextAll::UnaryNotContext(x) => {
-            let expression = antlr_child!(x, y, expression, analyze_pattern)
+            let expression = antlr_child!(x, y, expression, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
             Ok(meta::pattern::Value::Function(
@@ -459,7 +581,7 @@ fn analyze_pattern_misc(
             ))
         }
         PatternMiscContextAll::UnaryNegateContext(x) => {
-            let expression = antlr_child!(x, y, expression, analyze_pattern)
+            let expression = antlr_child!(x, y, expression, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
             Ok(meta::pattern::Value::Function(
@@ -477,8 +599,8 @@ fn analyze_pattern_misc(
             Ok(meta::pattern::Value::Integer(i64::MIN, i64::MAX))
         }
         PatternMiscContextAll::IntRangeContext(x) => {
-            let lower = antlr_hidden_child!(x, y, 0, analyze_integer).unwrap_or(i64::MIN);
-            let upper = antlr_hidden_child!(x, y, 1, analyze_integer).unwrap_or(i64::MAX);
+            let lower = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MIN);
+            let upper = antlr_hidden_child!(x, y, 1, analyze_integer, z).unwrap_or(i64::MAX);
             if lower > upper {
                 diagnostic!(
                     y,
@@ -490,15 +612,15 @@ fn analyze_pattern_misc(
             Ok(meta::pattern::Value::Integer(lower, upper))
         }
         PatternMiscContextAll::IntAtMostContext(x) => {
-            let upper = antlr_hidden_child!(x, y, analyze_integer).unwrap_or(i64::MAX);
+            let upper = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
             Ok(meta::pattern::Value::Integer(i64::MIN, upper))
         }
         PatternMiscContextAll::IntAtLeastContext(x) => {
-            let lower = antlr_hidden_child!(x, y, analyze_integer).unwrap_or(i64::MAX);
+            let lower = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
             Ok(meta::pattern::Value::Integer(lower, i64::MAX))
         }
         PatternMiscContextAll::IntExactlyContext(x) => {
-            let value = antlr_hidden_child!(x, y, analyze_integer).unwrap_or(i64::MAX);
+            let value = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
             Ok(meta::pattern::Value::Integer(value, value))
         }
         PatternMiscContextAll::EnumAnyContext(_) => Ok(meta::pattern::Value::Enum(None)),
@@ -528,7 +650,9 @@ fn analyze_pattern_misc(
         }
         PatternMiscContextAll::StrAnyContext(_) => Ok(meta::pattern::Value::String(None)),
         PatternMiscContextAll::StrExactlyContext(x) => {
-            let s = x.String().and_then(|x| analyze_string(&x.symbol.text, y));
+            let s = x
+                .String()
+                .and_then(|x| analyze_string(&x.symbol.text, y, z));
             if s.is_none() {
                 diagnostic!(y, Error, TypeParseError, "invalid string literal");
             }
@@ -542,7 +666,7 @@ fn analyze_pattern_misc(
             if function.is_none() {
                 diagnostic!(y, Error, TypeParseError, "unknown function");
             }
-            let arguments = antlr_children!(x, y, argument, analyze_pattern)
+            let arguments = antlr_children!(x, y, argument, analyze_pattern, z)
                 .1
                 .into_iter()
                 .map(|x| x.unwrap_or_default())
@@ -552,7 +676,7 @@ fn analyze_pattern_misc(
                 arguments,
             ))
         }
-        PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => analyze_dtbc(x, y),
+        PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => analyze_dtbc(x, y, z),
         PatternMiscContextAll::Error(_) => Ok(meta::pattern::Value::Unresolved),
     }
 }
@@ -561,9 +685,10 @@ fn analyze_pattern_misc(
 fn analyze_pattern_mul_div(
     x: &PatternMulDivContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
     antlr_reduce_left_recursion!(
-        x, y, PatternMulDivContextAll,
+        x, y, z, PatternMulDivContextAll,
         patternMisc_all, analyze_pattern_misc, operatorMulDiv,
         {
             OperatorMulDivContextAll::MulContext(_) => meta::Function::Multiply,
@@ -577,9 +702,10 @@ fn analyze_pattern_mul_div(
 fn analyze_pattern_add_sub(
     x: &PatternAddSubContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
     antlr_reduce_left_recursion!(
-        x, y, PatternAddSubContextAll,
+        x, y, z, PatternAddSubContextAll,
         patternMulDiv_all, analyze_pattern_mul_div, operatorAddSub,
         {
             OperatorAddSubContextAll::AddContext(_) => meta::Function::Add,
@@ -593,9 +719,10 @@ fn analyze_pattern_add_sub(
 fn analyze_pattern_ineq(
     x: &PatternIneqContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
     antlr_reduce_left_recursion!(
-        x, y, PatternIneqContextAll,
+        x, y, z, PatternIneqContextAll,
         patternAddSub_all, analyze_pattern_add_sub, operatorIneq,
         {
             OperatorIneqContextAll::LtContext(_) => meta::Function::LessThan,
@@ -611,9 +738,10 @@ fn analyze_pattern_ineq(
 fn analyze_pattern_eq_neq(
     x: &PatternEqNeqContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
     antlr_reduce_left_recursion!(
-        x, y, PatternEqNeqContextAll,
+        x, y, z, PatternEqNeqContextAll,
         patternIneq_all, analyze_pattern_ineq, operatorEqNeq,
         {
             OperatorEqNeqContextAll::EqContext(_) => meta::Function::Equal,
@@ -627,9 +755,10 @@ fn analyze_pattern_eq_neq(
 fn analyze_pattern_and(
     x: &PatternAndContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
     antlr_reduce_left_recursion!(
-        x, y, PatternAndContextAll,
+        x, y, z, PatternAndContextAll,
         patternEqNeq_all, analyze_pattern_eq_neq, operatorAnd,
         {
             OperatorAndContextAll::AndContext(_) => meta::Function::And,
@@ -642,9 +771,10 @@ fn analyze_pattern_and(
 fn analyze_pattern_or(
     x: &PatternOrContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
     antlr_reduce_left_recursion!(
-        x, y, PatternOrContextAll,
+        x, y, z, PatternOrContextAll,
         patternAnd_all, analyze_pattern_and, operatorOr,
         {
             OperatorOrContextAll::OrContext(_) => meta::Function::Or,
@@ -657,18 +787,20 @@ fn analyze_pattern_or(
 fn analyze_pattern(
     x: &PatternContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
-    Ok(antlr_hidden_child!(x, y, analyze_pattern_or).unwrap_or_default())
+    Ok(antlr_hidden_child!(x, y, 0, analyze_pattern_or, z).unwrap_or_default())
 }
 
 /// Analyzes a statement parse tree node.
 fn analyze_statement(
     x: &StatementContextAll,
     y: &mut context::Context,
+    z: &mut AnalysisContext,
 ) -> Result<meta::program::Statement> {
     match x {
         StatementContextAll::AssertContext(x) => {
-            let rhs_expression = antlr_child!(x, y, rhs, analyze_pattern)
+            let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
             Ok(meta::program::Statement {
@@ -677,10 +809,10 @@ fn analyze_statement(
             })
         }
         StatementContextAll::NormalContext(x) => {
-            let rhs_expression = antlr_child!(x, y, rhs, 1, analyze_pattern)
+            let rhs_expression = antlr_child!(x, y, rhs, 1, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            let lhs_pattern = antlr_child!(x, y, lhs, 0, analyze_pattern)
+            let lhs_pattern = antlr_child!(x, y, lhs, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
             Ok(meta::program::Statement {
@@ -689,10 +821,10 @@ fn analyze_statement(
             })
         }
         StatementContextAll::MatchContext(x) => {
-            let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern)
+            let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            let lhs_pattern = antlr_child!(x, y, lhs, 1, analyze_pattern)
+            let lhs_pattern = antlr_child!(x, y, lhs, 1, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
             Ok(meta::program::Statement {
@@ -705,13 +837,17 @@ fn analyze_statement(
 }
 
 /// Analyzes a program parse tree node.
-fn analyze_program(x: &ProgramContextAll, y: &mut context::Context) -> Result<meta::Program> {
-    let statements = antlr_children!(x, y, statement, analyze_statement)
+fn analyze_program(
+    x: &ProgramContextAll,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Result<meta::Program> {
+    let statements = antlr_children!(x, y, statement, analyze_statement, z)
         .1
         .into_iter()
         .map(|x| x.unwrap_or_default())
         .collect();
-    let expression = antlr_child!(x, y, pattern, analyze_pattern)
+    let expression = antlr_child!(x, y, pattern, 0, analyze_pattern, z)
         .1
         .unwrap_or_default();
     Ok(meta::Program {
@@ -721,15 +857,13 @@ fn analyze_program(x: &ProgramContextAll, y: &mut context::Context) -> Result<me
 }
 
 /// Parse a string as just the class part of a data type.
-pub fn parse_class(x: &str, y: &mut context::Context) -> Result<data::Class> {
-    // Resolve from within a fresh scope.
-    y.type_ident_map_init();
-    let result = resolve_pattern_identifier(x.split('.'), y);
-    y.type_ident_map_clear();
-    let object = result?;
-
+pub fn parse_class(
+    x: &str,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Result<data::Class> {
     // Only accept type classes.
-    if let context::IdentifiedObject::TypeClass(class) = object {
+    if let PatternObject::TypeClass(class) = z.resolve_pattern(x.split('.'), y) {
         Ok(class)
     } else {
         Err(cause!(
@@ -740,8 +874,12 @@ pub fn parse_class(x: &str, y: &mut context::Context) -> Result<data::Class> {
 }
 
 /// Parse a string as a complete type.
-pub fn parse_type(x: &str, y: &mut context::Context) -> Result<data::Type> {
-    let pattern = parse_pattern(x, y)?;
+pub fn parse_type(
+    x: &str,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Result<data::Type> {
+    let pattern = parse_pattern(x, y, z)?;
     let value = pattern.evaluate()?;
     value.get_data_type().ok_or_else(|| {
         cause!(
@@ -752,24 +890,28 @@ pub fn parse_type(x: &str, y: &mut context::Context) -> Result<data::Type> {
 }
 
 /// Parse a string as a meta-pattern.
-pub fn parse_pattern(x: &str, y: &mut context::Context) -> Result<meta::pattern::Value> {
+pub fn parse_pattern(
+    x: &str,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Result<meta::pattern::Value> {
     let x = antlr_parse!(x, y, startPattern)?;
-    y.type_ident_map_init();
-    let result = antlr_child!(x.as_ref(), y, pattern, analyze_pattern)
+    let result = antlr_child!(x.as_ref(), y, pattern, 0, analyze_pattern, z)
         .1
         .unwrap_or_default();
-    y.type_ident_map_clear();
     Ok(result)
 }
 
 /// Parse a string as a meta-program.
-pub fn parse_program(x: &str, y: &mut context::Context) -> Result<meta::Program> {
+pub fn parse_program(
+    x: &str,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Result<meta::Program> {
     let x = antlr_parse!(x, y, startProgram)?;
-    y.type_ident_map_init();
-    let result = antlr_child!(x.as_ref(), y, program, analyze_program)
+    let result = antlr_child!(x.as_ref(), y, program, 0, analyze_program, z)
         .1
         .unwrap_or_default();
-    y.type_ident_map_clear();
     Ok(result)
 }
 
@@ -784,6 +926,7 @@ mod test {
         let mut state = Default::default();
         let config = crate::Config::new();
         let mut context = context::Context::new("test", &mut node, &mut state, &config);
+        let mut analysis_context = AnalysisContext::new(None);
 
         /*let result = parse_program(
             r#"init_scale = max(S1,S2)
@@ -798,12 +941,16 @@ mod test {
         )
         .ok();*/
 
-        let _result = parse_program(r#"1 + 2 * 3 - 4 / 5"#, &mut context).unwrap_or_default();
+        let result = parse_program(r#"1 + 2 * 3 - 4 / 5"#, &mut context, &mut analysis_context)
+            .unwrap_or_default();
 
-        //let mut eval_context = meta::Context::default();
-        //panic!("{:#?}", result.evaluate(&mut eval_context));
-        //panic!("{:#?}", result);
+        let mut eval_context = meta::Context::default();
+        assert_eq!(
+            result.evaluate(&mut eval_context),
+            Ok(meta::Value::Integer(7))
+        );
+        //panic!("{:#?}", _result);
         //panic!("{node:#?}");
-        //panic!("{:#?}", result.to_string_tree(&*parser));
+        //panic!("{:#?}", _result.to_string_tree(&*parser));
     }
 }

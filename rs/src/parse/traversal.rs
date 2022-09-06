@@ -1430,7 +1430,7 @@ macro_rules! antlr_children {
         )
     };
     ($input:expr, $context:expr, $rule:ident, $analyzer:expr, $($args:expr),*) => {
-        antlr_children!($input, $context, $rule, $index, |x, y| $analyzer(x, y, $($args),*))
+        antlr_children!($input, $context, $rule, |x, y| $analyzer(x, y, $($args),*))
     };
 }
 

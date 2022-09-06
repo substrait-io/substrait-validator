@@ -209,17 +209,24 @@ impl<T> Definition<T> {
 
     /// Resolves a name to all items with the same name visible from within this
     /// namespace (so, including private items).
-    pub fn resolve_local<S: AsRef<str>>(&self, name: S) -> ResolutionResult<T> {
-        let name = name.as_ref();
-        let reference = name.to_string().into();
+    pub fn resolve_local<R>(&self, reference: R) -> ResolutionResult<T>
+    where
+        R: Into<extension::reference::Data<T>>,
+    {
+        let reference = reference.into();
+        let name = reference.name.name().unwrap_or("!").to_string();
         let mut result = ResolutionResult::new(reference);
-        self.resolve_internal(&mut result, true, None, name, true);
+        self.resolve_internal(&mut result, true, None, &name, true);
         result
     }
 
     /// Resolves a name to all items with the same name visible from outside
     /// this namespace (so, excluding private items).
-    pub fn resolve_public(&self, reference: extension::reference::Data<T>) -> ResolutionResult<T> {
+    pub fn resolve_public<R>(&self, reference: R) -> ResolutionResult<T>
+    where
+        R: Into<extension::reference::Data<T>>,
+    {
+        let reference = reference.into();
         let name = reference.name.name().unwrap_or("!").to_string();
         let mut result = ResolutionResult::new(reference);
         self.resolve_internal(&mut result, false, None, &name, true);
@@ -345,7 +352,8 @@ impl<T> std::fmt::Display for ResolutionResult<T> {
 
 impl<T> ResolutionResult<T> {
     /// Creates a new, empty resolution result for the given unresolved
-    /// reference, to be used as a placeholder if . It will behave as if resolution failed because the namespace
+    /// reference, to be used as a placeholder when no namespace is actually
+    /// available. It will behave as if resolution failed because the namespace
     /// being looked in was itself not resolved. If an item is passed via the
     /// reference, it will be returned by as_item(). as_namespace() will return
     /// None.
@@ -399,6 +407,7 @@ impl<T> ResolutionResult<T> {
         if_not_applicable: F1,
         if_ambiguous: F2,
         allow_ambiguity: bool,
+        optional: bool,
     ) -> Self
     where
         F1: FnOnce(String, &mut context::Context) -> bool,
@@ -420,6 +429,10 @@ impl<T> ResolutionResult<T> {
                     ),
                 )
             }
+        } else if self.visible_incomplete || optional {
+            // A visible namespace was not resolved (in which case we
+            // optimistically assume the item exists) or the item doesn't need
+            // to exist.
         } else if !self.invisible.is_empty() {
             traversal::push_diagnostic(
                 parse_context,
@@ -436,11 +449,11 @@ impl<T> ResolutionResult<T> {
                 diagnostic::Level::Error,
                 cause!(
                     LinkUnresolvedName,
-                    "a definition for {} may exists, but would not be visible from here",
+                    "a definition for {} may exist, but would not be visible from here",
                     self.unresolved_reference
                 ),
             );
-        } else if self.visible.first().is_some() || self.filtered {
+        } else if self.filtered {
             if !if_not_applicable(self.unresolved_reference.to_string(), parse_context) {
                 traversal::push_diagnostic(
                     parse_context,
@@ -482,7 +495,23 @@ impl<T> ResolutionResult<T> {
         F1: FnOnce(String, &mut context::Context) -> bool,
         F2: FnOnce(String, &mut context::Context) -> bool,
     {
-        self.expect(parse_context, if_not_applicable, if_ambiguous, false)
+        self.expect(parse_context, if_not_applicable, if_ambiguous, false, false)
+    }
+
+    /// Expects zero or one item(s), yielding diagnostics if this isn't the
+    /// case. If ambiguous, the specified function is called. It receives the
+    /// reference name and the parse context as arguments to form a suitable
+    /// diagnostic message. If it returns false, a default diagnostic message
+    /// will be emitted instead.
+    pub fn expect_not_ambiguous<F>(
+        self,
+        parse_context: &mut context::Context,
+        if_ambiguous: F,
+    ) -> Self
+    where
+        F: FnOnce(String, &mut context::Context) -> bool,
+    {
+        self.expect(parse_context, |_, _| true, if_ambiguous, false, true)
     }
 
     /// Expects a one or more items, yielding diagnostics if this isn't the
@@ -499,7 +528,7 @@ impl<T> ResolutionResult<T> {
     where
         F: FnOnce(String, &mut context::Context) -> bool,
     {
-        self.expect(parse_context, if_not_applicable, |_, _| true, true)
+        self.expect(parse_context, if_not_applicable, |_, _| true, true, false)
     }
 
     /// Silently returns the first matching item, if any. If there are none,
@@ -512,6 +541,20 @@ impl<T> ResolutionResult<T> {
             data.definition.replace(item);
         }
         Arc::new(data)
+    }
+
+    /// Silently returns the first matching item, if any. Unlike as_item(),
+    /// this returns None if there are no matches.
+    pub fn as_opt_item(&self) -> Option<extension::reference::Reference<T>> {
+        self.visible
+            .iter()
+            .filter_map(|x| x.1.as_item())
+            .next()
+            .map(|item| {
+                let mut data = self.unresolved_reference.clone();
+                data.definition.replace(item);
+                Arc::new(data)
+            })
     }
 
     /// Silently returns the first matching namespace. Use
