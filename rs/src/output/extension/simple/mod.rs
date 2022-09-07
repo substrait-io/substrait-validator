@@ -2,6 +2,7 @@
 
 //! Module for representing simple extensions.
 
+pub mod common;
 pub mod function;
 pub mod module;
 pub mod type_class;

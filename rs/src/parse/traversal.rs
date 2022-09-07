@@ -618,7 +618,8 @@ where
 // YAML object handling
 //=============================================================================
 
-/// Convenience/shorthand macro for parsing optional YAML fields.
+/// Convenience/shorthand macro for parsing optional YAML fields. The input
+/// must be an object, or this will fail.
 macro_rules! yaml_field {
     ($input:expr, $context:expr, $field:expr) => {
         yaml_field!($input, $context, $field, |_, _| Ok(()))
@@ -666,7 +667,8 @@ where
     }
 }
 
-/// Convenience/shorthand macro for parsing required YAML fields.
+/// Convenience/shorthand macro for parsing required YAML fields. The input
+/// must be an object, or this will fail.
 macro_rules! yaml_required_field {
     ($input:expr, $context:expr, $field:expr) => {
         yaml_required_field!($input, $context, $field, |_, _| Ok(()))
@@ -707,11 +709,100 @@ where
     }
 }
 
+/// Convenience/shorthand macro for parsing a YAML object as if it were an
+/// array. The input must be an object or this will fail, but the object may
+/// by default be empty. Use [yaml_required_object!] or set a minimum size to
+/// override. The parser function will have the nonstandard argument list
+/// (k, x, y, ...), where k is the String key and v is the value. Fields will
+/// be parsed in the order in which they are specified in the YAML file.
+macro_rules! yaml_object {
+    ($input:expr, $context:expr) => {
+        yaml_object!($input, $context, $field, |_, _, _| Ok(()))
+    };
+    ($input:expr, $context:expr, $parser:expr) => {
+        yaml_object!($input, $context, $field, $parser, 0)
+    };
+    ($input:expr, $context:expr, $parser:expr, $min_size:expr) => {
+        crate::parse::traversal::push_yaml_object($input, $context, $min_size, false, $parser)
+    };
+    ($input:expr, $context:expr, $parser:expr, $min_size:expr, $($args:expr),*) => {
+        yaml_object!($input, $context, |k, x, y| $parser(k, x, y, $($args),*), $min_size)
+    };
+}
+
+/// Like [yaml_object!], but requires the object to have at least one element.
+macro_rules! yaml_required_object {
+    ($input:expr, $context:expr) => {
+        yaml_required_object!($input, $context, |_, _, _| Ok(()))
+    };
+    ($input:expr, $context:expr, $parser:expr) => {
+        yaml_object!($input, $context, $parser, 1)
+    };
+    ($input:expr, $context:expr, $parser:expr, $($args:expr),*) => {
+        yaml_object!($input, $context, $parser, 1, $($args:expr),*)
+    };
+}
+
+/// Parse and push all fields in a YAML object.
+pub fn push_yaml_object<TR, FP>(
+    input: &yaml::Value,
+    context: &mut context::Context,
+    min_size: usize,
+    unknown_subtree: bool,
+    mut parser: FP,
+) -> diagnostic::Result<RepeatedResult<TR>>
+where
+    FP: FnMut(&str, &yaml::Value, &mut context::Context) -> diagnostic::Result<TR>,
+{
+    if let serde_json::Value::Object(input) = input {
+        if input.len() < min_size {
+            if min_size == 1 {
+                diagnostic!(
+                    context,
+                    Error,
+                    YamlMissingKey,
+                    "at least one field must be specified"
+                );
+            } else {
+                diagnostic!(
+                    context,
+                    Error,
+                    YamlMissingKey,
+                    "at least {min_size} fields must be specified"
+                );
+            }
+        }
+        Ok(input
+            .iter()
+            .map(|(key, value)| {
+                if !context.set_field_parsed(key) {
+                    panic!("field {key} was parsed multiple times");
+                }
+
+                push_child(
+                    context,
+                    value,
+                    path::PathElement::Field(key.clone()),
+                    unknown_subtree,
+                    |x, y| parser(key, x, y),
+                )
+            })
+            .unzip())
+    } else {
+        Err(cause!(YamlInvalidType, "object expected"))
+    }
+}
+
 //=============================================================================
 // YAML array handling
 //=============================================================================
 
 /// Convenience/shorthand macro for parsing a YAML array that may be empty.
+/// This differs from [yaml_repeated_field!] in that no field name is inserted
+/// in the node paths. This is useful when the input to a parser function is
+/// an array with no further context, the array having been pushed as a single
+/// child earlier. This, in turn, is necessary when the field may be something
+/// other than an array, too.
 macro_rules! yaml_array {
     ($input:expr, $context:expr) => {
         yaml_array!($input, $context, $field, |_, _| Ok(()))
@@ -727,8 +818,7 @@ macro_rules! yaml_array {
     };
 }
 
-/// Convenience/shorthand macro for parsing a YAML array that must have at
-/// least one value.
+/// Like [yaml_array!], but requiring that at least one entry exists.
 macro_rules! yaml_required_array {
     ($input:expr, $context:expr) => {
         yaml_required_array!($input, $context, |_, _| Ok(()))
@@ -821,7 +911,15 @@ where
     }
 }
 
-/// Shorthand for fields that must be arrays if specified.
+/// Shorthand for fields that must be arrays if specified. The input must be
+/// an object. This mimics the protobuf repeated field logic and tree
+/// structure, but will fail if the field is set to something other than an
+/// array. It will also fail if the input is not an object. This macro allows
+/// the field to not be specified; use [yaml_required_repeated_field!] if it
+/// must be. By default, it also allows the array to be empty if specified,
+/// but a minimum size can be specified. If the field is supposed to be
+/// variadic, use [yaml_field!] instead, use the parse function to distinguish
+/// between YAML types, and (if array) use [yaml_array!].
 macro_rules! yaml_repeated_field {
     ($input:expr, $context:expr, $field:expr) => {
         yaml_repeated_field!($input, $context, $field, |_, _| Ok(()))
@@ -839,7 +937,8 @@ macro_rules! yaml_repeated_field {
     };
 }
 
-/// Shorthand for fields that must be arrays.
+/// Like [yaml_repeated_field!], but fails if the array is empty or if the
+/// field does not exist.
 macro_rules! yaml_required_repeated_field {
     ($input:expr, $context:expr, $field:expr) => {
         yaml_required_repeated_field!($input, $context, $field, |_, _| Ok(()))
@@ -898,6 +997,9 @@ macro_rules! yaml_prim {
     ($typ:ident, $parser:expr) => {
         |x, y| crate::parse::traversal::yaml_primitive_parsers::$typ(x, y, $parser)
     };
+    ($typ:ident, $parser:expr, $($args:expr),*) => {
+        yaml_prim!($typ, |x, y| $parser(x, y, $($args),*))
+    };
 }
 
 pub mod yaml_primitive_parsers {
@@ -915,7 +1017,7 @@ pub mod yaml_primitive_parsers {
         if let serde_json::Value::Bool(x) = x {
             parser(x, y)
         } else {
-            Err(cause!(YamlInvalidType, "string expected"))
+            Err(cause!(YamlInvalidType, "boolean expected"))
         }
     }
 
@@ -992,7 +1094,7 @@ pub mod yaml_primitive_parsers {
 //=============================================================================
 
 /// Worker for resolve_uri().
-fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::BinaryData> {
+fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<(String, config::BinaryData)> {
     // Check for cyclic dependencies.
     let uri_stack = context.uri_stack();
     if let Some((index, _)) = uri_stack.iter().enumerate().find(|(_, x)| &x[..] == uri) {
@@ -1054,7 +1156,7 @@ fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::Bina
     // If a custom download function is specified, use it to resolve.
     if let Some(ref resolver) = context.config.uri_resolver {
         return match resolver(&remapped_uri) {
-            Ok(x) => Some(x),
+            Ok(x) => Some((remapped_uri, x)),
             Err(e) => {
                 diagnostic!(context, Warning, YamlResolutionFailed, "{e}");
                 None
@@ -1129,7 +1231,7 @@ fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::Bina
 
     // Read the file.
     match std::fs::read(path) {
-        Ok(data) => Some(Box::new(data)),
+        Ok(data) => Some((remapped_uri, Box::new(data))),
         Err(e) => {
             if is_remapped {
                 diagnostic!(
@@ -1151,7 +1253,9 @@ fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::Bina
 /// includes detection and prevention of recursive resolution. The reader
 /// function will first be called to convert the binary data from the
 /// resolution to a traversable tree (something that satisfied InputNode),
-/// then the parser will be called on the root of that tree.
+/// then the parser will be called on the root of that tree. In addition
+/// to the usual x/y argument pair, the parser receives two string arguments:
+/// the original URI and the remapped URI.
 pub fn parse_uri<FP, FR, TF, TR>(
     uri: &str,
     context: &mut context::Context,
@@ -1161,10 +1265,10 @@ pub fn parse_uri<FP, FR, TF, TR>(
 where
     TF: InputNode,
     FR: FnOnce(config::BinaryData, &mut context::Context) -> Option<TF>,
-    FP: FnOnce(&TF, &mut context::Context) -> diagnostic::Result<TR>,
+    FP: FnOnce(&TF, &mut context::Context, &str, &str) -> diagnostic::Result<TR>,
 {
     // Try resolving the URI.
-    if let Some(data) = resolve_uri(uri, context) {
+    if let Some((remapped_uri, data)) = resolve_uri(uri, context) {
         // Parse the flat file to a traversable tree.
         if let Some(root) = reader(data, context) {
             // Update recursion stack.
@@ -1177,7 +1281,7 @@ where
                 &root,
                 path::PathElement::Field("data".to_string()),
                 false,
-                parser,
+                |x, y| parser(x, y, uri, &remapped_uri),
             );
 
             // Revert recursion stack update.

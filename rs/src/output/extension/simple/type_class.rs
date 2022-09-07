@@ -19,23 +19,26 @@ pub struct Definition {
     /// Description of the type class.
     pub description: String,
 
-    /// The underlying structure of the type.
-    pub structure: Vec<(String, data::class::Simple)>,
-
     /// The parameters expected by the data type.
     pub parameter_slots: Vec<ParameterSlot>,
 
     /// Whether or not the last parameter slot is variadic.
     pub parameters_variadic: bool,
+
+    /// Constraint program for checking the parameters.
+    pub contraints: Vec<meta::Statement>,
+
+    /// The underlying structure of the type. Empty for opaque types.
+    pub structure: Option<meta::pattern::Value>,
 }
 
 /// A parameter slot for a user-defined data type.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ParameterSlot {
-    /// YAML-provided name of the parameter.
+    /// Name of the parameter.
     pub name: String,
 
-    /// YAML-provided human-readable description of the parameter.
+    /// Human-readable description of the parameter.
     pub description: String,
 
     /// Pattern for type- and bounds-checking parameters bound to this slot.
@@ -89,6 +92,7 @@ impl ParameterInfo for Definition {
         }
 
         // Match parameters to slots positionally.
+        let mut context = meta::Context::default();
         for (index, param) in params.iter().enumerate() {
             // Determine the slot that corresponds to this parameter.
             let slot = self
@@ -119,7 +123,10 @@ impl ParameterInfo for Definition {
                 ));
             }
             if let Some(value) = &param.value {
-                if !slot.pattern.match_pattern(value)? {
+                if !slot
+                    .pattern
+                    .match_pattern_with_context(&mut context, value)?
+                {
                     return Err(cause!(
                         TypeMismatchedParameters,
                         "parameter {} does not match pattern {}",
@@ -135,6 +142,17 @@ impl ParameterInfo for Definition {
                 ));
             }
         }
+
+        // Check constraints.
+        for constraint in self.contraints.iter() {
+            constraint.execute(&mut context)?;
+        }
+
+        // If there is a structure pattern, check that it can be evaluated.
+        if let Some(structure) = &self.structure {
+            structure.evaluate_with_context(&mut context)?;
+        }
+
         Ok(())
     }
 

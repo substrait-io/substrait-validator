@@ -249,6 +249,9 @@ pub enum Classification {
     #[strum(props(HiddenDescription = "invalid compound vs. simple function name usage"))]
     LinkCompoundVsSimpleFunctionName = 3010,
 
+    #[strum(props(Description = "discouraged name"))]
+    LinkDiscouragedName = 3011,
+
     // Type-related diagnostics (group 4).
     #[strum(props(HiddenDescription = "type-related diagnostics"))]
     Type = 4000,

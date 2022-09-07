@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//! Module providing parse/validation functions for advanced extensions, i.e.
+//! Module providing parse/validation functions for simple extensions, i.e.
 //! those based around YAML files.
 
 use crate::input::proto::substrait;
@@ -10,12 +10,12 @@ use crate::output::extension::simple::module::Scope;
 use crate::output::type_system::data;
 use crate::parse::context;
 
-mod builder;
+mod common;
 mod derivations;
-mod function_decls;
-mod type_decls;
-mod type_variation_decls;
-mod yaml;
+mod functions;
+mod modules;
+mod type_classes;
+mod type_variations;
 
 /// Parse a user-defined name. Note that names are matched case-insensitively
 /// because we return the name as lowercase.
@@ -51,7 +51,7 @@ fn parse_simple_extension_yaml_uri_mapping(
 ) -> Result<()> {
     // Parse the fields.
     let anchor = proto_primitive_field!(x, y, extension_uri_anchor, parse_anchor).1;
-    let yaml_data = proto_primitive_field!(x, y, uri, yaml::parse_uri)
+    let yaml_data = proto_primitive_field!(x, y, uri, modules::parse_uri)
         .1
         .unwrap();
 

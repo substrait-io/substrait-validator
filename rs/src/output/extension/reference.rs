@@ -6,10 +6,11 @@ use crate::output::path;
 use crate::util;
 use std::sync::Arc;
 
-/// Represents an identifier that was used to reference something. It is
-/// stored along with a resolution result to retain information about the
-/// reference even if the resolution failed, and is generally only used for
-/// identity/equality checks and diagnostic information.
+/// Represents an identifier that was used to reference an extension at the
+/// protobuf level. It is stored along with a resolution result to retain
+/// information about the reference even if the resolution failed, and is
+/// generally only used for identity/equality checks and diagnostic
+/// information.
 #[derive(Clone, Debug, Default)]
 pub struct Identifier {
     /// The name of the object being referred to, if known. Always stored using

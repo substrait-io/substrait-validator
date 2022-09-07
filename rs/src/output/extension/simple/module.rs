@@ -72,14 +72,13 @@ impl<T: Scope> DynScope for T {
 }
 
 /// A parsed simple extension module/file.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Definition {
-    /// Unique number within the tree that can be used to refer to this
-    /// extension when exporting in protobuf form.
-    pub extension_id: u64,
+    /// Identifier for the extension.
+    pub identifier: extension::simple::common::Identifier,
 
-    /// Description of the module.
-    pub description: String,
+    /// Common metadata for the extension.
+    pub metadata: extension::simple::common::Metadata,
 
     /// The URI that was actually used to resolve the module.
     pub actual_uri: String,

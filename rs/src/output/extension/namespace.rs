@@ -531,6 +531,22 @@ impl<T> ResolutionResult<T> {
         self.expect(parse_context, if_not_applicable, |_, _| true, true, false)
     }
 
+    /// Emits an error if one or more definitions were found for this name
+    /// resolution, to be used just before defining a new item.
+    pub fn expect_not_yet_defined(&self, parse_context: &mut context::Context) {
+        if !self.visible.is_empty() {
+            traversal::push_diagnostic(
+                parse_context,
+                diagnostic::Level::Error,
+                cause!(
+                    LinkDuplicateDefinition,
+                    "{} is already defined",
+                    self.unresolved_reference
+                ),
+            );
+        }
+    }
+
     /// Silently returns the first matching item, if any. If there are none,
     /// this just returns an unresolved reference. Use
     /// filter_items().expect_one() to formulate error messages if there are
@@ -566,19 +582,5 @@ impl<T> ResolutionResult<T> {
             .filter_map(|x| x.1.as_namespace())
             .next()
             .flatten()
-    }
-
-    /// Return an error if one or more definitions were found for this name
-    /// resolution, to be used just before defining a new item.
-    pub fn expect_not_yet_defined(&self) -> diagnostic::Result<()> {
-        if self.visible.is_empty() {
-            Ok(())
-        } else {
-            Err(cause!(
-                LinkDuplicateDefinition,
-                "{} is already defined",
-                self.unresolved_reference
-            ))
-        }
     }
 }

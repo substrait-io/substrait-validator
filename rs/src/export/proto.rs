@@ -353,25 +353,6 @@ impl From<&extension::simple::type_class::Reference> for validator::data_type::U
     }
 }
 
-impl From<&extension::simple::type_class::Definition>
-    for validator::data_type::user_defined_type::Definition
-{
-    fn from(node: &extension::simple::type_class::Definition) -> Self {
-        Self {
-            structure: node
-                .structure
-                .iter()
-                .map(
-                    |(name, simple)| validator::data_type::user_defined_type::Element {
-                        name: name.to_string(),
-                        kind: simple.into(),
-                    },
-                )
-                .collect(),
-        }
-    }
-}
-
 impl From<&data::Variation> for validator::data_type::Variation {
     fn from(node: &data::Variation) -> Self {
         match node {

@@ -5,7 +5,6 @@
 use std::sync::Arc;
 
 use crate::input::proto::substrait;
-use crate::output::comment;
 use crate::output::diagnostic;
 use crate::output::type_system::data;
 use crate::output::type_system::data::class::ParameterInfo;
@@ -875,21 +874,11 @@ fn describe_type(y: &mut context::Context, data_type: &data::Type) {
         data::Class::UserDefined(u) => {
             summary!(y, "Extension type {u}.");
             if let Some(x) = &u.definition {
-                y.push_summary(
-                    comment::Comment::new()
-                        .plain("Internal structure corresponds to:")
-                        .lo(),
-                );
-                let mut first = true;
-                for (name, class) in &x.structure {
-                    if first {
-                        first = false;
-                    } else {
-                        y.push_summary(comment::Comment::new().li());
-                    }
-                    summary!(y, "{}: {}", util::string::as_ident_or_string(name), class);
+                if let Some(structure) = &x.structure {
+                    summary!(y, "Internal structure corresponds to {structure:#}");
+                } else {
+                    summary!(y, "This type is opaque.");
                 }
-                y.push_summary(comment::Comment::new().lc());
             }
             format!("Extension type {}", u.name)
         }
