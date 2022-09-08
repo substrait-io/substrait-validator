@@ -94,6 +94,30 @@ fn enter_pattern(&mut self, _ctx: &PatternContext<'input>) { }
  */
 fn exit_pattern(&mut self, _ctx: &PatternContext<'input>) { }
 /**
+ * Enter a parse tree produced by the {@code ValidPattern}
+ * labeled alternative in {@link SubstraitTypeParser#patternInvalidIfThenElse}.
+ * @param ctx the parse tree
+ */
+fn enter_ValidPattern(&mut self, _ctx: &ValidPatternContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code ValidPattern}
+ * labeled alternative in {@link SubstraitTypeParser#patternInvalidIfThenElse}.
+ * @param ctx the parse tree
+ */
+fn exit_ValidPattern(&mut self, _ctx: &ValidPatternContext<'input>) { }
+/**
+ * Enter a parse tree produced by the {@code InvalidIfThenElse}
+ * labeled alternative in {@link SubstraitTypeParser#patternInvalidIfThenElse}.
+ * @param ctx the parse tree
+ */
+fn enter_InvalidIfThenElse(&mut self, _ctx: &InvalidIfThenElseContext<'input>) { }
+/**
+ * Exit a parse tree produced by the {@code InvalidIfThenElse}
+ * labeled alternative in {@link SubstraitTypeParser#patternInvalidIfThenElse}.
+ * @param ctx the parse tree
+ */
+fn exit_InvalidIfThenElse(&mut self, _ctx: &InvalidIfThenElseContext<'input>) { }
+/**
  * Enter a parse tree produced by {@link SubstraitTypeParser#patternOr}.
  * @param ctx the parse tree
  */

@@ -416,4 +416,42 @@ impl Function {
             }
         }
     }
+
+    /// Returns what type this function evaluates to. If unknown or multiple
+    /// types can be matched, yield unresolved.
+    pub fn determine_type(&self, arguments: &[meta::pattern::Value]) -> meta::Type {
+        match self {
+            Function::Unresolved => meta::Type::Unresolved,
+            Function::Not
+            | Function::And
+            | Function::Or
+            | Function::Equal
+            | Function::NotEqual
+            | Function::GreaterThan
+            | Function::LessThan
+            | Function::GreaterEqual
+            | Function::LessEqual
+            | Function::Covers => meta::Type::Boolean,
+            Function::Negate
+            | Function::Add
+            | Function::Subtract
+            | Function::Multiply
+            | Function::Divide
+            | Function::Min
+            | Function::Max => meta::Type::Integer,
+            Function::IfThenElse => {
+                if arguments.len() == 3 {
+                    let a = arguments[1].determine_type();
+                    let b = arguments[2].determine_type();
+                    if a == b {
+                        a
+                    } else {
+                        meta::Type::Unresolved
+                    }
+                } else {
+                    meta::Type::Unresolved
+                }
+            }
+        }
+    }
 }
