@@ -339,10 +339,16 @@ impl From<&data::class::Compound> for i32 {
 
 impl From<&extension::simple::type_class::Reference> for validator::data_type::UserDefinedType {
     fn from(node: &extension::simple::type_class::Reference) -> Self {
+        #[allow(deprecated)]
         Self {
             uri: node.uri.name().unwrap_or_default().to_string(),
             name: node.name.name().unwrap_or_default().to_string(),
-            definition: node.definition.as_ref().map(|x| x.as_ref().into()),
+            definition: None,
+            extension_id: node
+                .definition
+                .as_ref()
+                .map(|x| x.extension_id)
+                .unwrap_or_default(),
         }
     }
 }
@@ -373,44 +379,21 @@ impl From<&data::Variation> for validator::data_type::Variation {
                 validator::data_type::Variation::SystemPreferredVariation(())
             }
             data::Variation::UserDefined(variation) => {
-                if let Some(definition) = &variation.definition {
-                    validator::data_type::Variation::UserDefinedVariation(
-                        validator::data_type::UserDefinedVariation {
-                            uri: variation.uri.name().unwrap_or_default().to_string(),
-                            name: variation.name.name().unwrap_or_default().to_string(),
-                            definition: Some(Box::new(definition.as_ref().into())),
-                        },
-                    )
-                } else {
-                    validator::data_type::Variation::UnresolvedVariation(())
-                }
+                validator::data_type::Variation::UserDefinedVariation(
+                    #[allow(deprecated)]
+                    validator::data_type::UserDefinedVariation {
+                        uri: variation.uri.name().unwrap_or_default().to_string(),
+                        name: variation.name.name().unwrap_or_default().to_string(),
+                        definition: None,
+                        extension_id: variation
+                            .definition
+                            .as_ref()
+                            .map(|x| x.extension_id)
+                            .unwrap_or_default(),
+                    },
+                )
             }
         }
-    }
-}
-
-impl From<&extension::simple::type_variation::Definition>
-    for validator::data_type::user_defined_variation::Definition
-{
-    fn from(node: &extension::simple::type_variation::Definition) -> Self {
-        Self {
-            base_type: None,
-            function_behavior: (&node.function_behavior).into(),
-        }
-    }
-}
-
-impl From<&extension::simple::type_variation::FunctionBehavior> for i32 {
-    fn from(node: &extension::simple::type_variation::FunctionBehavior) -> Self {
-        match node {
-            extension::simple::type_variation::FunctionBehavior::Inherits => {
-                validator::data_type::user_defined_variation::FunctionBehavior::Inherits
-            }
-            extension::simple::type_variation::FunctionBehavior::Separate => {
-                validator::data_type::user_defined_variation::FunctionBehavior::Separate
-            }
-        }
-        .into()
     }
 }
 

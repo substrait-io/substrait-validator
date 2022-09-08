@@ -8,32 +8,21 @@ use crate::output::type_system::data;
 /// Type variation extension.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Definition {
+    /// Unique number within the tree that can be used to refer to this
+    /// extension when exporting in protobuf form.
+    pub extension_id: u64,
+
+    /// Description of the type variation.
+    pub description: String,
+
     /// The base type for this variation.
     pub base: data::Class,
 
-    /// Function behavior for this variation.
-    pub function_behavior: FunctionBehavior,
-}
-
-/// Type variation function behavior.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum FunctionBehavior {
-    /// This variation is compatible with the system-preferred variation. This
-    /// means that values of this type can be passed to functions that support
-    /// any variation compatible with the system-preferred variation, which is
-    /// the default behavior.
-    Inherits,
-
-    /// This variation is not compatible with the system-preferred variation.
-    /// This means that values of this type can only be passed to functions
-    /// that expect specifically this variation.
-    Separate,
-}
-
-impl Default for FunctionBehavior {
-    fn default() -> Self {
-        FunctionBehavior::Inherits
-    }
+    /// Whether this variation is compatible with the "system-preferred"
+    // variation for the purpose of (function argument) pattern matching.
+    // Corresponds with the "functions" field in the YAML syntax; INHERITS
+    // means compatible, SEPARATE means incompatible.
+    pub compatible: bool,
 }
 
 /// A reference to a completed type variation namespace.

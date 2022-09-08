@@ -1,20 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 syntax = "proto3";
 
+// This proto file defines the tree structure that corresponds to the internal
+// representation of the validator's parse result. The toplevel message type
+// for this is ParseResult.
+
 package substrait.validator;
 
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
+import "substrait/validator/type_system.proto";
+import "substrait/validator/simple_extensions.proto";
 
 option csharp_namespace = "Substrait.Validator.Protobuf";
 option java_multiple_files = true;
 option java_package = "io.substrait.validator.proto";
 
-// One of the functions of the validator is to convert Substrait plans to a
-// format that is more easy to consume for software geared toward making
-// human-readable representations of Substrait. The validator has a few
-// builtin text-based exporters, but it can also emit the complete parse
-// result via the binary serialization of this message type.
+// Root message type returned by the validator as a result of parsing a
+// substrait.Plan.
 message ParseResult {
   // Root node of the parse result tree.
   Node root = 1;
@@ -137,6 +140,12 @@ message Node {
 
       // Unstructured additional information about the node or something in it.
       Comment comment = 4;
+
+      // Pointer to a function extension.
+      FunctionUsage function_usage = 5;
+
+      // Simple extension definition.
+      ExtensionDefinition extension_definition = 6;
     }
   }
 
@@ -342,179 +351,24 @@ message Comment {
   }
 }
 
-// Representation of a resolved data type.
-message DataType {
-  // Type class.
-  Class class = 1;
+// Information about the usage of a function.
+message FunctionUsage {
+  // URI of the YAML file that the function is (supposed to be) defined in,
+  // if known.
+  string uri = 1;
 
-  // Nullability.
-  bool nullable = 8;
+  // Compound name of the function, uniquely identifying a function
+  // implementation within the scope of the URI.
+  string compound_name = 2;
 
-  // Type variation.
-  oneof variation {
-    google.protobuf.Empty system_preferred_variation = 10;
-    UserDefinedVariation user_defined_variation = 9;
-    google.protobuf.Empty unresolved_variation = 15;
-  }
+  // Simple name of the function, uniquely identifying the function behavior
+  // description within the scope of the URI. If the function only has a
+  // single implementation, this name may also be used to refer to it.
+  string simple_name = 3;
 
-  // Type parameters for non-simple types.
-  repeated Parameter parameters = 16;
-
-  // A type class.
-  message Class {
-    oneof kind {
-      Simple simple = 1;
-      Compound compound = 2;
-      UserDefinedType user_defined_type = 3;
-      google.protobuf.Empty unresolved_type = 7;
-    }
-  }
-
-  // Enumeration of simple types. Message numbers correspond to the ones in
-  // substrait.Type. Note that UNSPECIFIED should never be emitted by the
-  // validator.
-  enum Simple {
-    SIMPLE_UNSPECIFIED = 0;
-    SIMPLE_BOOLEAN = 1;
-    SIMPLE_I8 = 2;
-    SIMPLE_I16 = 3;
-    SIMPLE_I32 = 5;
-    SIMPLE_I64 = 7;
-    SIMPLE_FP32 = 10;
-    SIMPLE_FP64 = 11;
-    SIMPLE_STRING = 12;
-    SIMPLE_BINARY = 13;
-    SIMPLE_TIMESTAMP = 14;
-    SIMPLE_DATE = 16;
-    SIMPLE_TIME = 17;
-    SIMPLE_INTERVAL_YEAR = 19;
-    SIMPLE_INTERVAL_DAY = 20;
-    SIMPLE_TIMESTAMP_TZ = 29;
-    SIMPLE_UUID = 32;
-  }
-
-  // Enumeration of compound types. Message numbers correspond to the ones in
-  // substrait.Type. Note that UNSPECIFIED should never be emitted by the
-  // validator.
-  enum Compound {
-    COMPOUND_UNSPECIFIED = 0;
-    COMPOUND_FIXED_CHAR = 21;
-    COMPOUND_VAR_CHAR = 22;
-    COMPOUND_FIXED_BINARY = 23;
-    COMPOUND_DECIMAL = 24;
-    COMPOUND_STRUCT = 25;
-    COMPOUND_NAMED_STRUCT = 26;
-    COMPOUND_LIST = 27;
-    COMPOUND_MAP = 28;
-  }
-
-  // Information about a user-defined type.
-  message UserDefinedType {
-    // URI of the YAML file that the type is (supposed to be) defined in, if
-    // known.
-    string uri = 1;
-
-    // Name of the type within the scope of that YAML file.
-    string name = 2;
-
-    // Type definition information from the YAML file, if resolution
-    // succeeded.
-    Definition definition = 3;
-
-    // Type definition information from a YAML file for a user-defined type.
-    message Definition {
-      // The primitive structure of the type.
-      repeated Element structure = 1;
-    }
-
-    // Primitive structure element for a user-defined type.
-    message Element {
-      // Name of the element.
-      string name = 1;
-
-      // Type of data.
-      Simple kind = 2;
-    }
-  }
-
-  // Information about a type variation.
-  message UserDefinedVariation {
-    // URI of the YAML file that the type variation is (supposed to be) defined
-    // in, if known.
-    string uri = 1;
-
-    // Name of the type within the scope of that YAML file.
-    string name = 2;
-
-    // Type definition information from the YAML file, if resolution
-    // succeeded.
-    Definition definition = 3;
-
-    // Type definition information from a YAML file for a user-defined type.
-    message Definition {
-      // Base type.
-      oneof base_type {
-        Class physical = 1;
-        UserDefinedVariation logical = 2;
-        google.protobuf.Empty unresolved = 7;
-      }
-
-      // Function behavior for this type variation.
-      FunctionBehavior function_behavior = 8;
-    }
-
-    // Function behavior for a type variation.
-    enum FunctionBehavior {
-      FUNCTION_BEHAVIOR_UNSPECIFIED = 0;
-      FUNCTION_BEHAVIOR_INHERITS = 1;
-      FUNCTION_BEHAVIOR_SEPARATE = 2;
-    }
-  }
-
-  // Type parameter.
-  message Parameter {
-    // Optional name given to the parameter (used for NSTRUCT).
-    string name = 10;
-
-    // Type of parameter.
-    oneof kind {
-      // Anonymous data type parameter, for example the T in LIST<T>.
-      DataType data_type = 1;
-
-      // Boolean paramater, used only for extension types.
-      bool boolean = 4;
-
-      // Integer parameter, for example the L in VARCHAR<L>.
-      int64 integer = 5;
-
-      // Enumeration parameter, used only for extension types.
-      string enumeration = 6;
-
-      // String parameter, used only for extension types.
-      string string = 7;
-
-      // Used to skip optional parameters.
-      google.protobuf.Empty null = 8;
-
-      // Used when the value of a parameter could not be resolved.
-      google.protobuf.Empty unresolved = 9;
-
-      // Replaced by `integer`.
-      uint64 unsigned = 3 [deprecated = true];
-
-      // Replaced by data_type and an assigned name field.
-      Named named_type = 2 [deprecated = true];
-    }
-  }
-
-  // A named type, used for NSTRUCT (meta)types.
-  message Named {
-    option deprecated = true;
-
-    // Name of the struct element.
-    string name = 1;
-
-    // Data type of the struct element.
-    DataType data_type = 2;
-  }
+  // If nonzero, points to a function extension definition elsewhere in the
+  // tree. All extension definitions can be gathered by traversing the tree
+  // and looking for ExtensionDefinition messages in the data associated with
+  // each node. Note that extension IDs are only unique within a single tree.
+  uint64 extension_id = 4;
 }

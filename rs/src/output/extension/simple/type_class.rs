@@ -12,6 +12,13 @@ use crate::output::type_system::meta::pattern::Pattern;
 /// A definition of a user-defined type class.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Definition {
+    /// Unique number within the tree that can be used to refer to this
+    /// extension when exporting in protobuf form.
+    pub extension_id: u64,
+
+    /// Description of the type class.
+    pub description: String,
+
     /// The underlying structure of the type.
     pub structure: Vec<(String, data::class::Simple)>,
 

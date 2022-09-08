@@ -74,6 +74,16 @@ impl<T: Scope> DynScope for T {
 /// A parsed simple extension module/file.
 #[derive(Clone, Debug, Default)]
 pub struct Definition {
+    /// Unique number within the tree that can be used to refer to this
+    /// extension when exporting in protobuf form.
+    pub extension_id: u64,
+
+    /// Description of the module.
+    pub description: String,
+
+    /// The URI that was actually used to resolve the module.
+    pub actual_uri: String,
+
     /// Map with references to dependencies.
     pub dependencies: HashMap<String, Reference>,
 
