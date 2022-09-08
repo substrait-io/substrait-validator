@@ -302,6 +302,9 @@ pub enum Classification {
     #[strum(props(Description = "invalid field name"))]
     TypeInvalidFieldName = 4013,
 
+    #[strum(props(Description = "unsupported type pattern or derivation construct"))]
+    TypeDerivationNotSupported = 4014,
+
     // Relation-related diagnostics (group 5).
     #[strum(props(HiddenDescription = "relation-related diagnostics"))]
     Relation = 5000,

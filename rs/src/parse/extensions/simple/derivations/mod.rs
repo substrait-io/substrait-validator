@@ -16,6 +16,7 @@ use crate::output::type_system::data;
 use crate::output::type_system::meta;
 use crate::output::type_system::meta::Pattern;
 use crate::parse::context;
+use crate::util;
 use antlr_rust::Parser;
 use itertools::Itertools;
 use std::cell::RefCell;
@@ -259,17 +260,307 @@ macro_rules! antlr_reduce_left_recursion {
                 let rhs = antlr_child!(x, y, rhs, start, $next_analyzer, z)
                     .1
                     .unwrap_or_default();
+                let arguments = vec![lhs, rhs];
                 let function = x
                     .$one_operator(start - 1)
                     .map(|x| match x.as_ref() $operator_match)
                     .unwrap_or_default();
-                Ok(meta::pattern::Value::Function(function, vec![lhs, rhs]))
+                check_function(y, z, &function, &arguments);
+                Ok(meta::pattern::Value::Function(function, arguments))
             }
         }
 
         let total_operands = $x.$all_operands().len();
         left_recursive($x, $y, $z, total_operands - 1)
     }};
+}
+
+/// Helper function for check_function() to check normal arguments.
+fn check_function_argument(
+    y: &mut context::Context,
+    _z: &mut AnalysisContext,
+    function: &meta::Function,
+    slot_index: usize,
+    argument: &meta::pattern::Value,
+    expected: &meta::Type,
+) {
+    if !argument.can_evaluate() {
+        diagnostic!(
+            y,
+            Error,
+            TypeDerivationInvalid,
+            "{} argument of {function}() can never be evaluated",
+            util::string::describe_nth((slot_index + 1) as u32)
+        );
+    } else if expected != &meta::Type::Unresolved {
+        let arg_type = argument.determine_type();
+        if arg_type != meta::Type::Unresolved && &arg_type != expected {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationInvalid,
+                "{} argument of {function}() must be of type {expected}, \
+                but pattern always evaluates to {arg_type}",
+                util::string::describe_nth((slot_index + 1) as u32)
+            );
+        }
+    }
+}
+
+/// Helper function for check_function() to check normal functions against a
+/// prototype.
+fn check_function_fixed_prototype(
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+    function: &meta::Function,
+    arguments: &[meta::pattern::Value],
+    expected: &[meta::Type],
+) {
+    if arguments.len() != expected.len() {
+        diagnostic!(
+            y,
+            Error,
+            TypeDerivationInvalid,
+            "{function}() expects {} argument(s) but received {}",
+            expected.len(),
+            arguments.len()
+        );
+    } else {
+        for (slot_index, (argument, expected)) in arguments.iter().zip(expected.iter()).enumerate()
+        {
+            check_function_argument(y, z, function, slot_index, argument, expected)
+        }
+    }
+}
+
+struct VariadicRange {
+    pub min: usize,
+    pub max: usize,
+}
+
+impl std::fmt::Display for VariadicRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match (self.min, self.max) {
+            (0, usize::MAX) => write!(f, "any number of arguments"),
+            (1, usize::MAX) => write!(f, "one or more arguments"),
+            (x, usize::MAX) => write!(f, "{x} or more arguments"),
+            (0, 1) => write!(f, "zero or one argument"),
+            (1, 1) => write!(f, "exactly one argument"),
+            (x, y) => {
+                if x == y {
+                    write!(f, "exactly {x} arguments")
+                } else {
+                    write!(f, "{x} to {y} arguments")
+                }
+            }
+        }
+    }
+}
+
+impl VariadicRange {
+    fn at_least(min: usize) -> Self {
+        Self {
+            min,
+            max: usize::MAX,
+        }
+    }
+
+    fn exactly(n: usize) -> Self {
+        Self { min: n, max: n }
+    }
+
+    fn contains(&self, n: usize) -> bool {
+        n >= self.min && n <= self.max
+    }
+}
+
+/// Helper function for check_function() to check variadic functions against a
+/// prototype.
+fn check_function_variadic_prototype(
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+    function: &meta::Function,
+    arguments: &[meta::pattern::Value],
+    expected: &meta::Type,
+    validator_nargs: VariadicRange,
+    substrait_nargs: VariadicRange,
+) {
+    if !validator_nargs.contains(arguments.len()) {
+        diagnostic!(
+            y,
+            Error,
+            TypeDerivationInvalid,
+            "{function}() expects {validator_nargs} but received {}",
+            arguments.len()
+        );
+    } else {
+        if !substrait_nargs.contains(arguments.len()) {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "{function}() officially only supports {substrait_nargs} but received {}",
+                arguments.len()
+            );
+        }
+        for (slot_index, argument) in arguments.iter().enumerate() {
+            check_function_argument(y, z, function, slot_index, argument, expected)
+        }
+    }
+}
+
+/// Sanity-checks/lints a new function invocation.
+fn check_function(
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+    function: &meta::Function,
+    arguments: &[meta::pattern::Value],
+) {
+    match function {
+        meta::Function::Unresolved => (),
+        meta::Function::Not => {
+            check_function_fixed_prototype(y, z, function, arguments, &[meta::Type::Boolean]);
+        }
+        meta::Function::And | meta::Function::Or => {
+            check_function_fixed_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &[meta::Type::Boolean, meta::Type::Boolean],
+            );
+        }
+        meta::Function::Negate => {
+            check_function_fixed_prototype(y, z, function, arguments, &[meta::Type::Integer]);
+        }
+        meta::Function::Add | meta::Function::Multiply => {
+            check_function_variadic_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &meta::Type::Integer,
+                VariadicRange::at_least(0),
+                VariadicRange::exactly(2),
+            );
+        }
+        meta::Function::Subtract | meta::Function::Divide => {
+            check_function_fixed_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &[meta::Type::Integer, meta::Type::Integer],
+            );
+        }
+        meta::Function::Min | meta::Function::Max => {
+            check_function_variadic_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &meta::Type::Integer,
+                VariadicRange::at_least(1),
+                VariadicRange::exactly(2),
+            );
+        }
+        meta::Function::Equal => {
+            check_function_fixed_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &[meta::Type::Unresolved, meta::Type::Unresolved],
+            );
+        }
+        meta::Function::NotEqual => {
+            check_function_fixed_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &[meta::Type::Unresolved, meta::Type::Unresolved],
+            );
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "{function}() is not officially supported"
+            );
+        }
+        meta::Function::GreaterThan | meta::Function::LessThan => {
+            check_function_fixed_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &[meta::Type::Integer, meta::Type::Integer],
+            );
+        }
+        meta::Function::LessEqual | meta::Function::GreaterEqual => {
+            check_function_fixed_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &[meta::Type::Integer, meta::Type::Integer],
+            );
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "{function}() is not officially supported"
+            );
+        }
+        meta::Function::Covers => {
+            if arguments.len() != 2 {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeDerivationInvalid,
+                    "{function}() expects two arguments but received {}",
+                    arguments.len()
+                );
+            } else {
+                if !arguments[0].can_evaluate() {
+                    diagnostic!(
+                        y,
+                        Error,
+                        TypeDerivationInvalid,
+                        "first argument of covers() can never be evaluated"
+                    );
+                }
+                match (arguments[0].determine_type(), arguments[1].determine_type()) {
+                    (meta::Type::Unresolved, _) => (),
+                    (_, meta::Type::Unresolved) => (),
+                    (a, b) => {
+                        if a != b {
+                            diagnostic!(
+                                y,
+                                Info,
+                                TypeDerivationInvalid,
+                                "second argument of covers() can never match first; \
+                                second matches only {b} while first returns {a}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        meta::Function::IfThenElse => {
+            check_function_fixed_prototype(
+                y,
+                z,
+                function,
+                arguments,
+                &[
+                    meta::Type::Boolean,
+                    meta::Type::Unresolved,
+                    meta::Type::Unresolved,
+                ],
+            );
+        }
+    }
 }
 
 /// Analyzes a string literal.
@@ -376,13 +667,31 @@ fn analyze_dtbc(
                         meta::pattern::Value::Boolean(Some(false))
                     }
                     NullabilityContextAll::NullableIfContext(x) => {
-                        antlr_child!(x, y, nullability, 0, analyze_pattern, z)
+                        let pattern = antlr_child!(x, y, nullability, 0, analyze_pattern, z)
                             .1
-                            .unwrap_or_default()
+                            .unwrap_or_default();
+                        let typ = pattern.determine_type();
+                        if !matches!(typ, meta::Type::Boolean | meta::Type::Unresolved) {
+                            diagnostic!(
+                                y,
+                                Error,
+                                TypeDerivationInvalid,
+                                "nullability pattern must be boolean, but {typ} was found"
+                            );
+                        }
+                        pattern
                     }
                     NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
                 })
             });
+            if nullability.is_some() {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeDerivationNotSupported,
+                    "bindings with nullability override are not officially supported"
+                );
+            }
             Ok(meta::pattern::Value::Binding(meta::pattern::Binding {
                 name,
                 inconsistent: false,
@@ -423,12 +732,34 @@ fn analyze_dtbc(
                         meta::pattern::Value::Boolean(Some(true))
                     }
                     NullabilityContextAll::NonNullableContext(_) => {
+                        diagnostic!(
+                            y,
+                            Error,
+                            TypeDerivationNotSupported,
+                            "explicitly-non-nullable type suffix is not officially supported"
+                        );
                         meta::pattern::Value::Boolean(Some(false))
                     }
                     NullabilityContextAll::NullableIfContext(x) => {
-                        antlr_child!(x, y, nullability, 0, analyze_pattern, z)
+                        let pattern = antlr_child!(x, y, nullability, 0, analyze_pattern, z)
                             .1
-                            .unwrap_or_default()
+                            .unwrap_or_default();
+                        let typ = pattern.determine_type();
+                        if !matches!(typ, meta::Type::Boolean | meta::Type::Unresolved) {
+                            diagnostic!(
+                                y,
+                                Error,
+                                TypeDerivationInvalid,
+                                "nullability pattern must be boolean, but {typ} was found"
+                            );
+                        }
+                        diagnostic!(
+                            y,
+                            Error,
+                            TypeDerivationNotSupported,
+                            "nullability patterns are not officially supported"
+                        );
+                        pattern
                     }
                     NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
                 }
@@ -518,6 +849,12 @@ fn analyze_type_parameter(
                 .unwrap_or_default(),
             IdentifierOrStringContextAll::Error(_) => String::from(""),
         };
+        diagnostic!(
+            y,
+            Error,
+            TypeDerivationNotSupported,
+            "named parameters are not officially supported (nstruct is not a real type)"
+        );
         if name.is_empty() {
             diagnostic!(
                 y,
@@ -581,36 +918,58 @@ fn analyze_pattern_misc(
             let if_false = antlr_child!(x, y, if_false, 2, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            Ok(meta::pattern::Value::Function(
-                meta::Function::IfThenElse,
-                vec![condition, if_true, if_false],
-            ))
+            let arguments = vec![condition, if_true, if_false];
+            let function = meta::Function::IfThenElse;
+            check_function(y, z, &function, &arguments);
+            Ok(meta::pattern::Value::Function(function, arguments))
         }
         PatternMiscContextAll::UnaryNotContext(x) => {
             let expression = antlr_child!(x, y, expression, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            Ok(meta::pattern::Value::Function(
-                meta::Function::Not,
-                vec![expression],
-            ))
+            let arguments = vec![expression];
+            let function = meta::Function::Not;
+            check_function(y, z, &function, &arguments);
+            Ok(meta::pattern::Value::Function(function, arguments))
         }
         PatternMiscContextAll::UnaryNegateContext(x) => {
             let expression = antlr_child!(x, y, expression, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            Ok(meta::pattern::Value::Function(
-                meta::Function::Negate,
-                vec![expression],
-            ))
+            let arguments = vec![expression];
+            let function = meta::Function::Negate;
+            check_function(y, z, &function, &arguments);
+            Ok(meta::pattern::Value::Function(function, arguments))
         }
-        PatternMiscContextAll::AnyContext(_) => Ok(meta::pattern::Value::Any),
-        PatternMiscContextAll::BoolAnyContext(_) => Ok(meta::pattern::Value::Boolean(None)),
+        PatternMiscContextAll::AnyContext(_) => {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the 'any' pattern is not officially supported"
+            );
+            Ok(meta::pattern::Value::Any)
+        }
+        PatternMiscContextAll::BoolAnyContext(_) => {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the 'any boolean' pattern is not officially supported"
+            );
+            Ok(meta::pattern::Value::Boolean(None))
+        }
         PatternMiscContextAll::BoolTrueContext(_) => Ok(meta::pattern::Value::Boolean(Some(true))),
         PatternMiscContextAll::BoolFalseContext(_) => {
             Ok(meta::pattern::Value::Boolean(Some(false)))
         }
         PatternMiscContextAll::IntAnyContext(_) => {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the 'any integer' pattern is not officially supported"
+            );
             Ok(meta::pattern::Value::Integer(i64::MIN, i64::MAX))
         }
         PatternMiscContextAll::IntRangeContext(x) => {
@@ -624,21 +983,47 @@ fn analyze_pattern_misc(
                     "lower bound of range is greater than upper bound"
                 );
             }
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the integer range pattern is not officially supported"
+            );
             Ok(meta::pattern::Value::Integer(lower, upper))
         }
         PatternMiscContextAll::IntAtMostContext(x) => {
             let upper = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the integer range pattern is not officially supported"
+            );
             Ok(meta::pattern::Value::Integer(i64::MIN, upper))
         }
         PatternMiscContextAll::IntAtLeastContext(x) => {
             let lower = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the integer range pattern is not officially supported"
+            );
             Ok(meta::pattern::Value::Integer(lower, i64::MAX))
         }
         PatternMiscContextAll::IntExactlyContext(x) => {
             let value = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
             Ok(meta::pattern::Value::Integer(value, value))
         }
-        PatternMiscContextAll::EnumAnyContext(_) => Ok(meta::pattern::Value::Enum(None)),
+        PatternMiscContextAll::EnumAnyContext(_) => {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the 'any enumeration' pattern is not officially supported"
+            );
+            Ok(meta::pattern::Value::Enum(None))
+        }
         PatternMiscContextAll::EnumSetContext(x) => {
             let names = x
                 .Identifier_all()
@@ -661,9 +1046,23 @@ fn analyze_pattern_misc(
                     repeated_names.iter().join(", ")
                 );
             }
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the enum set pattern is not officially supported"
+            );
             Ok(meta::pattern::Value::Enum(Some(names)))
         }
-        PatternMiscContextAll::StrAnyContext(_) => Ok(meta::pattern::Value::String(None)),
+        PatternMiscContextAll::StrAnyContext(_) => {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the 'any string' pattern is not officially supported"
+            );
+            Ok(meta::pattern::Value::String(None))
+        }
         PatternMiscContextAll::StrExactlyContext(x) => {
             let s = x
                 .String()
@@ -673,7 +1072,15 @@ fn analyze_pattern_misc(
             }
             Ok(meta::pattern::Value::String(s))
         }
-        PatternMiscContextAll::DtAnyContext(_) => Ok(meta::pattern::Value::DataType(None)),
+        PatternMiscContextAll::DtAnyContext(_) => {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "the 'any data type' pattern is not officially supported"
+            );
+            Ok(meta::pattern::Value::DataType(None))
+        }
         PatternMiscContextAll::FunctionContext(x) => {
             let function = x
                 .Identifier()
@@ -681,15 +1088,14 @@ fn analyze_pattern_misc(
             if function.is_none() {
                 diagnostic!(y, Error, TypeParseError, "unknown function");
             }
+            let function = function.unwrap_or_default();
             let arguments = antlr_children!(x, y, argument, analyze_pattern, z)
                 .1
                 .into_iter()
                 .map(|x| x.unwrap_or_default())
-                .collect();
-            Ok(meta::pattern::Value::Function(
-                function.unwrap_or_default(),
-                arguments,
-            ))
+                .collect::<Vec<_>>();
+            check_function(y, z, &function, &arguments);
+            Ok(meta::pattern::Value::Function(function, arguments))
         }
         PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => analyze_dtbc(x, y, z),
         PatternMiscContextAll::InconsistentContext(x) => {
@@ -735,6 +1141,12 @@ fn analyze_pattern_misc(
                     NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
                 })
             });
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "inconsistent bindings are not officially supported"
+            );
             Ok(meta::pattern::Value::Binding(meta::pattern::Binding {
                 name,
                 inconsistent: true,
@@ -847,13 +1259,49 @@ fn analyze_pattern_or(
     )
 }
 
+/// Analyzes a set of zero or more x||y expressions.
+fn analyze_pattern_invalid_if_then_else(
+    x: &PatternInvalidIfThenElseContextAll,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Result<meta::pattern::Value> {
+    match x {
+        PatternInvalidIfThenElseContextAll::InvalidIfThenElseContext(x) => {
+            diagnostic!(
+                y,
+                Error,
+                TypeParseError,
+                "'x ? y : z' ternary operator syntax is not supported; \
+                use 'if x then y else z' instead"
+            );
+            let condition = antlr_child!(x, y, condition, 0, analyze_pattern_or, z)
+                .1
+                .unwrap_or_default();
+            let if_true = antlr_child!(x, y, if_true, 1, analyze_pattern_or, z)
+                .1
+                .unwrap_or_default();
+            let if_false = antlr_child!(x, y, if_false, 0, analyze_pattern, z)
+                .1
+                .unwrap_or_default();
+            let arguments = vec![condition, if_true, if_false];
+            let function = meta::Function::IfThenElse;
+            check_function(y, z, &function, &arguments);
+            Ok(meta::pattern::Value::Function(function, arguments))
+        }
+        PatternInvalidIfThenElseContextAll::ValidPatternContext(x) => {
+            Ok(antlr_hidden_child!(x, y, 0, analyze_pattern_or, z).unwrap_or_default())
+        }
+        PatternInvalidIfThenElseContextAll::Error(_) => Ok(meta::pattern::Value::Unresolved),
+    }
+}
+
 /// Analyzes a pattern parse tree node.
 fn analyze_pattern(
     x: &PatternContextAll,
     y: &mut context::Context,
     z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
-    Ok(antlr_hidden_child!(x, y, 0, analyze_pattern_or, z).unwrap_or_default())
+    Ok(antlr_hidden_child!(x, y, 0, analyze_pattern_invalid_if_then_else, z).unwrap_or_default())
 }
 
 /// Analyzes a statement parse tree node.
@@ -862,15 +1310,21 @@ fn analyze_statement(
     y: &mut context::Context,
     z: &mut AnalysisContext,
 ) -> Result<meta::program::Statement> {
-    match x {
+    let statement = match x {
         StatementContextAll::AssertContext(x) => {
             let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            Ok(meta::program::Statement {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "assert statements are not officially supported"
+            );
+            meta::program::Statement {
                 lhs_pattern: meta::pattern::Value::Boolean(Some(true)),
                 rhs_expression,
-            })
+            }
         }
         StatementContextAll::NormalContext(x) => {
             let rhs_expression = antlr_child!(x, y, rhs, 1, analyze_pattern, z)
@@ -879,10 +1333,23 @@ fn analyze_statement(
             let lhs_pattern = antlr_child!(x, y, lhs, 0, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            Ok(meta::program::Statement {
+            let lhs_supported = match &lhs_pattern {
+                meta::pattern::Value::Unresolved => true,
+                meta::pattern::Value::Binding(binding) => {
+                    !binding.inconsistent && binding.nullability.is_none()
+                }
+                _ => false,
+            };
+            if !lhs_supported {
+                diagnostic!(
+                    y, Error, TypeDerivationNotSupported,
+                    "only normal bindings are officially supported at the LHS of an assignment statement"
+                );
+            }
+            meta::program::Statement {
                 lhs_pattern,
                 rhs_expression,
-            })
+            }
         }
         StatementContextAll::MatchContext(x) => {
             let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern, z)
@@ -891,13 +1358,46 @@ fn analyze_statement(
             let lhs_pattern = antlr_child!(x, y, lhs, 1, analyze_pattern, z)
                 .1
                 .unwrap_or_default();
-            Ok(meta::program::Statement {
+            diagnostic!(
+                y,
+                Error,
+                TypeDerivationNotSupported,
+                "assert-match statements are not officially supported"
+            );
+            meta::program::Statement {
                 lhs_pattern,
                 rhs_expression,
-            })
+            }
         }
-        StatementContextAll::Error(_) => Ok(meta::program::Statement::default()),
+        StatementContextAll::Error(_) => return Ok(meta::program::Statement::default()),
+    };
+    if !statement.rhs_expression.can_evaluate() {
+        diagnostic!(
+            y,
+            Error,
+            TypeDerivationInvalid,
+            "right-hand side of pattern assignment can never be evaluated"
+        );
     }
+    match (
+        statement.lhs_pattern.determine_type(),
+        statement.rhs_expression.determine_type(),
+    ) {
+        (meta::Type::Unresolved, _) => (),
+        (_, meta::Type::Unresolved) => (),
+        (lhs, rhs) => {
+            if lhs != rhs {
+                diagnostic!(
+                    y,
+                    Error,
+                    TypeDerivationInvalid,
+                    "pattern assignment can never match; lhs matches \
+                    only {lhs} while rhs returns {rhs}"
+                );
+            }
+        }
+    }
+    Ok(statement)
 }
 
 /// Analyzes a program parse tree node.
@@ -914,6 +1414,14 @@ fn analyze_program(
     let expression = antlr_child!(x, y, pattern, 0, analyze_pattern, z)
         .1
         .unwrap_or_default();
+    if !expression.can_evaluate() {
+        diagnostic!(
+            y,
+            Error,
+            TypeDerivationInvalid,
+            "return pattern of program can never be evaluated"
+        );
+    }
     Ok(meta::Program {
         statements,
         expression,
@@ -985,36 +1493,89 @@ mod test {
     use crate::output::tree;
 
     #[test]
-    fn test() {
-        let mut node = tree::Node::from(tree::NodeType::ProtoMessage("test"));
+    fn test1() {
+        // Boilerplate to get a parsing context (only used here as a sink for
+        // diagnostics).
+        let mut root = tree::Node::from(tree::NodeType::ProtoMessage("test"));
         let mut state = Default::default();
         let config = crate::Config::new();
-        let mut context = context::Context::new("test", &mut node, &mut state, &config);
-        let mut analysis_context = AnalysisContext::new(None);
+        let mut context = context::Context::new("test", &mut root, &mut state, &config);
+        let y = &mut context;
 
-        /*let result = parse_program(
+        // Boilerplate for analysis environment (mostly namespace/scope info,
+        // which can be empty here).
+        let mut analysis_context = AnalysisContext::new(None);
+        let z = &mut analysis_context;
+
+        // Parse argument patterns and return type program, taken from decimal
+        // add because it's horrible.
+        let x_slot = parse_pattern("decimal<P1,S1>", y, z).unwrap();
+        let y_slot = parse_pattern("decimal<P2,S2>", y, z).unwrap();
+        let return_program = parse_program(
             r#"init_scale = max(S1,S2)
             init_prec = init_scale + max(P1 - S1, P2 - S2) + 1
             min_scale = min(init_scale, 6)
             delta = init_prec - 38
             prec = min(init_prec, 38)
             scale_after_borrow = max(init_scale - delta, min_scale)
-            scale = if init_prec > 38 then scale_after_borrow else init_scale
+            scale = init_prec > 38 ? scale_after_borrow : init_scale
             DECIMAL<prec, scale>"#,
-            &mut context,
+            y,
+            z,
         )
-        .ok();*/
+        .unwrap();
 
-        let result = parse_program(r#"1 + 2 * 3 - 4 / 5"#, &mut context, &mut analysis_context)
+        // Get some decimal types to use as arguments for testing; parse them
+        // too (instead of using the constructors) for good measure.
+        let x_binding = parse_type("decimal<20,10>", y, z).unwrap();
+        let y_binding = parse_type("decimal<10,5>", y, z).unwrap();
+
+        // Match the arguments and evaluate the return type.
+        let mut eval_context = meta::Context::default();
+        let c = &mut eval_context;
+        assert!(x_slot
+            .match_pattern_with_context(c, &x_binding.into())
+            .unwrap());
+        assert!(y_slot
+            .match_pattern_with_context(c, &y_binding.into())
+            .unwrap());
+        let result = return_program.evaluate(c).unwrap();
+
+        // Test the pretty-printer too because why not.
+        assert_eq!(&result.to_string(), "DECIMAL<21, 10>");
+
+        // Another batch of arguments.
+        let x_binding = parse_type("decimal<38,38>", y, z).unwrap();
+        let y_binding = parse_type("decimal<38,0>", y, z).unwrap();
+
+        // Evaluate in new context.
+        let mut eval_context = meta::Context::default();
+        let c = &mut eval_context;
+        assert!(x_slot
+            .match_pattern_with_context(c, &x_binding.into())
+            .unwrap());
+        assert!(y_slot
+            .match_pattern_with_context(c, &y_binding.into())
+            .unwrap());
+        let result = return_program.evaluate(c).unwrap();
+        assert_eq!(&result.to_string(), "DECIMAL<38, 6>");
+    }
+
+    #[test]
+    fn test2() {
+        let mut node = tree::Node::from(tree::NodeType::ProtoMessage("test"));
+        let mut state = Default::default();
+        let config = crate::Config::new();
+        let mut context = context::Context::new("test", &mut node, &mut state, &config);
+        let mut analysis_context = AnalysisContext::new(None);
+
+        let program = parse_program(r#"1 + 2 * 3 - 4 / 5"#, &mut context, &mut analysis_context)
             .unwrap_or_default();
 
         let mut eval_context = meta::Context::default();
         assert_eq!(
-            result.evaluate(&mut eval_context),
+            program.evaluate(&mut eval_context),
             Ok(meta::Value::Integer(7))
         );
-        //panic!("{:#?}", _result);
-        //panic!("{node:#?}");
-        //panic!("{:#?}", _result.to_string_tree(&*parser));
     }
 }

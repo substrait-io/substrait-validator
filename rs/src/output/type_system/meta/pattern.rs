@@ -44,6 +44,9 @@ pub trait Pattern {
     /// Evaluates this pattern with a provided context.
     fn evaluate_with_context(&self, context: &mut meta::Context)
         -> diagnostic::Result<Self::Value>;
+
+    /// Returns whether this pattern can be evaluated under ideal conditions.
+    fn can_evaluate(&self) -> bool;
 }
 
 /// Patterns are used wherever a meta::Value is expected, such as for type
@@ -252,6 +255,21 @@ impl Value {
             meta::Type::DataType => Value::DataType(None),
         }
     }
+
+    /// Returns what type this pattern matches or evaluates to. If unknown or
+    /// multiple types can be matched, yield unresolved.
+    pub fn determine_type(&self) -> meta::Type {
+        match self {
+            Value::Unresolved | Value::Any => meta::Type::Unresolved,
+            Value::Binding(binding) => binding.determine_type(),
+            Value::Boolean(_) => meta::Type::Boolean,
+            Value::Integer(_, _) => meta::Type::Integer,
+            Value::Enum(_) => meta::Type::Enum,
+            Value::String(_) => meta::Type::String,
+            Value::DataType(_) => meta::Type::DataType,
+            Value::Function(function, arguments) => function.determine_type(arguments),
+        }
+    }
 }
 
 impl Pattern for Value {
@@ -345,6 +363,21 @@ impl Pattern for Value {
                 }
             }
             Value::Function(func, args) => func.evaluate(context, args),
+        }
+    }
+
+    fn can_evaluate(&self) -> bool {
+        match self {
+            Value::Unresolved => true,
+            Value::Any => false,
+            Value::Binding(_) => true,
+            Value::Boolean(x) => x.is_some(),
+            Value::Integer(a, b) => a == b,
+            Value::Enum(x) => x.is_some(),
+            Value::String(x) => x.is_some(),
+            Value::DataType(None) => false,
+            Value::DataType(Some(x)) => x.can_evaluate(),
+            Value::Function(_, _) => true,
         }
     }
 }
@@ -557,6 +590,16 @@ impl Binding {
             ))
         }
     }
+
+    /// Returns what type this pattern matches or evaluates to. If unknown or
+    /// multiple types can be matched, yield unresolved.
+    pub fn determine_type(&self) -> meta::Type {
+        if self.nullability.is_some() {
+            meta::Type::DataType
+        } else {
+            meta::Type::Unresolved
+        }
+    }
 }
 
 /// Data type matching structure.
@@ -639,13 +682,13 @@ impl DataType {
             return Ok(false);
         }
         if !ignore_nullability
-            && self
+            && !self
                 .nullable
                 .match_pattern_with_context(context, &value.nullable().into())?
         {
             return Ok(false);
         }
-        if self.variation.match_pattern(value.variation())? {
+        if !self.variation.match_pattern(value.variation())? {
             return Ok(false);
         }
         if let Some(expected) = &self.parameters {
@@ -716,6 +759,15 @@ impl Pattern for DataType {
         };
         data::new_type(class, nullable, variation, parameters)
     }
+
+    fn can_evaluate(&self) -> bool {
+        if let Some(parameters) = &self.parameters {
+            if !parameters.iter().all(|x| x.can_evaluate()) {
+                return false;
+            }
+        }
+        self.nullable.can_evaluate() && self.variation.can_evaluate()
+    }
 }
 
 /// Type variation matching structure.
@@ -777,6 +829,13 @@ impl Pattern for Variation {
             )),
             Variation::Compatible => Ok(data::Variation::SystemPreferred),
             Variation::Exactly(expected) => Ok(expected.clone()),
+        }
+    }
+
+    fn can_evaluate(&self) -> bool {
+        match self {
+            Variation::Any => false,
+            Variation::Compatible | Variation::Exactly(_) => true,
         }
     }
 }
@@ -883,5 +942,14 @@ impl Pattern for Parameter {
                 .map(|x| x.evaluate_with_context(context))
                 .transpose()?,
         })
+    }
+
+    fn can_evaluate(&self) -> bool {
+        if let Some(value) = &self.value {
+            value.can_evaluate()
+        } else {
+            // Evaluates to null.
+            true
+        }
     }
 }

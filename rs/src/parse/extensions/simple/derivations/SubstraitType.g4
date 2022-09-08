@@ -190,7 +190,23 @@ statement
 // Patterns are at the core of the type derivation interpreter; they are used
 // both for matching and as expressions. However, note that not all types of
 // patterns work in both contexts.
-pattern : patternOr ;
+pattern : patternInvalidIfThenElse ;
+
+patternInvalidIfThenElse
+  : patternOr #ValidPattern
+
+  // The following rule is ILLEGAL and only exists for better error recovery
+  // in the validator. It's an incomplete implementation of a C-style
+  // if-then-else, which should be written as "if x then y else z" instead.
+  // The reason is that this rule makes question marks HEAVILY ambiguous.
+  // ANTLR can sort of deal with this because it implements a PEG parser
+  // and will thus attempt the above option first, but many parser frameworks
+  // won't handle this correctly, and parsing will be slow. Hence the
+  // non-standard syntax. The validator supports this nonetheless because some
+  // core extensions are using C-style if-then-else at the time of writing, and
+  // the documentation is rather ambiguous about which it should be.
+  | patternOr Question patternOr Colon pattern #InvalidIfThenElse
+  ;
 
 // Lazily-evaluated boolean OR expression. Maps to builtin or() function if
 // more than one pattern is parsed.
