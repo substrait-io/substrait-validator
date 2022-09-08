@@ -422,12 +422,14 @@ fn check_function(
             check_function_fixed_prototype(y, z, function, arguments, &[meta::Type::Boolean]);
         }
         meta::Function::And | meta::Function::Or => {
-            check_function_fixed_prototype(
+            check_function_variadic_prototype(
                 y,
                 z,
                 function,
                 arguments,
-                &[meta::Type::Boolean, meta::Type::Boolean],
+                &meta::Type::Boolean,
+                VariadicRange::at_least(0),
+                VariadicRange::exactly(2),
             );
         }
         meta::Function::Negate => {
