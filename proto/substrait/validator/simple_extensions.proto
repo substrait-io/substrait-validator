@@ -210,11 +210,6 @@ message ExtensionDefinition {
     // for a function to be session-dependent without being non-deterministic,
     // if the function does always return the same value within a session.
     bool non_deterministic = 5;
-
-    // If set, evaluating the function may have side effects, such as emission
-    // of a message to a logging sink or updating the hidden state of a random
-    // number generator.
-    bool has_side_effects = 6;
   }
 
   // Properties common to aggregate and window functions.
