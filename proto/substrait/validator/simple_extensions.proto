@@ -70,23 +70,20 @@ message ExtensionDefinition {
     // definitions.
     Module module = 4;
 
-    // Represents a user-defined simple type class.
-    SimpleTypeClass simple_type_class = 5;
-
-    // Represents a user-defined compound type class.
-    CompoundTypeClass compound_type_class = 6;
+    // Represents a user-defined type class.
+    TypeClass type_class = 5;
 
     // Represents a user-defined type variation.
-    TypeVariation type_variation = 7;
+    TypeVariation type_variation = 6;
 
     // Represents a user-defined scalar function.
-    ScalarFunction scalar_function = 8;
+    ScalarFunction scalar_function = 7;
 
     // Represents a user-defined aggregate function.
-    AggregateFunction aggregate_function = 9;
+    AggregateFunction aggregate_function = 8;
 
     // Represents a user-defined window function.
-    WindowFunction window_function = 10;
+    WindowFunction window_function = 9;
   }
 
   // Data associated with an extension module definition.
@@ -100,10 +97,6 @@ message ExtensionDefinition {
 
     // List of immediate dependencies.
     repeated Dependency dependencies = 3;
-
-    // List of references to all extensions publicly defined by this module.
-    repeated int64 extension_ids = 4;
-
     message Dependency {
       // URI of the dependency.
       string uri = 1;
@@ -115,50 +108,27 @@ message ExtensionDefinition {
       // resolved by the validator.
       int64 extension_id = 3;
     }
+
+    // List of references to all extensions publicly defined by this module.
+    repeated int64 extension_ids = 4;
   }
 
-  // Data associated with a simple type class.
-  message SimpleTypeClass {
+  // Data associated with a type class.
+  message TypeClass {
     // Optional description of the class. Only serves as documentation.
     string description = 1;
 
-    // Optional structure of the type. If no elements are specified, the type
-    // is opaque.
-    repeated Field structure = 2;
-
-    message Field {
-      // Name of the field.
-      string name = 1;
-
-      // Data type of the field.
-      DataType data_type = 2;
-    }
-  }
-
-  // Data associated with a simple type class.
-  message CompoundTypeClass {
-    // Optional description of the class. Only serves as documentation.
-    string description = 1;
-
-    // Set of parameters expected by the type class.
+    // Set of parameters expected by the type class. If unspecified or empty,
+    // the type class is a simple type. Otherwise, it is a compound type.
     //
     // The structure is shared with function arguments because it is very
     // similar. Note however that type classes can only accept generics as
     // value types.
     Pack parameters = 2;
 
-    // Optional structure of the type. If no elements are specified, the type
-    // is opaque.
-    repeated Field structure = 3;
-    message Field {
-      // Name of the field.
-      string name = 1;
-
-      // Data type of the field, derived by means of a metapattern evaluated in
-      // the same context in which the parameter patterns and constraints were
-      // matched and evaluated.
-      Metapattern data_type = 2;
-    }
+    // Optional pattern for the type representing the structure of the class.
+    // If not specified, the type class is opaque.
+    Metapattern structure = 3;
   }
 
   // Data associated with a type variation.
@@ -179,32 +149,32 @@ message ExtensionDefinition {
   // Data associated with a scalar function.
   message ScalarFunction {
     // Properties common to all functions.
-    CommonProperties common_properties = 1;
+    CommonFunctionProperties common = 1;
   }
 
   // Data associated with an aggregate function.
   message AggregateFunction {
     // Properties common to all functions.
-    CommonProperties common_properties = 1;
+    CommonFunctionProperties common = 1;
 
     // Properties common to both aggregate and window functions.
-    AggregateProperties aggregate_properties = 2;
+    AggregateFunctionProperties aggregate = 2;
   }
 
   // Data associated with a window function.
   message WindowFunction {
     // Properties common to all functions.
-    CommonProperties common_properties = 1;
+    CommonFunctionProperties common = 1;
 
     // Properties common to both aggregate and window functions.
-    AggregateProperties aggregate_properties = 2;
+    AggregateFunctionProperties aggregate = 2;
 
     // Properties specific to window functions.
-    WindowProperties window_properties = 3;
+    WindowFunctionProperties window = 3;
   }
 
   // Properties common to all function types.
-  message CommonProperties {
+  message CommonFunctionProperties {
     // Optional description of the variation. Only serves as documentation.
     string description = 1;
 
@@ -248,7 +218,7 @@ message ExtensionDefinition {
   }
 
   // Properties common to aggregate and window functions.
-  message AggregateProperties {
+  message AggregateFunctionProperties {
     // When specified, the function is decomposable.
     Decomposability decomposability = 1;
     message Decomposability {
@@ -275,7 +245,7 @@ message ExtensionDefinition {
   }
 
   // Properties applicable only to window functions.
-  message WindowProperties {
+  message WindowFunctionProperties {
     // If set, the window function can be computed in streaming fashion. If not
     // set, the window function can only start working when the complete input
     // is available.
@@ -299,8 +269,7 @@ message ExtensionDefinition {
   //  - For decomposable aggregate/window functions, evaluate the intermediate
   //    type pattern.
   //  - For functions, evaluate the return type pattern.
-  //  - For user-defined compound type classes, evaluate the structure patterns
-  //    from left to right.
+  //  - For user-defined compound type classes, evaluate the structure pattern.
   //
   // If any match or evaluation operation fails, the provided pack is
   // considered to be incompatible with the function or type class.

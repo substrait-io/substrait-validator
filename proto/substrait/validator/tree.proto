@@ -9,8 +9,8 @@ package substrait.validator;
 
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
-import "substrait/validator/type_system.proto";
 import "substrait/validator/simple_extensions.proto";
+import "substrait/validator/type_system.proto";
 
 option csharp_namespace = "Substrait.Validator.Protobuf";
 option java_multiple_files = true;
@@ -86,8 +86,6 @@ message Node {
 
   // Semantic classification of this node.
   Class class = 13;
-
-  // Semantic classification of a node.
   enum Class {
     CLASS_UNSPECIFIED = 0;
 
@@ -121,12 +119,10 @@ message Node {
   // that don't have a logical Substrait type.
   DataType data_type = 16;
 
-  // Data associated with this node.
-  repeated Data data = 31;
-
   // Data associated with the node. Note that some variants are illegal based
   // on the node type (for example, a primitive does not have fields, so it
   // makes no sense for Field data to appear).
+  repeated Data data = 31;
   message Data {
     oneof kind {
       // Represents a child node in the tree.
@@ -224,8 +220,6 @@ message Path {
   // Elements of the path. The first element selects a child node of the root
   // node, the second selects one of its children, etc.
   repeated Element elements = 2;
-
-  // Path element structure.
   message Element {
     oneof kind {
       Field field = 1;
@@ -310,8 +304,6 @@ message Comment {
   // Comments consist of one or more "elements," defining formatting
   // information.
   repeated Element elements = 1;
-
-  // A comment element.
   message Element {
     oneof kind {
       // A span of text.

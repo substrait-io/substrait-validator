@@ -19,21 +19,6 @@ option java_package = "io.substrait.validator.proto";
 message DataType {
   // Type class.
   Class class = 1;
-
-  // Nullability.
-  bool nullable = 8;
-
-  // Type variation.
-  oneof variation {
-    google.protobuf.Empty system_preferred_variation = 10;
-    UserDefinedVariation user_defined_variation = 9;
-    google.protobuf.Empty unresolved_variation = 15;
-  }
-
-  // Type parameters for non-simple types.
-  repeated Parameter parameters = 16;
-
-  // A type class.
   message Class {
     oneof kind {
       Simple simple = 1;
@@ -112,6 +97,16 @@ message DataType {
     }
   }
 
+  // Nullability.
+  bool nullable = 8;
+
+  // Type variation.
+  oneof variation {
+    google.protobuf.Empty system_preferred_variation = 10;
+    UserDefinedVariation user_defined_variation = 9;
+    google.protobuf.Empty unresolved_variation = 15;
+  }
+
   // Information about a type variation.
   message UserDefinedVariation {
     // URI of the YAML file that the type variation is (supposed to be) defined
@@ -149,7 +144,8 @@ message DataType {
     }
   }
 
-  // Type parameter.
+  // Type parameters for non-simple types.
+  repeated Parameter parameters = 16;
   message Parameter {
     // Optional name given to the parameter (currently used only for NSTRUCT).
     string name = 10;
