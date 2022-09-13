@@ -313,6 +313,7 @@ def parse_comment_instruction(comment_test, path):
         raise Exception("__test.comment must be a string")
     return [dict(Comment=dict(path=path, msg=comment_test))]
 
+
 def parse_instructions(test_tags, fname, proto_desc):
     """Parses and checks the syntax for instructions in the input format into
     the Rust/serde instruction syntax."""
