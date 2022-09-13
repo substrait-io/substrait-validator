@@ -1,0 +1,46 @@
+name: filter-nullability-bool-expression
+plan:
+  __test: [level: i]
+  relations:
+    - rel:
+        filter:
+          input:
+            read:
+              baseSchema:
+                names: [a, b]
+                struct:
+                  nullability: NULLABILITY_REQUIRED
+                  types:
+                    - string: { nullability: NULLABILITY_REQUIRED }
+                    - bool: { nullability: NULLABILITY_NULLABLE }
+              namedTable:
+                names:
+                  - test
+          condition:
+            literal:
+              nullable: true
+              boolean: false
+          __test:
+            [
+              comment: "*false or null.",
+              type: "NSTRUCT<a: string, b: boolean?>",
+            ]
+    - rel:
+        filter:
+          input:
+            read:
+              baseSchema:
+                names: [a, b]
+                struct:
+                  nullability: NULLABILITY_REQUIRED
+                  types:
+                    - string: { nullability: NULLABILITY_REQUIRED }
+                    - bool: { nullability: NULLABILITY_REQUIRED }
+              namedTable:
+                names:
+                  - test
+          condition:
+            literal:
+              nullable: false
+              boolean: false
+          __test: [comment: "*false.", type: "NSTRUCT<a: string, b: boolean>"]

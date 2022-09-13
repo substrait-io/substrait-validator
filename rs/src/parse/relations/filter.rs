@@ -32,14 +32,10 @@ pub fn parse_filter_rel(
     describe!(y, Relation, "Filter by {}", &predicate);
     summary!(
         y,
-        "This relation discards all rows for which {} yields false.",
-        &predicate
+        "This relation discards all rows for which the expression {} yields {}.",
+        &predicate,
+        if nullable { "false or null" } else { "false" }
     );
-    if nullable {
-        // FIXME: what's the behavior when a filter condition is nullable and
-        // yields null? Same applies for all other usages of parse_predicate().
-        summary!(y, "Behavior for a null condition is unspecified.");
-    }
 
     // Handle the common field.
     handle_rel_common!(x, y);

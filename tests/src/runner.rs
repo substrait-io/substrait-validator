@@ -75,6 +75,12 @@ struct DiagnosticTest {
 }
 
 #[derive(serde::Deserialize, Debug)]
+struct CommentTest {
+    pub path: Vec<PathElement>,
+    pub msg: String,
+}
+
+#[derive(serde::Deserialize, Debug)]
 struct DataTypeTest {
     pub path: Vec<PathElement>,
     pub data_type: String,
@@ -123,6 +129,7 @@ enum Instruction {
     Level(LevelTest),
     Diag(DiagnosticTest),
     DataType(DataTypeTest),
+    Comment(CommentTest),
 }
 
 /// A diagnostic level override command.
@@ -359,6 +366,23 @@ impl TestCase {
         })
     }
 
+    /// Runs the given comment test instruction.
+    fn run_comment_test(
+        result: &mut TestResult,
+        root: &mut sv::output::tree::Node,
+        desc: &CommentTest,
+    ) {
+        let path = convert_path(&desc.path);
+        result.log(format!("Checking comment at {path}..."));
+        Self::traverse(result, root, path.elements.iter(), |result, node| {
+            let actual = format!("{}", node.summary.clone().unwrap_or_default());
+            let pattern = glob::Pattern::new(&desc.msg).unwrap();
+            if !pattern.matches(&actual) {
+                result.error(format!("comment mismatch; found {actual}"));
+            }
+        })
+    }
+
     /// Runs the given test case, updating result.
     fn run(
         result: &mut TestResult,
@@ -420,6 +444,7 @@ impl TestCase {
                 Instruction::DataType(data_type) => {
                     Self::run_data_type_test(result, &mut root, data_type)
                 }
+                Instruction::Comment(comment) => Self::run_comment_test(result, &mut root, comment),
             }
         }
     }
