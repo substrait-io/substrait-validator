@@ -43,6 +43,21 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
             .1
             .unwrap_or_default();
 
+    // If the join expression is a literal it must be True.
+    if let expressions::Expression::Literal(ref literal) = join_expression {
+        if !matches!(
+            literal.value(),
+            expressions::literals::LiteralValue::Boolean(true)
+        ) {
+            diagnostic!(
+                y,
+                Error,
+                ExpressionIllegalLiteralValue,
+                "literal join expression value must be true"
+            );
+        }
+    }
+
     // Parse join type.
     let join_type = proto_required_enum_field!(x, y, r#type, JoinType)
         .1
@@ -64,11 +79,13 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
     // Derive final schema.
     if let (Some(left_fields), Some(right_fields)) = (left.unwrap_struct(), right.unwrap_struct()) {
         let mut fields = Vec::with_capacity(left_fields.len() + right_fields.len());
+        // Add fields from left side.
         if left_nullable {
             fields.extend(left_fields.into_iter().map(|x| x.make_nullable()))
         } else {
             fields.extend(left_fields.into_iter())
         }
+        // Add fields from right side (if they are to be included in the output).
         if let Some(right_nullable) = right_nullable {
             if right_nullable {
                 fields.extend(right_fields.into_iter().map(|x| x.make_nullable()))

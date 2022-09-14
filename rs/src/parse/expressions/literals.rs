@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 /// The value of a literal, not including type information.
 #[derive(Clone, Debug, PartialEq)]
-enum LiteralValue {
+pub(crate) enum LiteralValue {
     /// May be used for any nullable type.
     Null,
 
@@ -128,6 +128,11 @@ impl Literal {
     /// Returns the data type of this literal.
     pub fn data_type(&self) -> &data::Type {
         &self.data_type
+    }
+
+    /// Returns the value of this literal.
+    pub(crate) fn value(&self) -> &LiteralValue {
+        &self.value
     }
 }
 
@@ -825,7 +830,7 @@ fn parse_decimal(
         if val >= range || val <= -range {
             Err(cause!(
                 ExpressionIllegalLiteralValue,
-                "decimal value is out of range for specificied precision and scale"
+                "decimal value is out of range for specified precision and scale"
             ))
         } else {
             Literal::new_compound(
