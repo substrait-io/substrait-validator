@@ -127,6 +127,7 @@ details.relation_tree > summary::before {
 div.diag_info {
     background-color: #9f9;
     color: #333;
+    overflow-wrap: break-word;
 }
 
 div.diag_info::before,
@@ -145,6 +146,7 @@ div.diag_warn {
     background-color: #fc9;
     color: #333;
     font-weight: bold;
+    overflow-wrap: break-word;
 }
 
 div.diag_warn::before,
@@ -158,6 +160,7 @@ div.diag_error {
     background-color: #f99;
     color: #000;
     font-weight: bold;
+    overflow-wrap: break-word;
 }
 
 div.diag_error::before,

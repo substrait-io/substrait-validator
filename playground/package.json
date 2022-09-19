@@ -1,0 +1,33 @@
+{
+  "name": "substrait-playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run wasm && vite",
+    "build": "npm run wasm && vite build",
+    "preview": "vite preview",
+    "check": "npm run wasm && svelte-check --tsconfig ./tsconfig.json",
+    "wasm": "wasm-pack build ./substrait-playground --target web"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^1.0.5",
+    "@tsconfig/svelte": "^3.0.0",
+    "svelte": "^3.50.1",
+    "svelte-check": "^2.9.0",
+    "svelte-preprocess": "^4.10.7",
+    "tslib": "^2.4.0",
+    "typescript": "^4.6.4",
+    "vite": "^3.1.0",
+    "vite-plugin-wasm-pack": "^0.1.12",
+    "wasm-pack": "^0.10.3"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.1.0",
+    "@codemirror/lang-json": "^6.0.0",
+    "@codemirror/language": "^6.2.1",
+    "@codemirror/lint": "^6.0.0",
+    "@codemirror/state": "^6.1.1",
+    "@codemirror/view": "^6.2.3"
+  }
+}

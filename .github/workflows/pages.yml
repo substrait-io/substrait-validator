@@ -1,0 +1,59 @@
+name: Pages
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  playground:
+    name: Playground
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+          cache-dependency-path: playground/package-lock.json
+      - uses: arduino/setup-protoc@v1
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./playground
+      - name: Build
+        run: npm run build -- --base /substrait-validator/
+        working-directory: ./playground
+      - name: Check
+        run: npm run check
+        working-directory: ./playground
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: target/doc/
+
+  deploy:
+    name: Deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: playground
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v2
+      - uses: actions/deploy-pages@v1
+        id: deployment
