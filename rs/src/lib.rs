@@ -174,6 +174,7 @@ use strum::IntoEnumIterator;
 // Aliases for common types used on the crate interface.
 pub use input::config::glob::Pattern;
 pub use input::config::Config;
+pub use output::comment::Comment;
 pub use output::diagnostic::Classification;
 pub use output::diagnostic::Diagnostic;
 pub use output::diagnostic::Level;

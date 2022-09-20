@@ -17,9 +17,10 @@ use crate::util;
 use crate::util::string::Describe;
 
 /// Description of an expression.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum Expression {
     /// Used for unknown expression types.
+    #[default]
     Unresolved,
 
     /// Used for literals.
@@ -42,12 +43,6 @@ pub enum Expression {
 
     /// Used for type casts.
     Cast(data::Type, Box<Expression>),
-}
-
-impl Default for Expression {
-    fn default() -> Self {
-        Expression::Unresolved
-    }
 }
 
 impl From<literals::Literal> for Expression {

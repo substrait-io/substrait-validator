@@ -303,6 +303,17 @@ def parse_type_instruction(type_str, path):
     return [dict(DataType=dict(path=path, data_type=type_str))]
 
 
+def parse_comment_instruction(comment_test, path):
+    """Parses a comment check instruction in the input format into the
+    Rust/serde instruction syntax."""
+    if comment_test is None:
+        return []
+
+    if not isinstance(comment_test, str):
+        raise Exception("__test.comment must be a string")
+    return [dict(Comment=dict(path=path, msg=comment_test))]
+
+
 def parse_instructions(test_tags, fname, proto_desc):
     """Parses and checks the syntax for instructions in the input format into
     the Rust/serde instruction syntax."""
@@ -325,6 +336,11 @@ def parse_instructions(test_tags, fname, proto_desc):
                 # Handle type instructions.
                 instructions.extend(
                     parse_type_instruction(insn_type.pop("type", None), path)
+                )
+
+                # Handle comment instructions.
+                instructions.extend(
+                    parse_comment_instruction(insn_type.pop("comment", None), path)
                 )
 
                 if insn_type:

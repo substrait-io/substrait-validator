@@ -825,7 +825,7 @@ fn parse_decimal(
         if val >= range || val <= -range {
             Err(cause!(
                 ExpressionIllegalLiteralValue,
-                "decimal value is out of range for specificied precision and scale"
+                "decimal value is out of range for specified precision and scale"
             ))
         } else {
             Literal::new_compound(
