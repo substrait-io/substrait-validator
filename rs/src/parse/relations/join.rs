@@ -114,60 +114,53 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         comment::Comment::new().nl().plain(match join_type {
             JoinType::Unspecified => "".to_string(),
             JoinType::Inner => format!(
-                " 
-Returns rows combining the row from the left and right
-input for each pair where the join expression yields true.
-Discarding rows where the join expression yields {}.",
+                "Returns rows combining the row from the left and right \
+                 input for each pair where the join expression yields true. \
+                 Discarding rows where the join expression yields {}.",
                 nullable
             ),
             JoinType::Outer => format!(
-                " 
-Returns rows combining the row from the left and right
-input for each pair where the join expression yields true.
-Discarding rows where the join expression yields {}.
-If the join expression never yields true for any left or
-right row, this returns a row anyway, with the fields
-corresponding to the other input set to null.",
+                "Returns rows combining the row from the left and right \
+                 input for each pair where the join expression yields true. \
+                 Discarding rows where the join expression yields {}. \
+                 If the join expression never yields true for any left or \
+                 right row, this returns a row anyway, with the fields \
+                 corresponding to the other input set to null.",
                 nullable
             ),
             JoinType::Left => format!(
-                " 
-Returns rows combining the row from the left and right
-input for each pair where the join expression yields true.
-Discarding rows where the join expression yields {}.
-If the join expression never yields true for a row from the
-left, this returns a row anyway, with the fields corresponding
-to the right input set to null.",
+                "Returns rows combining the row from the left and right \
+                 input for each pair where the join expression yields true. \
+                 Discarding rows where the join expression yields {}. \
+                 If the join expression never yields true for a row from the \
+                 left, this returns a row anyway, with the fields corresponding \
+                 to the right input set to null.",
                 nullable
             ),
             JoinType::Right => format!(
-                " 
-Returns rows combining the row from the left and right
-input for each pair where the join expression yields true.
-Discarding rows where the join expression yields {}.
-If the join expression never yields true for a row from the
-right, this returns a row anyway, with the fields corresponding
-to the left input set to null.",
+                "Returns rows combining the row from the left and right \
+                 input for each pair where the join expression yields true. \
+                 Discarding rows where the join expression yields {}. \
+                 If the join expression never yields true for a row from the \
+                 right, this returns a row anyway, with the fields corresponding \
+                 to the left input set to null.",
                 nullable
             ),
-            JoinType::Semi => " 
-Filters rows from the left input, propagating a row only if
-the join expression yields true for that row combined with
-any row from the right input."
+            JoinType::Semi => "Filters rows from the left input, propagating a row only if \
+                               the join expression yields true for that row combined with \
+                               any row from the right input."
                 .to_string(),
-            JoinType::Anti => " 
-Filters rows from the left input, propagating a row only if
-the join expression does not yield true for that row combined
-with any row from the right input."
+            JoinType::Anti => "Filters rows from the left input, propagating a row only if \
+                               the join expression does not yield true for that row combined \
+                               with any row from the right input."
                 .to_string(),
-            JoinType::Single => " 
-Returns a row for each row from the left input, concatenating
-it with the row from the right input for which the join
-expression yields true. If the expression never yields true for
-a left input, the fields corresponding to the right input are
-set to null. If the expression yields true for a left row and
-multiple right rows, this may return the first pair encountered
-or throw an error."
+            JoinType::Single => "Returns a row for each row from the left input, concatenating \
+                                 it with the row from the right input for which the join \
+                                 expression yields true. If the expression never yields true for \
+                                 a left input, the fields corresponding to the right input are \
+                                 set to null. If the expression yields true for a left row and \
+                                 multiple right rows, this may return the first pair encountered \
+                                 or throw an error."
                 .to_string(),
         }),
     );
