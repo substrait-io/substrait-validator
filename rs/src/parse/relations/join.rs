@@ -115,14 +115,14 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
             JoinType::Unspecified => "".to_string(),
             JoinType::Inner => format!(
                 "Returns rows combining the row from the left and right \
-                input for each pair where the join expression yields true. \
-                Discarding rows where the join expression yields {}.",
+                input for each pair where the join expression yields true, \
+                discarding rows where the join expression yields {}.",
                 nullable
             ),
             JoinType::Outer => format!(
                 "Returns rows combining the row from the left and right \
-                input for each pair where the join expression yields true. \
-                Discarding rows where the join expression yields {}. \
+                input for each pair where the join expression yields true, \
+                discarding rows where the join expression yields {}. \
                 If the join expression never yields true for any left or \
                 right row, this returns a row anyway, with the fields \
                 corresponding to the other input set to null.",
@@ -130,8 +130,8 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
             ),
             JoinType::Left => format!(
                 "Returns rows combining the row from the left and right \
-                input for each pair where the join expression yields true. \
-                Discarding rows where the join expression yields {}. \
+                input for each pair where the join expression yields true, \
+                discarding rows where the join expression yields {}. \
                 If the join expression never yields true for a row from the \
                 left, this returns a row anyway, with the fields corresponding \
                 to the right input set to null.",
@@ -139,8 +139,8 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
             ),
             JoinType::Right => format!(
                 "Returns rows combining the row from the left and right \
-                input for each pair where the join expression yields true. \
-                Discarding rows where the join expression yields {}. \
+                input for each pair where the join expression yields true, \
+                discarding rows where the join expression yields {}. \
                 If the join expression never yields true for a row from the \
                 right, this returns a row anyway, with the fields corresponding \
                 to the left input set to null.",
