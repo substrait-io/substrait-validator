@@ -334,7 +334,7 @@ pub fn parse_read_rel(x: &substrait::ReadRel, y: &mut context::Context) -> diagn
     y.set_schema(schema.clone());
 
     // Handle filter.
-    proto_boxed_field!(x, y, filter, expressions::parse_predicate);
+    let filter = proto_boxed_field!(x, y, filter, expressions::parse_predicate);
 
     // Handle projection.
     if x.projection.is_some() {
@@ -351,6 +351,17 @@ pub fn parse_read_rel(x: &substrait::ReadRel, y: &mut context::Context) -> diagn
         (false, true) => describe!(y, Relation, "Partial read from {}", source.name),
         (true, false) => describe!(y, Relation, "Filtered read from {}", source.name),
         (true, true) => describe!(y, Relation, "Filtered partial read from {}", source.name),
+    }
+
+    // Add filter summary.
+    if let (Some(filter_node), Some(filter_expr)) = filter {
+        let nullable = filter_node.data_type().nullable();
+        summary!(
+            y,
+            "This relation discards all rows for which the expression {} yields {}.",
+            filter_expr,
+            if nullable { "false or null" } else { "false" }
+        );
     }
 
     // Handle the common field.
