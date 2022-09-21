@@ -3,8 +3,8 @@ name: Rust
 on:
   pull_request:
   push:
-    branches: [ main ]
-    tags: [ 'v*.*.*' ]
+    branches: [main]
+    tags: ["v*.*.*"]
 
 jobs:
   check:
@@ -19,6 +19,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - uses: arduino/setup-protoc@v1
       - uses: Swatinem/rust-cache@v1
       - name: Check
         run: cargo check --all-features
@@ -39,6 +40,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - uses: arduino/setup-protoc@v1
       - uses: Swatinem/rust-cache@v1
       - name: Run unit tests
         run: cargo test --all-features
@@ -81,6 +83,7 @@ jobs:
           toolchain: stable
           override: true
           components: clippy
+      - uses: arduino/setup-protoc@v1
       - uses: Swatinem/rust-cache@v1
       - name: Clippy
         run: cargo clippy --all-features -- -D warnings
@@ -97,6 +100,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - uses: arduino/setup-protoc@v1
       - uses: Swatinem/rust-cache@v1
       - name: Doc
         run: RUSTDOCFLAGS="-Dwarnings" cargo doc --workspace --all-features
@@ -105,7 +109,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [ check, test ]
+    needs: [check, test]
     environment: VALIDATOR_RELEASE
     steps:
       - uses: actions/checkout@v2
@@ -116,6 +120,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - uses: arduino/setup-protoc@v1
       - name: Fetch Substrait submodule tags
         working-directory: substrait
         run: |
