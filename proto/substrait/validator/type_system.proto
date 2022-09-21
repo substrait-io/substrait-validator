@@ -315,14 +315,15 @@ message Metapattern {
 
   // A pattern that matches typenames.
   message Typename {
+    // Pattern for nullability. If false is not contained in this set, only
+    // nullable typenames are contained; if true is not contained in this
+    // set, only non-nullable typenames are contained. Evaluation will only
+    // succeed if this evaluates to a boolean.
+    Metapattern nullability = 1;
+
     oneof kind {
       // Represents the set of all typenames.
-      google.protobuf.Empty any = 1;
-
-      // Represents the set of all typenames for which the nullability (as a
-      // boolean, where false = non-nullable and true = nullable) matches the
-      // contained pattern.
-      Metapattern with_nullability = 2;
+      google.protobuf.Empty any = 2;
 
       // Represents the set of all valid nullability, variation, and parameter
       // combinations of a specific type class.
@@ -334,17 +335,11 @@ message Metapattern {
       // based on.
       DataType.Class class = 1;
 
-      // Pattern for nullability. If false is not contained in this set, only
-      // nullable typenames are contained; if true is not contained in this
-      // set, only non-nullable typenames are contained. Evaluation will only
-      // succeed if this evaluates to a boolean.
-      Metapattern nullability = 2;
-
       // Pattern for the type variation.
-      Variation variation = 3;
+      Variation variation = 2;
 
       // Pattern for the parameters.
-      ParameterPack parameter_pack = 4;
+      ParameterPack parameter_pack = 3;
     }
 
     message Variation {
@@ -414,20 +409,21 @@ message Metapattern {
     string name = 1;
 
     oneof kind {
-      // A normal binding. When a name is first used as a binding, this pattern
-      // represents the set of all metavalues. When matched, however, the name
-      // is bound to the matched metavalue. For later usages, the pattern
-      // represents the set containing only the previously bound value. This
-      // makes this pattern act more or less like single-assignment variables.
-      google.protobuf.Empty normal = 2;
+      // A consistent binding. When a name is first used as a binding, this
+      // pattern represents the set of all metavalues except nullable
+      // typenames. When matched, however, the name is bound to the matched
+      // metavalue. For later usages, the pattern represents the set containing
+      // only the previously bound value. This makes this pattern act more or
+      // less like single-assignment variables.
+      google.protobuf.Empty consistent = 2;
 
-      // An inconsistent binding. This is a variation on normal bindings with
+      // An inconsistent binding. This is a variation on consistent bindings with
       // some special rules that come in handy for representing "mirror"
       // nullability and inconsistent variadic argument slots.
       //
       // When matched, this binding *always* represents the set of all
-      // metavalues, i.e. it will always match everything. The name is bound to
-      // the incoming metavalue in the following cases:
+      // metavalues except nullable typenames. The name is bound to the
+      // incoming metavalue in the following cases:
       //  - the name was not previously bound;
       //  - the name was previously bound to false, and the incoming value is
       //    true.
@@ -435,11 +431,11 @@ message Metapattern {
       // is useful for mirror nullability in argument slots.
       //
       // Inconsistent bindings can always be evaluated. If the name was bound,
-      // they evaluate to the bound value (just like a normal binding), but if
-      // the name was not yet bound, they evaluate to false. This is useful for
-      // mirror nullability in the return type derivation; together with the
-      // binding update rule, it makes the return type non-nullable (false) if
-      // no nullable (true) arguments were matched.
+      // they evaluate to the bound value (just like a consistent binding), but
+      // if the name was not yet bound, they evaluate to false. This is useful
+      // for mirror nullability in the return type derivation; together with
+      // the binding update rule, it makes the return type non-nullable (false)
+      // if no nullable (true) arguments were matched.
       google.protobuf.Empty inconsistent = 3;
 
       // A variation on a normal binding that includes a nullability override.
@@ -448,9 +444,12 @@ message Metapattern {
       // match typenames, and only match them if their nullability matches the
       // contained (boolean) pattern; i.e., if a non-nullable type is matched,
       // the contained pattern is matched against false, and if a nullable
-      // pattern is matched, the contained pattern is matched against true. If
-      // the name of the binding was bound to a metavalue previously, its
-      // nullability is ignored in the matching process.
+      // pattern is matched, the contained pattern is matched against true.
+      // When binding, the bound typename is always the non-nullable variant of
+      // the matched typename. If the name of the binding was bound to a
+      // metavalue previously, its nullability is ignored in the matching
+      // process; the nullability check is always based on the contained
+      // nullability pattern.
       //
       // When evaluated, the nullability of the previously bound metavalue will
       // be overridden with the evaluation result of the contained pattern
@@ -468,15 +467,15 @@ message Metapattern {
       // nullability override.
       //
       // When matched, they only match typenames, and only match them if their
-      // nullability matches the contained (boolean) pattern. Otherwise, the
-      // rules are the same as for inconsistent bindings.
+      // nullability matches the contained (boolean) pattern. The bound
+      // typename is always the non-nullable variant of the matched typename.
+      // Otherwise, the rules are the same as for inconsistent bindings.
       //
       // When evaluated, the nullability of the previously bound metavalue will
       // be overridden with the evaluation result of the contained pattern
-      // (again, false = non-nullable, true = nullable). If no metavalue was
-      // bound to the name, if the bound metavalue was not a typename, or if
-      // the contained pattern does not evaluate to a boolean, evaluation
-      // fails.
+      // (false = non-nullable, true = nullable). If no metavalue was bound to
+      // the name, if the bound metavalue was not a typename, or if the
+      // contained pattern does not evaluate to a boolean, evaluation fails.
       //
       // These rules are useful (and necessary) for specifying inconsistent
       // variadic functions that will accept any type class, but have specific

@@ -310,8 +310,9 @@ patternMisc
   // Matches and evaluates to exactly the given string.
   | String #strExactly
 
-  // Matches any data type.
-  | Typename #dtAny
+  // Matches any typename for which the nullability matches the nullability
+  // suffix. Use `typename??` for either nullability.
+  | Typename nullability? #dtAny
 
   // Evaluates a function. When a function is used in match context, the
   // function (and its arguments) will be *evaluated* instead, and the incoming
@@ -446,34 +447,36 @@ patternMisc
   //     - The nullability, variation, and parameters fields are illegal and
   //       must be blank.
   //
-  //  - Normal binding:
-  //     - If this is the first use of the binding, matches any value. The
-  //       incoming metavalue is bound to the binding as a side effect.
-  //     - If the binding was previously bound, matches only if the incoming
+  //  - Consistent binding without nullability suffix:
+  //     - If this is the first use of the name, matches non-typename
+  //       metavalues and non-nullable typenames. The incoming metavalue is
+  //       bound to the name as a side effect.
+  //     - If the name was previously bound, matches only if the incoming
   //       metavalue is exactly equal to the previous binding.
-  //     - Can only be evaluated if the binding was previously bound, in which
+  //     - Can only be evaluated if the name was previously bound, in which
   //       case it yields the bound value exactly.
-  //     - The variation and parameters fields are illegal and must be blank.
+  //     - The variation and parameter pack fields are illegal and must be
+  //       blank.
   //
-  //  - Binding with nullability override:
-  //     - If this is the first use of the binding, matches if and only if:
+  //  - Consistent binding with nullability suffix:
+  //     - If this is the first use of the name, matches if and only if:
   //        - the incoming metavalue is a typename; and
   //        - the nullability of the incoming type matches the nullability
-  //          field.
-  //       If the above rules match, the incoming type is bound to the
-  //       binding as a side effect.
-  //     - If the binding was previously bound, matches if and only if:
+  //          suffix.
+  //       If the above rules match, the incoming typename, with its
+  //       nullability overridden to non-nullable, is bound to the name as a
+  //       side effect.
+  //     - If the name was previously bound, matches if and only if:
   //        - the incoming metavalue is a typename;
   //        - the nullability of the incoming type matches the nullability
-  //          field;
+  //          suffix;
   //        - the previously bound metavalue is a typename; and
   //        - the incoming type matches the previously bound type, ignoring
-  //          nullability.
-  //     - Can only be evaluated if the binding was previously bound. If the
-  //       previously bound metavalue is not a typename, this is treated as a
-  //       pattern match failure. The returned type is the previously bound
-  //       type, with its nullability adjusted according to the nullability
-  //       field evaluation rules.
+  //          nullability and parameter names.
+  //     - Can only be evaluated if the name was previously bound. If the
+  //       previously bound metavalue is not a typename, evaluation fails. The
+  //       returned type is the previously bound type, with its nullability
+  //       adjusted according to the nullability suffix evaluation rules.
   //     - The variation and parameters fields are illegal and must be blank.
   | identifierPath nullability? variation? parameters? #datatypeBindingOrConstant
 
@@ -494,37 +497,38 @@ patternMisc
   // The exacty behavior for the pattern types is as follows. Rules that differ
   // from the consistent binding rules are highlighted with (!).
   //
-  //  - Normal inconsistent binding:
-  //     - If this is the first use of the binding, matches any value. The
-  //       incoming metavalue is bound to the binding as a side effect.
-  //     - (!) If the binding was previously bound, matches any value. If the
-  //       incoming metavalue is boolean true, and the currently bound
-  //       metavalue is boolean false, update the binding to boolean true.
-  //       Otherwise, leave it unchanged.
-  //     - (!) If this is the first use of the binding, evaluation yields
+  //  - Inconsistent binding without nullability suffix:
+  //     - If this is the first use of the name, matches non-typename
+  //       metavalues and non-nullable typenames. The incoming metavalue is
+  //       bound to the name as a side effect.
+  //     - (!) If the name was previously bound, still matches all
+  //       non-typename metavalues and non-nullable typenames. If the
+  //       incoming metavalue is boolean `true`, and the currently bound
+  //       metavalue is boolean `false`, rebind the name to `true` as a side
+  //       effect. Otherwise, leave it unchanged.
+  //     - (!) If this is the first use of the name, evaluation yields
   //       the metabool `false` (for the nullability of the return type in
   //       a MIRROR function).
-  //     - If the binding was previously bound, evaluation yields the bound
+  //     - If the name was previously bound, evaluation yields the bound
   //       value exactly.
   //
   //  - Inconsistent binding with nullability override:
-  //     - If this is the first use of the binding, matches if and only if:
+  //     - If this is the first use of the name, matches if and only if:
   //        - the incoming metavalue is a typename; and
   //        - the nullability of the incoming type matches the nullability
   //          field.
-  //       If the above rules match, the incoming type is bound to the
-  //       binding as a side effect.
+  //       If the above rules match, the incoming typename, with its
+  //       nullability overridden to non-nullable, is bound to the name as a
+  //       side effect.
   //     - (!) If the binding was previously bound, matches if and only if:
   //        - the incoming metavalue is a typename; and
   //        - the nullability of the incoming type matches the nullability
   //          field.
-  //       The binding is not modified.
-  //     - Can only be evaluated if the binding was previously bound. If the
-  //       previously bound metavalue is not a typename, this is treated as a
-  //       pattern match failure. The returned type is the previously bound
-  //       type, with its nullability adjusted according to the nullability
-  //       field evaluation rules.
-  //     - The variation and parameters fields are illegal and must be blank.
+  //       There are no side effects in this case.
+  //     - Can only be evaluated if the name was previously bound. If the
+  //       previously bound metavalue is not a typename, evaluation fails. The
+  //       returned type is the previously bound type, with its nullability
+  //       adjusted according to the nullability field evaluation rules.
   | Question Identifier nullability? #inconsistent
 
   // Unary negation function. Can only be evaluated and can only be applied to
@@ -534,21 +538,20 @@ patternMisc
   | Minus pattern #unaryNegate
   ;
 
-// Nullability suffix for a data type pattern.
+// Nullability suffix.
 //
 //  - If there is no such suffix, or the suffix is "!", the pattern matches
 //    only non-nullable types, and also evaluates to a non-nullable type if
-//    applicable. The "!" suffix is necessary to distinguish between normal
-//    bindings and bindings with nullability override, but is otherwise
-//    optional and normally not written.
+//    applicable. The "!" suffix changes the semantics of bindings slightly
+//    compared to no suffix (specifically, `x!` only matches non-nullable
+//    typenames, but `x` also matches non-typename metavalues), but is
+//    otherwise optional and customarily not written.
 //  - If this suffix is just "?", the pattern matches only nullable types,
 //    and also evaluates to a nullable type if applicable.
 //  - If this suffix is a "?" followed by a pattern, the pattern is matched
 //    against false for non-nullable and true for nullable types. Likewise for
 //    evaluation; if the pattern evaluates to false the type will be
 //    non-nullable, if it evaluates to true it will be nullable.
-//
-// The "?" is also used for implicit-OR bindings.
 nullability
   : Bang #nonNullable
   | Question #nullable
