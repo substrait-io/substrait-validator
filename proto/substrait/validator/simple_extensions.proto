@@ -17,86 +17,92 @@ option java_package = "io.substrait.validator.proto";
 // extension module to machine-readable form.
 message SimpleExtension {
   // Metadata about the simple extension module.
-  ExtensionDefinition module = 1;
+  ExtensionDefinition.Module module = 1;
 
   // All extensions defined in the type class namespace of this extension. All
   // names are case-insensitively unique.
-  repeated ExtensionDefinition type_classes = 2;
+  repeated ExtensionDefinition.TypeClass type_classes = 2;
 
   // All type variation extensions. These are grouped by type class, because
   // names need only be unique for a given type class.
   repeated TypeVariationNamespace type_variations = 3;
-
-  // All functions defined in the function namespace of this extension. All
-  // names are case-insensitively unique.
-  repeated ExtensionDefinition functions = 4;
-
-  // Any resolved extensions defined by dependencies of this module. Note that
-  // these are not publicly exposed by this extension.
-  repeated ExtensionDefinition dependencies = 5;
-
-  // A type variation namespace scoped to a particular type class.
   message TypeVariationNamespace {
     // The type class that these variations are defined for.
     DataType.Class class = 1;
 
     // All variations defined for this type class. All names are
     // case-insensitively unique.
-    repeated ExtensionDefinition variations = 2;
+    repeated ExtensionDefinition.TypeVariation variations = 2;
   }
+
+  // All functions defined in the function namespace of this extension. All
+  // names are case-insensitively unique.
+  repeated ExtensionDefinition.Function functions = 4;
+
+  // Any resolved extensions defined by dependencies of this module. Note that
+  // these are not publicly exposed by this extension.
+  repeated ExtensionDefinition dependencies = 5;
 }
 
 // Definition information for an extension.
 message ExtensionDefinition {
-  // URI of the extension module that defined the extension. URI matching is
-  // case sensitive.
-  string uri = 1;
-
-  // The set of names that may be used to case-insensitively refer to this
-  // extension within the scope of the above URI. For type classes and type
-  // variations there will only ever be one of these. For functions, the first
-  // name is always the compound name. The simple name will only be added when
-  // there is only one implementation for the function. For modules, the name
-  // list will be empty, as they are referred to by only their URI.
-  repeated string names = 2;
-
-  // Unique identifier that may be used to refer to this definition elsewhere
-  // in the tree. Note that extension IDs are only unique within a single tree.
-  uint64 extension_id = 3;
-
   oneof kind {
     // Represents an extension module (i.e. a YAML file). This only contains
     // metadata about the module; the extensions defined in it have their own
     // definitions.
-    Module module = 4;
+    Module module = 1;
 
     // Represents a user-defined type class.
-    TypeClass type_class = 5;
+    TypeClass type_class = 2;
 
     // Represents a user-defined type variation.
-    TypeVariation type_variation = 6;
+    TypeVariation type_variation = 3;
 
-    // Represents a user-defined scalar function.
-    ScalarFunction scalar_function = 7;
+    // Represents a user-defined function.
+    Function function = 4;
+  }
 
-    // Represents a user-defined aggregate function.
-    AggregateFunction aggregate_function = 8;
+  // Identifying information associated with an extension, that can be used to
+  // refer to the extension from elsewhere.
+  message Identifier {
+    // URI of the extension module that defined the extension. URI matching is
+    // case sensitive.
+    string uri = 1;
 
-    // Represents a user-defined window function.
-    WindowFunction window_function = 9;
+    // The set of names that may be used to case-insensitively refer to this
+    // extension within the scope of the above URI. For type classes and type
+    // variations there will only ever be one of these. For functions, the
+    // first name is always the compound name. The simple name will only be
+    // added when there is only one implementation for the function. For
+    // modules, the name list will be empty, as they are referred to by only
+    // their URI.
+    repeated string names = 2;
+
+    // Unique identifier that may be used to refer to this definition elsewhere
+    // in the tree. Note that extension IDs are only unique within a single tree.
+    uint64 extension_id = 3;
+  }
+
+  // Non-functional metadata common to all extension types.
+  message Metadata {
+    // Optional description of the extension. Only serves as documentation.
+    string description = 1;
   }
 
   // Data associated with an extension module definition.
   message Module {
-    // Optional description of the module. Only serves as documentation.
-    string description = 1;
+    // Identifier for the extension.
+    Identifier identifier = 1;
+
+    // Common metadata for the extension.
+    Metadata metadata = 2;
 
     // The URI that was actually used to resolve the extension (the validator
     // allows URI overrides to be specified).
-    string actual_uri = 2;
+    string actual_uri = 3;
 
     // List of immediate dependencies.
-    repeated Dependency dependencies = 3;
+    repeated Dependency dependencies = 4;
     message Dependency {
       // URI of the dependency.
       string uri = 1;
@@ -110,13 +116,16 @@ message ExtensionDefinition {
     }
 
     // List of references to all extensions publicly defined by this module.
-    repeated int64 extension_ids = 4;
+    repeated int64 extension_ids = 5;
   }
 
   // Data associated with a type class.
   message TypeClass {
-    // Optional description of the class. Only serves as documentation.
-    string description = 1;
+    // Identifier for the extension.
+    Identifier identifier = 1;
+
+    // Common metadata for the extension.
+    Metadata metadata = 2;
 
     // Set of parameters expected by the type class. If unspecified or empty,
     // the type class is a simple type. Otherwise, it is a compound type.
@@ -124,59 +133,38 @@ message ExtensionDefinition {
     // The structure is shared with function arguments because it is very
     // similar. Note however that type classes can only accept generics as
     // value types.
-    Pack parameters = 2;
+    Pack parameters = 3;
 
     // Optional pattern for the type representing the structure of the class.
     // If not specified, the type class is opaque.
-    Metapattern structure = 3;
+    Metapattern structure = 4;
   }
 
   // Data associated with a type variation.
   message TypeVariation {
-    // Optional description of the variation. Only serves as documentation.
-    string description = 1;
+    // Identifier for the extension.
+    Identifier identifier = 1;
+
+    // Common metadata for the extension.
+    Metadata metadata = 2;
 
     // The type class that this variation is defined for.
-    DataType.Class class = 2;
+    DataType.Class class = 3;
 
     // Whether the variation is compatible with the "system-preferred"
     // variation for the purpose of (function argument) pattern matching.
     // Corresponds with the "functions" field in the YAML syntax; INHERITS
     // means compatible, SEPARATE means incompatible.
-    bool compatible = 3;
+    bool compatible = 4;
   }
 
-  // Data associated with a scalar function.
-  message ScalarFunction {
-    // Properties common to all functions.
-    CommonFunctionProperties common = 1;
-  }
+  // Definition information for an extension.
+  message Function {
+    // Identifier for the extension.
+    Identifier identifier = 1;
 
-  // Data associated with an aggregate function.
-  message AggregateFunction {
-    // Properties common to all functions.
-    CommonFunctionProperties common = 1;
-
-    // Properties common to both aggregate and window functions.
-    AggregateFunctionProperties aggregate = 2;
-  }
-
-  // Data associated with a window function.
-  message WindowFunction {
-    // Properties common to all functions.
-    CommonFunctionProperties common = 1;
-
-    // Properties common to both aggregate and window functions.
-    AggregateFunctionProperties aggregate = 2;
-
-    // Properties specific to window functions.
-    WindowFunctionProperties window = 3;
-  }
-
-  // Properties common to all function types.
-  message CommonFunctionProperties {
-    // Optional description of the variation. Only serves as documentation.
-    string description = 1;
+    // Common metadata for the extension.
+    Metadata metadata = 2;
 
     // List of arguments expected by the function.
     //
@@ -197,54 +185,69 @@ message ExtensionDefinition {
     //    are not skippable, and use "value" binding type.
     //
     // This may be further generalized in the future.
-    Pack arguments = 2;
+    Pack arguments = 3;
 
     // The return type of the function, evaluated after the pack is matched.
-    Metapattern return_type = 3;
+    Metapattern return_type = 4;
 
     // If set, the behavior of the function is session-dependent.
-    bool session_dependent = 4;
+    bool session_dependent = 5;
 
     // If set, the behavior of the function is non-deterministic, i.e.
     // evaluating it twice may yield different values. Note that it is possible
     // for a function to be session-dependent without being non-deterministic,
     // if the function does always return the same value within a session.
-    bool non_deterministic = 5;
-  }
+    bool non_deterministic = 6;
 
-  // Properties common to aggregate and window functions.
-  message AggregateFunctionProperties {
-    // When specified, the function is decomposable.
-    Decomposability decomposability = 1;
-    message Decomposability {
-      // The intermediate type, evaluated along with the return type. For
-      // INITIAL_TO_INTERMEDIATE and INTERMEDIATE_TO_INTERMEDIATE phases, this
-      // overrides the return type of the function. For
-      // INTERMEDIATE_TO_INTERMEDIATE and INTERMEDIATE_TO_RESULT phases, this
-      // (also) replaces the first value argument slot, and the remaining value
-      // argument slots are removed.
-      Metapattern intermediate_type = 1;
+    // The function type, along with type-specific properties.
+    oneof kind {
+      // Represents a user-defined scalar function.
+      google.protobuf.Empty scalar_function = 7;
 
-      // Determines whether the INTERMEDIATE_TO_INTERMEDIATE phase is
-      // applicable to this function.
-      bool many = 2;
+      // Represents a user-defined aggregate function.
+      AggregateProperties aggregate_function = 8;
+
+      // Represents a user-defined window function.
+      WindowProperties window_function = 9;
     }
 
-    // Whether the behavior of the aggregate function is sensitive to the order
-    // in which the input is provided.
-    bool order_sensitive = 2;
+    // Properties common to aggregate and window functions.
+    message AggregateProperties {
+      // When specified, the function is decomposable.
+      Decomposability decomposability = 1;
+      message Decomposability {
+        // The intermediate type, evaluated along with the return type. For
+        // INITIAL_TO_INTERMEDIATE and INTERMEDIATE_TO_INTERMEDIATE phases, this
+        // overrides the return type of the function. For
+        // INTERMEDIATE_TO_INTERMEDIATE and INTERMEDIATE_TO_RESULT phases, this
+        // (also) replaces the first value argument slot, and the remaining value
+        // argument slots are removed.
+        Metapattern intermediate_type = 1;
 
-    // If specified, this designates the maximum set size that can be passed to
-    // the function.
-    uint64 max_set = 3;
-  }
+        // Determines whether the INTERMEDIATE_TO_INTERMEDIATE phase is
+        // applicable to this function.
+        bool many = 2;
+      }
 
-  // Properties applicable only to window functions.
-  message WindowFunctionProperties {
-    // If set, the window function can be computed in streaming fashion. If not
-    // set, the window function can only start working when the complete input
-    // is available.
-    bool can_stream = 1;
+      // Whether the behavior of the aggregate function is sensitive to the order
+      // in which the input is provided.
+      bool order_sensitive = 2;
+
+      // If specified, this designates the maximum set size that can be passed to
+      // the function.
+      uint64 max_set = 3;
+    }
+
+    // Properties applicable only to window functions.
+    message WindowProperties {
+      // Properties shared with aggregate functions.
+      AggregateProperties aggregate_properties = 1;
+
+      // If set, the window function can be computed in streaming fashion. If not
+      // set, the window function can only start working when the complete input
+      // is available.
+      bool can_stream = 2;
+    }
   }
 
   // Represents a parameter pack for a user-defined compound type class or a
