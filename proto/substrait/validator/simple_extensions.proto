@@ -1,0 +1,359 @@
+// SPDX-License-Identifier: Apache-2.0
+syntax = "proto3";
+
+// This proto file defines a machine-readable form of simple extension YAML
+// files.
+
+package substrait.validator;
+
+import "google/protobuf/empty.proto";
+import "substrait/validator/type_system.proto";
+
+option csharp_namespace = "Substrait.Validator.Protobuf";
+option java_multiple_files = true;
+option java_package = "io.substrait.validator.proto";
+
+// Root message returned by the validator as a result of converting a simple
+// extension module to machine-readable form.
+message SimpleExtension {
+  // Metadata about the simple extension module.
+  ExtensionDefinition.Module module = 1;
+
+  // All extensions defined in the type class namespace of this extension. All
+  // names are case-insensitively unique.
+  repeated ExtensionDefinition.TypeClass type_classes = 2;
+
+  // All type variation extensions. These are grouped by type class, because
+  // names need only be unique for a given type class.
+  repeated TypeVariationNamespace type_variations = 3;
+  message TypeVariationNamespace {
+    // The type class that these variations are defined for.
+    DataType.Class class = 1;
+
+    // All variations defined for this type class. All names are
+    // case-insensitively unique.
+    repeated ExtensionDefinition.TypeVariation variations = 2;
+  }
+
+  // All functions defined in the function namespace of this extension. All
+  // names are case-insensitively unique.
+  repeated ExtensionDefinition.Function functions = 4;
+
+  // Any resolved extensions defined by dependencies of this module. Note that
+  // these are not publicly exposed by this extension.
+  repeated ExtensionDefinition dependencies = 5;
+}
+
+// Definition information for an extension.
+message ExtensionDefinition {
+  oneof kind {
+    // Represents an extension module (i.e. a YAML file). This only contains
+    // metadata about the module; the extensions defined in it have their own
+    // definitions.
+    Module module = 1;
+
+    // Represents a user-defined type class.
+    TypeClass type_class = 2;
+
+    // Represents a user-defined type variation.
+    TypeVariation type_variation = 3;
+
+    // Represents a user-defined function.
+    Function function = 4;
+  }
+
+  // Identifying information associated with an extension, that can be used to
+  // refer to the extension from elsewhere.
+  message Identifier {
+    // URI of the extension module that defined the extension. URI matching is
+    // case sensitive.
+    string uri = 1;
+
+    // The set of names that may be used to case-insensitively refer to this
+    // extension within the scope of the above URI. For type classes and type
+    // variations there will only ever be one of these. For functions, the
+    // first name is always the compound name. The simple name will only be
+    // added when there is only one implementation for the function. For
+    // modules, the name list will be empty, as they are referred to by only
+    // their URI.
+    repeated string names = 2;
+
+    // Unique identifier that may be used to refer to this definition elsewhere
+    // in the tree. Note that extension IDs are only unique within a single tree.
+    uint64 extension_id = 3;
+  }
+
+  // Non-functional metadata common to all extension types.
+  message Metadata {
+    // Optional description of the extension. Only serves as documentation.
+    string description = 1;
+  }
+
+  // Data associated with an extension module definition.
+  message Module {
+    // Identifier for the extension.
+    Identifier identifier = 1;
+
+    // Common metadata for the extension.
+    Metadata metadata = 2;
+
+    // The URI that was actually used to resolve the extension (the validator
+    // allows URI overrides to be specified).
+    string actual_uri = 3;
+
+    // List of immediate dependencies.
+    repeated Dependency dependencies = 4;
+    message Dependency {
+      // URI of the dependency.
+      string uri = 1;
+
+      // Name used to refer to the dependency internally.
+      string name = 2;
+
+      // Identifier referring to the module definition of the dependency, if
+      // resolved by the validator.
+      int64 extension_id = 3;
+    }
+
+    // List of references to all extensions publicly defined by this module.
+    repeated int64 extension_ids = 5;
+  }
+
+  // Data associated with a type class.
+  message TypeClass {
+    // Identifier for the extension.
+    Identifier identifier = 1;
+
+    // Common metadata for the extension.
+    Metadata metadata = 2;
+
+    // Set of parameters expected by the type class. If unspecified or empty,
+    // the type class is a simple type. Otherwise, it is a compound type.
+    //
+    // The structure is shared with function arguments because it is very
+    // similar. Note however that type classes can only accept generics as
+    // value types.
+    Pack parameters = 3;
+
+    // Optional pattern for the type representing the structure of the class.
+    // If not specified, the type class is opaque.
+    Metapattern structure = 4;
+  }
+
+  // Data associated with a type variation.
+  message TypeVariation {
+    // Identifier for the extension.
+    Identifier identifier = 1;
+
+    // Common metadata for the extension.
+    Metadata metadata = 2;
+
+    // The type class that this variation is defined for.
+    DataType.Class class = 3;
+
+    // Whether the variation is compatible with the "system-preferred"
+    // variation for the purpose of (function argument) pattern matching.
+    // Corresponds with the "functions" field in the YAML syntax; INHERITS
+    // means compatible, SEPARATE means incompatible.
+    bool compatible = 4;
+  }
+
+  // Definition information for an extension.
+  message Function {
+    // Identifier for the extension.
+    Identifier identifier = 1;
+
+    // Common metadata for the extension.
+    Metadata metadata = 2;
+
+    // List of arguments expected by the function.
+    //
+    // The structure is shared with user-defined compound type classes because
+    // it is very similar. Note however that not all pattern and binding types
+    // are currently applicable:
+    //
+    //  - required enumeration arguments must be represented using a metaenum
+    //    pattern representing a defined set of values, are not skippable, and
+    //    use "generic" binding type;
+    //  - optional enumeration arguments are represented the same way, but with
+    //    skippable set to true;
+    //  - type arguments are represented using a typename pattern, are not
+    //    skippable, and use "generic" binding type;
+    //  - constant value arguments are represented using a typename pattern,
+    //    are not skippable, and use "literal" binding type;
+    //  - non-constant value arguments are represented using a typename pattern,
+    //    are not skippable, and use "value" binding type.
+    //
+    // This may be further generalized in the future.
+    Pack arguments = 3;
+
+    // The return type of the function, evaluated after the pack is matched.
+    Metapattern return_type = 4;
+
+    // If set, the behavior of the function is session-dependent.
+    bool session_dependent = 5;
+
+    // If set, the behavior of the function is non-deterministic, i.e.
+    // evaluating it twice may yield different values. Note that it is possible
+    // for a function to be session-dependent without being non-deterministic,
+    // if the function does always return the same value within a session.
+    bool non_deterministic = 6;
+
+    // The function type, along with type-specific properties.
+    oneof kind {
+      // Represents a user-defined scalar function.
+      google.protobuf.Empty scalar_function = 7;
+
+      // Represents a user-defined aggregate function.
+      AggregateProperties aggregate_function = 8;
+
+      // Represents a user-defined window function.
+      WindowProperties window_function = 9;
+    }
+
+    // Properties common to aggregate and window functions.
+    message AggregateProperties {
+      // When specified, the function is decomposable.
+      Decomposability decomposability = 1;
+      message Decomposability {
+        // The intermediate type, evaluated along with the return type. For
+        // INITIAL_TO_INTERMEDIATE and INTERMEDIATE_TO_INTERMEDIATE phases, this
+        // overrides the return type of the function. For
+        // INTERMEDIATE_TO_INTERMEDIATE and INTERMEDIATE_TO_RESULT phases, this
+        // (also) replaces the first value argument slot, and the remaining value
+        // argument slots are removed.
+        Metapattern intermediate_type = 1;
+
+        // Determines whether the INTERMEDIATE_TO_INTERMEDIATE phase is
+        // applicable to this function.
+        bool many = 2;
+      }
+
+      // Whether the behavior of the aggregate function is sensitive to the order
+      // in which the input is provided.
+      bool order_sensitive = 2;
+
+      // If specified, this designates the maximum set size that can be passed to
+      // the function.
+      uint64 max_set = 3;
+    }
+
+    // Properties applicable only to window functions.
+    message WindowProperties {
+      // Properties shared with aggregate functions.
+      AggregateProperties aggregate_properties = 1;
+
+      // If set, the window function can be computed in streaming fashion. If not
+      // set, the window function can only start working when the complete input
+      // is available.
+      bool can_stream = 2;
+    }
+  }
+
+  // Represents a parameter pack for a user-defined compound type class or a
+  // function argument slot list. In the latter case, the patterns will only
+  // ever be passed typenames.
+  //
+  // The order of operations for the various patterns is:
+  //
+  //  - Match the patterns of each slot against the bound arguments from left
+  //    to right. Note that the pattern in the last slot may be bound zero or
+  //    more times, depending on the variadicity of the pack.
+  //  - Process the constraint statements.
+  //  - Evaluate any patterns in lambda arguments from left to right.
+  //
+  // After evaluation of the pack:
+  //
+  //  - For decomposable aggregate/window functions, evaluate the intermediate
+  //    type pattern.
+  //  - For functions, evaluate the return type pattern.
+  //  - For user-defined compound type classes, evaluate the structure pattern.
+  //
+  // If any match or evaluation operation fails, the provided pack is
+  // considered to be incompatible with the function or type class.
+  message Pack {
+    // List of parameter/argument slots.
+    repeated Slot slots = 1;
+    message Slot {
+      // Optional name of the slot. Only serves as documentation.
+      string name = 1;
+
+      // Optional description of the slot. Only serves as documentation.
+      string description = 2;
+
+      // The pattern that the metavalue passed to the slot must match.
+      Metapattern pattern = 3;
+
+      // Whether this slot is skippable. Skippable slots may be skipped with
+      // null for type parameters or unspecified for function arguments (only
+      // enumerations can be made optional), but must be *explicitly* set to
+      // null/unspecified; it's illegal to omit them entirely.
+      bool skippable = 4;
+
+      // Describes what type of construct should be bound to this slot.
+      oneof binding_type {
+        // Only a metavalue is to be bound to the slot. This is the only legal
+        // option for type parameters. For function argument slots, it is used
+        // for type, required enumeration, and optional enumeration arguments.
+        google.protobuf.Empty generic = 5;
+
+        // A literal data value must be bound to the slot. The data type of the
+        // literal must match the metapattern. This is used for value function
+        // arguments that are marked as constant. They are particularly useful
+        // for aggregate and window functions.
+        google.protobuf.Empty literal = 6;
+
+        // An data value must be bound to the slot. This is done by means of
+        // binding an expression, but the expression can always be evaluated or
+        // reduced before the function is invoked. This is used for value
+        // function arguments that are not marked as constant. The data type of
+        // the data value must match the pattern.
+        google.protobuf.Empty value = 7;
+
+        // A lambda expression must be bound to the slot. This is also done by
+        // means of binding a normal expression, but the function has control
+        // over when, if, and how the bound expression is evaluated. The
+        // function can also provide arguments to the expression.
+        Lambda lambda = 8;
+      }
+
+      message Lambda {
+        // The list of arguments that the bound lambda expression may make use
+        // of.
+        repeated Argument arguments = 1;
+        message Argument {
+          // Optional name of the slot. Only serves as documentation.
+          string name = 1;
+
+          // Optional description of the slot. Only serves as documentation.
+          string description = 2;
+
+          // The pattern used to evaluate the data type that will be passed to
+          // the lambda expression. These patterns are evaluated after all
+          // slots have been matched and the list of constraints have been
+          // processed.
+          Metapattern data_type = 3;
+        }
+      }
+    }
+
+    // Variadic behavior of the last slot, i.e. the number of items that can
+    // be bound to the slot. Note that all slots before the last slot always
+    // bind to exactly one argument. This field is only legal if there is at
+    // least one slot.
+    Variadicity variadicity = 3;
+    message Variadicity {
+      // The minimum number of arguments that can be bound to the slot. May
+      // be 0.
+      uint64 minimum = 1;
+
+      // The maximum number of arguments that can be bound to the slot. Zero
+      // is treated as unspecified/no upper limit.
+      uint64 maximum = 2;
+    }
+
+    // Optional additional constraints to apply when determining whether a
+    // parameter pack is valid.
+    repeated Metastatement constraints = 4;
+  }
+}

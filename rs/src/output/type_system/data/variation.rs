@@ -48,14 +48,9 @@ impl Variation {
     pub fn is_compatible_with_system_preferred(&self) -> bool {
         match self {
             Variation::SystemPreferred => true,
-            Variation::UserDefined(x) => x
-                .definition
-                .as_ref()
-                .map(|x| {
-                    x.function_behavior
-                        == extension::simple::type_variation::FunctionBehavior::Inherits
-                })
-                .unwrap_or(true),
+            Variation::UserDefined(x) => {
+                x.definition.as_ref().map(|x| x.compatible).unwrap_or(true)
+            }
         }
     }
 }

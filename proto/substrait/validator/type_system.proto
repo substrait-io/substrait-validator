@@ -1,0 +1,613 @@
+// SPDX-License-Identifier: Apache-2.0
+syntax = "proto3";
+
+// This proto file defines a representations of Substrait's meta type system,
+// including data types.
+
+package substrait.validator;
+
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "Substrait.Validator.Protobuf";
+option java_multiple_files = true;
+option java_package = "io.substrait.validator.proto";
+
+// This is effectively a more homogeneous form of substrait.Type, but should
+// otherwise be equally powerful. It is also less context-sensitive, in that
+// usage of type class and type variation extensions includes the complete URI
+// and name, rather than only a plan-specific link.
+message DataType {
+  // Type class.
+  Class class = 1;
+  message Class {
+    oneof kind {
+      Simple simple = 1;
+      Compound compound = 2;
+      UserDefinedType user_defined_type = 3;
+      google.protobuf.Empty unresolved_type = 7;
+    }
+  }
+
+  // Enumeration of simple types. Message numbers correspond to the ones in
+  // substrait.Type. Note that UNSPECIFIED should never be emitted by the
+  // validator.
+  enum Simple {
+    SIMPLE_UNSPECIFIED = 0;
+    SIMPLE_BOOLEAN = 1;
+    SIMPLE_I8 = 2;
+    SIMPLE_I16 = 3;
+    SIMPLE_I32 = 5;
+    SIMPLE_I64 = 7;
+    SIMPLE_FP32 = 10;
+    SIMPLE_FP64 = 11;
+    SIMPLE_STRING = 12;
+    SIMPLE_BINARY = 13;
+    SIMPLE_TIMESTAMP = 14;
+    SIMPLE_DATE = 16;
+    SIMPLE_TIME = 17;
+    SIMPLE_INTERVAL_YEAR = 19;
+    SIMPLE_INTERVAL_DAY = 20;
+    SIMPLE_TIMESTAMP_TZ = 29;
+    SIMPLE_UUID = 32;
+  }
+
+  // Enumeration of compound types. Message numbers correspond to the ones in
+  // substrait.Type. Note that UNSPECIFIED should never be emitted by the
+  // validator.
+  enum Compound {
+    COMPOUND_UNSPECIFIED = 0;
+    COMPOUND_FIXED_CHAR = 21;
+    COMPOUND_VAR_CHAR = 22;
+    COMPOUND_FIXED_BINARY = 23;
+    COMPOUND_DECIMAL = 24;
+    COMPOUND_STRUCT = 25;
+    COMPOUND_NAMED_STRUCT = 26;
+    COMPOUND_LIST = 27;
+    COMPOUND_MAP = 28;
+  }
+
+  // Information about a user-defined type.
+  message UserDefinedType {
+    // URI of the YAML file that the type is (supposed to be) defined in, if
+    // known.
+    string uri = 1;
+
+    // Name of the type within the scope of that YAML file.
+    string name = 2;
+
+    // If nonzero, points to a variation extension definition elsewhere in the
+    // tree. All extension definitions can be gathered by traversing the tree
+    // and looking for ExtensionDefinition messages in the data associated with
+    // each node. Note that extension IDs are only unique within a single tree.
+    uint64 extension_id = 4;
+
+    // Deprecated; definitions are referred to via the definition_id field to
+    // avoid duplication.
+    Definition definition = 3 [deprecated = true];
+
+    message Definition {
+      option deprecated = true;
+      repeated Element structure = 1;
+    }
+
+    message Element {
+      option deprecated = true;
+      string name = 1;
+      Simple kind = 2;
+    }
+  }
+
+  // Nullability.
+  bool nullable = 8;
+
+  // Type variation.
+  oneof variation {
+    google.protobuf.Empty system_preferred_variation = 10;
+    UserDefinedVariation user_defined_variation = 9;
+    google.protobuf.Empty unresolved_variation = 15;
+  }
+
+  // Information about a type variation.
+  message UserDefinedVariation {
+    // URI of the YAML file that the type variation is (supposed to be) defined
+    // in, if known.
+    string uri = 1;
+
+    // Name of the type within the scope of that YAML file.
+    string name = 2;
+
+    // If nonzero, points to a variation extension definition elsewhere in the
+    // tree. All extension definitions can be gathered by traversing the tree
+    // and looking for ExtensionDefinition messages in the data associated with
+    // each node. Note that extension IDs are only unique within a single tree.
+    uint64 extension_id = 4;
+
+    // Deprecated; definitions are referred to via the definition_id field to
+    // avoid duplication.
+    Definition definition = 3 [deprecated = true];
+
+    message Definition {
+      option deprecated = true;
+      oneof base_type {
+        Class physical = 1;
+        UserDefinedVariation logical = 2;
+        google.protobuf.Empty unresolved = 7;
+      }
+      FunctionBehavior function_behavior = 8;
+    }
+
+    enum FunctionBehavior {
+      option deprecated = true;
+      FUNCTION_BEHAVIOR_UNSPECIFIED = 0;
+      FUNCTION_BEHAVIOR_INHERITS = 1;
+      FUNCTION_BEHAVIOR_SEPARATE = 2;
+    }
+  }
+
+  // Type parameters for non-simple types.
+  repeated Parameter parameters = 16;
+  message Parameter {
+    // Optional name given to the parameter (currently used only for NSTRUCT).
+    string name = 10;
+
+    // Type of parameter.
+    oneof kind {
+      // Used to skip optional parameters.
+      google.protobuf.Empty null = 8;
+
+      // The value that the parameter is set to.
+      Metavalue value = 11;
+
+      // These are all deprecated in favor of value.
+      DataType data_type = 1 [deprecated = true];
+      Named named_type = 2 [deprecated = true];
+      uint64 unsigned = 3 [deprecated = true];
+      bool boolean = 4 [deprecated = true];
+      int64 integer = 5 [deprecated = true];
+      string enumeration = 6 [deprecated = true];
+      string string = 7 [deprecated = true];
+      google.protobuf.Empty unresolved = 9 [deprecated = true];
+    }
+  }
+
+  message Named {
+    option deprecated = true;
+    string name = 1;
+    DataType data_type = 2;
+  }
+}
+
+// A value in the meta type system used for type patterns, type derivations,
+// and type parameters.
+message Metavalue {
+  oneof kind {
+    // An unresolved value (i.e., the validator could not determine what the
+    // value is or should be).
+    google.protobuf.Empty unresolved = 1;
+
+    // A boolean.
+    bool metabool = 2;
+
+    // An integer.
+    int64 metaint = 3;
+
+    // An enumeration variant.
+    string metaenum = 4;
+
+    // A string.
+    string metastr = 5;
+
+    // A data type.
+    DataType typename = 6;
+  }
+}
+
+// A pattern within the meta type system. In most cases, these can be thought
+// of as representing a (context-sensitive) set of metavalues. In the special
+// case where the set has only one metavalue in it, a pattern can also be
+// evaluated to that metavalue. This allows patterns to be used at both the LHS
+// and RHS of an assignment statement, for matching incoming metavalues or data
+// types, and for deriving data types. Note however, that some binding patterns
+// may evaluate to a value despite representing a non-unit set, or even
+// evaluate to something not in the matched set.
+//
+// Matching or evaluating patterns may have side effects in the form of names
+// being bound to a metavalue or rebound to a different metavalue. Evaluation
+// and matching is strictly done in left-to-right order unless otherwise
+// specified.
+message Metapattern {
+  oneof kind {
+    // An unresolved pattern (i.e., the validator could not determine what the
+    // pattern is or should be).
+    google.protobuf.Empty unresolved = 1;
+
+    // Represents the set of all metavalues.
+    google.protobuf.Empty any = 2;
+
+    // Represents sets of metabools.
+    Metabool metabool = 3;
+
+    // Represents sets of metaints.
+    Metaint metaint = 4;
+
+    // Represents sets of metaenums.
+    Metaenum metaenum = 5;
+
+    // Represents sets of metastrs.
+    Metastr metastr = 6;
+
+    // Represents sets of typenames.
+    Typename typename = 7;
+
+    // Represents context-sensitive sets based on named bindings.
+    Binding binding = 8;
+
+    // Represents a single metavalue based on the evaluation of a function.
+    Function function = 9;
+  }
+
+  // A pattern that matches metabools.
+  message Metabool {
+    oneof kind {
+      // Represents the set of all metabools.
+      google.protobuf.Empty any = 1;
+
+      // Represents the set containing only this metabool.
+      bool exactly = 2;
+    }
+  }
+
+  // A pattern that matches metaints.
+  message Metaint {
+    oneof kind {
+      // Represents the set of all metaints.
+      google.protobuf.Empty any = 1;
+
+      // Represents the set containing only this metaint.
+      int64 exactly = 2;
+
+      // Represents the set of all metaints greater than or equal to this
+      // value.
+      int64 at_least = 3;
+
+      // Represents the set of all metaints less than or equal to this value.
+      int64 at_most = 4;
+
+      // Represents the set of all metaints within the given range.
+      Range range = 5;
+    }
+
+    message Range {
+      int64 minimum = 1;
+      int64 maximum = 2;
+    }
+  }
+
+  // A pattern that matches metaenums.
+  message Metaenum {
+    oneof kind {
+      // Represents the set of all metaenums.
+      google.protobuf.Empty any = 1;
+
+      // Represents the set containing only this metaenum.
+      string exactly = 2;
+
+      // Represents a specific set of metaenum variants.
+      Set set = 3;
+    }
+
+    message Set {
+      // List of at least two case-insensitively unique variants.
+      repeated string variants = 1;
+    }
+  }
+
+  // A pattern that matches metastrs.
+  message Metastr {
+    oneof kind {
+      // Represents the set of all metastrs.
+      google.protobuf.Empty any = 1;
+
+      // Represents the set containing only this metastr.
+      string exactly = 2;
+    }
+  }
+
+  // A pattern that matches typenames.
+  message Typename {
+    // Pattern for nullability. If false is not contained in this set, only
+    // nullable typenames are contained; if true is not contained in this
+    // set, only non-nullable typenames are contained. Evaluation will only
+    // succeed if this evaluates to a boolean.
+    Metapattern nullability = 1;
+
+    oneof kind {
+      // Represents the set of all typenames.
+      google.protobuf.Empty any = 2;
+
+      // Represents the set of all valid nullability, variation, and parameter
+      // combinations of a specific type class.
+      WithClass with_class = 3;
+    }
+
+    message WithClass {
+      // The specific data type class that all typenames in the matched set are
+      // based on.
+      DataType.Class class = 1;
+
+      // Pattern for the type variation.
+      Variation variation = 2;
+
+      // Pattern for the parameters.
+      ParameterPack parameter_pack = 3;
+    }
+
+    message Variation {
+      oneof kind {
+        // Represents the set of all variations accepted by the type class.
+        // This corresponds to the [?] suffix in the DSL.
+        google.protobuf.Empty any = 1;
+
+        // Represents the set of all variations accepted by the type class that
+        // are compatible with the system-preferred variation, i.e. variations
+        // with "INHERITS" function behavior. When evaluated, the
+        // system-preferred variation is used. This corresponds to the lack of
+        // a variation suffix in the DSL.
+        google.protobuf.Empty compatible = 2;
+
+        // Only typenames using the system-preferred variation are included in
+        // the set. This corresponds to the [0] suffix in the DSL.
+        google.protobuf.Empty exactly_system_preferred = 3;
+
+        // Only typenames using the specified variation are included in the
+        // set.
+        DataType.UserDefinedVariation exactly_user_defined = 4;
+      }
+    }
+
+    message ParameterPack {
+      oneof kind {
+        // Represents the set of all parameter packs accepted by the type
+        // class.
+        google.protobuf.Empty any = 1;
+
+        // Represents a subset of acceptable parameter packs with a specific
+        // number of specified parameters.
+        Parameters parameters = 2;
+      }
+    }
+
+    message Parameters {
+      // The pattern for each parameter in the parameter pack.
+      repeated Parameter parameters = 1;
+    }
+
+    message Parameter {
+      // Optional name for parameters. Only used when evaluated, and only used
+      // by the NSTRUCT pseudotype. No functional significance to Substrait;
+      // only serves as optional user-facing documentation.
+      string name = 1;
+
+      oneof kind {
+        // The set containing both the special null value (used for skipping
+        // optional parameters) and all metavalues in the given pattern.
+        Metapattern null_or_specified = 2;
+
+        // The set containing only the special null value (used for skipping
+        // optional parameters).
+        google.protobuf.Empty only_null = 3;
+
+        // The specified set of metavalues (so, excluding null).
+        Metapattern only_specified = 4;
+      }
+    }
+  }
+
+  // A context-sensitive pattern based on named bindings.
+  message Binding {
+    // The case-insensitive name of the binding.
+    string name = 1;
+
+    oneof kind {
+      // A consistent binding. When a name is first used as a binding, this
+      // pattern represents the set of all metavalues except nullable
+      // typenames. When matched, however, the name is bound to the matched
+      // metavalue. For later usages, the pattern represents the set containing
+      // only the previously bound value. This makes this pattern act more or
+      // less like single-assignment variables.
+      google.protobuf.Empty consistent = 2;
+
+      // An inconsistent binding. This is a variation on consistent bindings with
+      // some special rules that come in handy for representing "mirror"
+      // nullability and inconsistent variadic argument slots.
+      //
+      // When matched, this binding *always* represents the set of all
+      // metavalues except nullable typenames. The name is bound to the
+      // incoming metavalue in the following cases:
+      //  - the name was not previously bound;
+      //  - the name was previously bound to false, and the incoming value is
+      //    true.
+      // The former is useful for inconsistent argument slots, while the latter
+      // is useful for mirror nullability in argument slots.
+      //
+      // Inconsistent bindings can always be evaluated. If the name was bound,
+      // they evaluate to the bound value (just like a consistent binding), but
+      // if the name was not yet bound, they evaluate to false. This is useful
+      // for mirror nullability in the return type derivation; together with
+      // the binding update rule, it makes the return type non-nullable (false)
+      // if no nullable (true) arguments were matched.
+      google.protobuf.Empty inconsistent = 3;
+
+      // A variation on a normal binding that includes a nullability override.
+      //
+      // When matched, they behave more or less like normal bindings, but only
+      // match typenames, and only match them if their nullability matches the
+      // contained (boolean) pattern; i.e., if a non-nullable type is matched,
+      // the contained pattern is matched against false, and if a nullable
+      // pattern is matched, the contained pattern is matched against true.
+      // When binding, the bound typename is always the non-nullable variant of
+      // the matched typename. If the name of the binding was bound to a
+      // metavalue previously, its nullability is ignored in the matching
+      // process; the nullability check is always based on the contained
+      // nullability pattern.
+      //
+      // When evaluated, the nullability of the previously bound metavalue will
+      // be overridden with the evaluation result of the contained pattern
+      // (again, false = non-nullable, true = nullable). If no metavalue was
+      // bound to the name, if the bound metavalue was not a typename, or if
+      // the contained pattern does not evaluate to a boolean, evaluation
+      // fails.
+      //
+      // These rules are useful (and necessary) for specifying functions that
+      // can accept any type class, but have specific rules for nullability
+      // behavior.
+      Metapattern normal_with_nullability = 4;
+
+      // The combination of an inconsistent binding and a binding with
+      // nullability override.
+      //
+      // When matched, they only match typenames, and only match them if their
+      // nullability matches the contained (boolean) pattern. The bound
+      // typename is always the non-nullable variant of the matched typename.
+      // Otherwise, the rules are the same as for inconsistent bindings.
+      //
+      // When evaluated, the nullability of the previously bound metavalue will
+      // be overridden with the evaluation result of the contained pattern
+      // (false = non-nullable, true = nullable). If no metavalue was bound to
+      // the name, if the bound metavalue was not a typename, or if the
+      // contained pattern does not evaluate to a boolean, evaluation fails.
+      //
+      // These rules are useful (and necessary) for specifying inconsistent
+      // variadic functions that will accept any type class, but have specific
+      // rules for nullability behavior.
+      Metapattern inconsistent_with_nullability = 5;
+    }
+  }
+
+  // A pattern that represents a set of metavalues for which the sole value is
+  // determined by evaluating a function.
+  message Function {
+    // The type of function being evaluated.
+    FunctionType function_type = 1;
+
+    // The arguments passed to the function.
+    repeated Metapattern arguments = 2;
+
+    enum FunctionType {
+      FUNCTION_TYPE_UNSPECIFIED = 0;
+
+      // Used when the validator could not determine which function was used.
+      FUNCTION_TYPE_UNRESOLVED = 1;
+
+      // Unary boolean NOT. Takes a single metabool as argument, and returns its
+      // complementary value.
+      FUNCTION_TYPE_NOT = 2;
+
+      // Boolean AND. Accepts any number of metabools as arguments, and returns
+      // the AND of all of them, i.e. whether all of them are true. If no
+      // arguments are specified, returns true.
+      FUNCTION_TYPE_AND = 3;
+
+      // Boolean OR. Accepts any number of metabools as arguments, and returns
+      // the OR of all of them, i.e. whether any of them are true. If no
+      // arguments are specified, returns false.
+      FUNCTION_TYPE_OR = 4;
+
+      // Integer negation. Takes a single metaint as argument, and returns its
+      // inverse. int64 overflow should be detected and result in evaluation
+      // failure.
+      FUNCTION_TYPE_NEGATE = 5;
+
+      // Integer addition. Accepts any number of metaints, and returns their
+      // sum. int64 overflow should be detected and result in evaluation
+      // failure. Overflow for intermediate values when evaluating
+      // left-to-right *may* result in evaluation failure.
+      FUNCTION_TYPE_ADD = 6;
+
+      // Integer subtraction. Accepts two metaints, and returns their difference.
+      // int64 overflow should be detected and result in evaluation failure.
+      FUNCTION_TYPE_SUBTRACT = 7;
+
+      // Integer multiplication. Accepts any number of metaints, and returns
+      // their product. int64 overflow should be detected and result in
+      // evaluation failure. Overflow for intermediate values when evaluating
+      // left-to-right *may* result in evaluation failure.
+      FUNCTION_TYPE_MULTIPLY = 8;
+
+      // Truncating integer division (rounding toward zero). Accepts two
+      // metaints, and returns their quotient. Division by zero should be
+      // detected and result in evaluation failure.
+      FUNCTION_TYPE_DIVIDE = 9;
+
+      // Returns the minimum value of one or more metaints.
+      FUNCTION_TYPE_MIN = 10;
+
+      // Returns the maximum value of one or more metaints.
+      FUNCTION_TYPE_MAX = 11;
+
+      // Returns whether two metavalues are equal. When matching data types,
+      // NSTRUCT parameter names are *not* considered.
+      FUNCTION_TYPE_EQUAL = 12;
+
+      // Returns whether one metaint is strictly greater than another. Not
+      // defined for metavalues other than metaint.
+      FUNCTION_TYPE_GREATER_THAN = 13;
+
+      // Returns whether one metaint is strictly greater than another. Not
+      // defined for metavalues other than metaint.
+      FUNCTION_TYPE_LESS_THAN = 14;
+
+      // Returns whether two metavalues are not equal. When matching data
+      // types, NSTRUCT parameter names are *not* considered. This is the exact
+      // complement of equal().
+      FUNCTION_TYPE_NOT_EQUAL = 15;
+
+      // Returns whether one metaint is less than or equal to another. Not
+      // defined for metavalues other than metaint. This is the exact
+      // complement of greater_than().
+      FUNCTION_TYPE_LESS_EQUAL = 16;
+
+      // Returns whether one metaint is greater than or equal to another. Not
+      // defined for metavalues other than metaint. This is the exact
+      // complement of less_than().
+      FUNCTION_TYPE_GREATER_EQUAL = 17;
+
+      // Matches the metavalue evaluated from the first argument against the
+      // pattern passed via the second argument (the second argument is *not*
+      // evaluated). Returns whether this match was successful. Any side
+      // effects of the pattern match (i.e. names being bound or rebound) shall
+      // be supressed if the final pattern does not match.
+      FUNCTION_TYPE_COVERS = 18;
+
+      // Requires exactly three arguments. Evaluates the first argument. If
+      // this returns true, the second argument is evaluated and returned; the
+      // third argument is not evaluated or matched in this case. If false,
+      // the third argument is evaluated and returned; the second argument is
+      // not evaluated in this case. If not a metabool, evaluation fails.
+      FUNCTION_TYPE_IF_THEN_ELSE = 19;
+    }
+  }
+}
+
+// Represents a statement. These are used to specify constraints, and to allow
+// common subexpressions in return type derivations etc. to be eliminated.
+message Metastatement {
+  oneof kind {
+    // An assignment statement. Assertion statements are also represented
+    // using these: matching assertions are simply an assignment with LHS
+    // and RHS flipped around for readability, while normal assertions are
+    // just sugar for a match against the "true" pattern.
+    Assignment assignment = 1;
+  }
+
+  message Assignment {
+    // The pattern to be evaluated. This is always done first, even though it
+    // appears on the right-hand side of an assignment statement in the DSL.
+    Metapattern evaluate = 1;
+
+    // The pattern to match the result of the evaluation against. This is
+    // always done after the evaluation, even though it appears on the
+    // left-hand side of an assignment statement in the DSL.
+    Metapattern match = 2;
+  }
+}

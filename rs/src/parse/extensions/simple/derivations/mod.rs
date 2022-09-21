@@ -772,14 +772,12 @@ fn analyze_dtbc(
                 .1
                 .unwrap_or(meta::pattern::Variation::Compatible);
             let parameters = antlr_child!(x, y, parameters, 0, analyze_type_parameters, z).1;
-            Ok(meta::pattern::Value::DataType(Some(
-                meta::pattern::DataType {
-                    class,
-                    nullable: std::sync::Arc::new(nullable),
-                    variation,
-                    parameters,
-                },
-            )))
+            Ok(meta::pattern::Value::DataType(meta::pattern::DataType {
+                class: Some(class),
+                nullable: std::sync::Arc::new(nullable),
+                variation,
+                parameters,
+            }))
         }
     }
 }
@@ -1074,14 +1072,47 @@ fn analyze_pattern_misc(
             }
             Ok(meta::pattern::Value::String(s))
         }
-        PatternMiscContextAll::DtAnyContext(_) => {
+        PatternMiscContextAll::DtAnyContext(x) => {
             diagnostic!(
                 y,
                 Error,
                 TypeDerivationNotSupported,
                 "the 'any data type' pattern is not officially supported"
             );
-            Ok(meta::pattern::Value::DataType(None))
+            let nullable = if let Some(nullability) = x.nullability() {
+                match nullability.as_ref() {
+                    NullabilityContextAll::NullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(true))
+                    }
+                    NullabilityContextAll::NonNullableContext(_) => {
+                        meta::pattern::Value::Boolean(Some(false))
+                    }
+                    NullabilityContextAll::NullableIfContext(x) => {
+                        let pattern = antlr_child!(x, y, nullability, 0, analyze_pattern, z)
+                            .1
+                            .unwrap_or_default();
+                        let typ = pattern.determine_type();
+                        if !matches!(typ, meta::Type::Boolean | meta::Type::Unresolved) {
+                            diagnostic!(
+                                y,
+                                Error,
+                                TypeDerivationInvalid,
+                                "nullability pattern must be boolean, but {typ} was found"
+                            );
+                        }
+                        pattern
+                    }
+                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
+                }
+            } else {
+                meta::pattern::Value::Boolean(Some(false))
+            };
+            Ok(meta::pattern::Value::DataType(meta::pattern::DataType {
+                class: None,
+                nullable: Arc::new(nullable),
+                variation: meta::pattern::Variation::Compatible,
+                parameters: None,
+            }))
         }
         PatternMiscContextAll::FunctionContext(x) => {
             let function = x

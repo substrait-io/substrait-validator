@@ -102,12 +102,10 @@ pub enum Value {
     ///    string. Syntax: quoted string.
     String(Option<String>),
 
-    /// Pattern for data types.
-    ///  - None: matches any data type. Cannot be evaluated. Syntax: `typename`.
-    ///  - Some(_): matches what the contained pattern matches, and evaluates to
-    ///    what it evaluates to. Syntax:
-    ///    `<class><null-pattern><variation-pattern><parameter-pattern>`.
-    DataType(Option<DataType>),
+    /// Pattern for data types. Syntax:
+    /// `<class><null-pattern><variation-pattern><parameter-pattern>` or
+    /// `typename<null-pattern>`.
+    DataType(DataType),
 
     /// A function applied to a number of patterns. Functions cannot be
     /// matched; they can only be evaluated. Syntax:
@@ -146,8 +144,7 @@ impl Describe for Value {
             }
             Value::String(None) => write!(f, "metastr"),
             Value::String(Some(text)) => util::string::describe_string(f, text, limit),
-            Value::DataType(None) => write!(f, "typename"),
-            Value::DataType(Some(pattern)) => pattern.describe(f, limit),
+            Value::DataType(pattern) => pattern.describe(f, limit),
             Value::Function(func, args) => {
                 write!(f, "{func}(")?;
                 util::string::describe_sequence(f, args, limit, 10, |f, arg, _, limit| {
@@ -230,11 +227,7 @@ impl Value {
             }
             Value::DataType(expected) => {
                 if let Some(value) = value.get_data_type() {
-                    if let Some(expected) = expected {
-                        expected.match_pattern_with_context(context, &value)?
-                    } else {
-                        true
-                    }
+                    expected.match_pattern_with_context(context, &value)?
                 } else {
                     false
                 }
@@ -252,7 +245,12 @@ impl Value {
             meta::Type::Integer => Value::Integer(i64::MIN, i64::MAX),
             meta::Type::Enum => Value::Enum(None),
             meta::Type::String => Value::String(None),
-            meta::Type::DataType => Value::DataType(None),
+            meta::Type::DataType => Value::DataType(DataType {
+                class: None,
+                nullable: Arc::new(Value::Boolean(None)),
+                variation: Variation::Compatible,
+                parameters: None,
+            }),
         }
     }
 
@@ -282,7 +280,7 @@ impl Pattern for Value {
             meta::Value::Integer(x) => Value::Integer(x, x),
             meta::Value::Enum(x) => Value::Enum(Some(vec![x])),
             meta::Value::String(x) => Value::String(Some(x)),
-            meta::Value::DataType(x) => Value::DataType(Some(DataType::exactly(x))),
+            meta::Value::DataType(x) => Value::DataType(DataType::exactly(x)),
         }
     }
 
@@ -352,16 +350,7 @@ impl Pattern for Value {
                     ))
                 }
             }
-            Value::DataType(value) => {
-                if let Some(value) = value {
-                    value.evaluate_with_context(context).map(meta::Value::from)
-                } else {
-                    Err(cause!(
-                        TypeDerivationInvalid,
-                        "cannot evaluate undefined data type"
-                    ))
-                }
-            }
+            Value::DataType(value) => value.evaluate_with_context(context).map(meta::Value::from),
             Value::Function(func, args) => func.evaluate(context, args),
         }
     }
@@ -375,8 +364,7 @@ impl Pattern for Value {
             Value::Integer(a, b) => a == b,
             Value::Enum(x) => x.is_some(),
             Value::String(x) => x.is_some(),
-            Value::DataType(None) => false,
-            Value::DataType(Some(x)) => x.can_evaluate(),
+            Value::DataType(x) => x.can_evaluate(),
             Value::Function(_, _) => true,
         }
     }
@@ -384,58 +372,58 @@ impl Pattern for Value {
 
 /// Binding matching structure. Four variations exist, as detailed below.
 ///
-/// ## Normal bindings
+/// ## Consistent bindings without nullability suffix
 ///
 /// (inconsistent = false, nullability = None)
 ///
-/// When the binding is first matched against a value, it acts like Any and
-/// assumes that value. When it is matched again in the same context later,
-/// it only matches meta::Values that are exactly equal to the previous
-/// match. When evaluated, it evaluates to the value that the binding was
-/// bound to, or fails if it was not bound. Syntax: any identifier that
-/// isn't recognized as anything else.
+/// When the binding is first matched against a value, it matches any
+/// non-typename metavalue and any non-nullable typename and binds the name to
+/// that value. When it is matched again in the same context later, it only
+/// matches metavalues that are exactly equal to the previous match. When
+/// evaluated, it evaluates to the value that the name was bound to, or fails
+/// if it was not bound. Syntax: any identifier that isn't recognized as
+/// anything else.
 ///
-/// ## Inconsistent bindings
+/// ## Inconsistent bindings without nullability suffix
 ///
 /// (inconsistent = true, nullability = None)
 ///
-/// A special binding that always accepts any metavalue. When the binding
-/// is first matched against a value, the binding assumes the value. When
-/// it is matched again in the same context later, the binding assumes the
-/// boolean OR of the previous value of the binding and the matched value
-/// if both values happen to be booleans; this is used to handle MIRROR
-/// nullability behavior. If one or neither of the values is not a boolean,
-/// the binding is not modified; this is used to handle inconsistent
-/// variadic function arguments. When evaluated, it evaluates to the value
-/// that the binding was bound to, or to false if it was not found; this,
-/// again, is used for MIRROR nullability behavior (in the return
-/// derivation this time). Syntax: a `?` followed by any identifier.
+/// Behaves exactly like a consistent binding without nullability, except for
+/// the following.
+///
+///  - When matched and the name is already bound, it still matches any
+///    non-typename metavalue and any non-nullable typename. This is used for
+///    inconsistently-typed variadic argument slots.
+///  - When matched against `true` and the name was previously bound to
+///    `false`, the name is rebound to `true`. This is used to handle
+///    `MIRROR` nullability behavior.
+///  - When evaluated while the name is not yet bound, yields `false` as a
+///    default value instead of failing. This is, again, used to handle
+///    `MIRROR` nullability behavior.
+///
+/// Syntax: a `?` followed by any identifier.
 ///    
-/// ## Normal bindings with nullability override
+/// ## Consistent bindings with nullability suffix
 ///
 /// (inconsistent = false, nullability = Some(pattern))
 ///
 /// A normal binding, but with overrides for nullability. Both the incoming
-/// and (if any) previously bound value must be typenames. When matching
-/// against a previously bound value, the nullability field of the type is
-/// ignored; instead, the nullability of the incoming type is always
-/// matched against the contained pattern. When evaluating, the nullability
-/// of the previously bound value is overridden with the nullability as
-/// evaluated by the contained pattern. Otherwise, the rules are the same
+/// and (if any) previously bound value must be typenames. The bound typename
+/// is always the non-nullable variant of the matched typename. When matching
+/// against a previously bound typename, the nullability field of said typename
+/// is ignored; instead, the nullability of the matched typename is always
+/// matched against the contained nullability pattern. When evaluating, the
+/// nullability of the previously bound value is overridden by the nullability
+/// as evaluated by the contained pattern. Otherwise, the rules are the same
 /// as for normal bindings.
 ///
-/// ## Inconsistent bindings with nullability override
+/// ## Inconsistent bindings with nullability suffix
 ///
 /// (inconsistent = true, nullability = Some(pattern))
 ///
-/// An inconsistent binding, but with overrides for nullability. Both the
-/// incoming and (if any) previously bound value must be typenames. When
-/// matching, the nullability of the incoming type is matched against the
-/// contained pattern. When evaluating, the nullability of the previously
-/// bound value is overridden with the nullability as evaluated by the
-/// contained pattern. Unlike for normal inconsistent bindings, the binding
-/// must have been previously bound for evaluation to succeed. Otherwise,
-/// the rules are the same as for normal inconsistent bindings.
+/// Behaves exactly like a consistent binding with nullability suffix, except
+/// that any previously bound value is ignored when matching. The name is never
+/// rebound if it was previously bound.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Binding {
     /// The name of the binding, using its original case convention. Note that
@@ -536,10 +524,15 @@ impl Binding {
                 Value::exactly(current.clone()).match_strictly(context, value)
             }
         } else {
-            // Bind the incoming value to the binding.
+            // Bind the non-nullable version of the incoming value to the name.
+            let value_to_bind = if let meta::Value::DataType(dt) = value {
+                meta::Value::DataType(dt.override_nullable(false))
+            } else {
+                value.clone()
+            };
             context
                 .bindings
-                .insert(self.name.to_ascii_lowercase(), value.clone());
+                .insert(self.name.to_ascii_lowercase(), value_to_bind);
 
             // Match anything.
             Ok(true)
@@ -605,10 +598,12 @@ impl Binding {
 /// Data type matching structure.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DataType {
-    /// Type class (simple, compound, or user-defined). This must always match
-    /// exactly. [DataType] patterns are wrapped in an Option if the class can
-    /// also be omitted.
-    pub class: data::Class,
+    /// Type class (simple, compound, or user-defined) to be matched, if any.
+    /// The syntax for omitting the class name is to use the `typename` keyword
+    /// instead. In this case, the variation and parameter pack fields are
+    /// unused, and must be set to [Variation::Compatible] and None
+    /// respectively.
+    pub class: Option<data::Class>,
 
     /// Nullability, defined using a (boolean) Pattern. Syntax:
     ///  - no suffix: Boolean(Some(false))
@@ -639,7 +634,11 @@ impl Describe for DataType {
         limit: util::string::Limit,
     ) -> std::fmt::Result {
         let mut non_recursive = String::new();
-        write!(&mut non_recursive, "{}", self.class)?;
+        if let Some(class) = &self.class {
+            write!(&mut non_recursive, "{}", class)?;
+        } else {
+            write!(&mut non_recursive, "typename")?;
+        }
         match self.nullable.as_ref() {
             Value::Boolean(Some(false)) => (),
             Value::Boolean(Some(true)) => write!(&mut non_recursive, "?")?,
@@ -678,9 +677,6 @@ impl DataType {
         value: &data::Type,
         ignore_nullability: bool,
     ) -> diagnostic::Result<bool> {
-        if !value.class().weak_equals(&self.class) {
-            return Ok(false);
-        }
         if !ignore_nullability
             && !self
                 .nullable
@@ -688,17 +684,22 @@ impl DataType {
         {
             return Ok(false);
         }
-        if !self.variation.match_pattern(value.variation())? {
-            return Ok(false);
-        }
-        if let Some(expected) = &self.parameters {
-            let parameters = value.parameters();
-            if parameters.len() != expected.len() {
+        if let Some(class) = &self.class {
+            if !value.class().weak_equals(class) {
                 return Ok(false);
             }
-            for (parameter, expected) in parameters.iter().zip(expected.iter()) {
-                if !expected.match_pattern_with_context(context, parameter)? {
+            if !self.variation.match_pattern(value.variation())? {
+                return Ok(false);
+            }
+            if let Some(expected) = &self.parameters {
+                let parameters = value.parameters();
+                if parameters.len() != expected.len() {
                     return Ok(false);
+                }
+                for (parameter, expected) in parameters.iter().zip(expected.iter()) {
+                    if !expected.match_pattern_with_context(context, parameter)? {
+                        return Ok(false);
+                    }
                 }
             }
         }
@@ -711,7 +712,7 @@ impl Pattern for DataType {
 
     fn exactly(value: Self::Value) -> Self {
         DataType {
-            class: value.class().clone(),
+            class: Some(value.class().clone()),
             nullable: Arc::new(Value::exactly(meta::Value::from(value.nullable()))),
             variation: Variation::Exactly(value.variation().clone()),
             parameters: Some(
@@ -737,7 +738,14 @@ impl Pattern for DataType {
         &self,
         context: &mut meta::Context,
     ) -> diagnostic::Result<Self::Value> {
-        let class = self.class.clone();
+        let class = if let Some(class) = self.class.clone() {
+            class
+        } else {
+            return Err(cause!(
+                TypeDerivationInvalid,
+                "typename pattern cannot be evaluated"
+            ));
+        };
         let nullable = self
             .nullable
             .evaluate_with_context(context)?
@@ -766,7 +774,7 @@ impl Pattern for DataType {
                 return false;
             }
         }
-        self.nullable.can_evaluate() && self.variation.can_evaluate()
+        self.class.is_some() && self.nullable.can_evaluate() && self.variation.can_evaluate()
     }
 }
 
