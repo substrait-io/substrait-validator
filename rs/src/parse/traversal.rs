@@ -1126,44 +1126,54 @@ fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::Bina
         return None;
     }
 
-    // Convert to path.
-    let path =
-        match url.to_file_path() {
-            Ok(path) => path,
-            Err(_) => {
+    // Convert to path and read the file.
+    #[cfg(any(unix, windows, target_os = "redox", target_os = "wasi"))]
+    match url.to_file_path() {
+        Ok(path) => match std::fs::read(path) {
+            Ok(data) => Some(Box::new(data)),
+            Err(e) => {
                 if is_remapped {
-                    diagnostic!(context, Warning,
-                    YamlResolutionFailed,
-                    "configured URI remapping ({remapped_uri}) could not be converted to file path"
-                )
-                } else {
                     diagnostic!(
                         context,
                         Warning,
                         YamlResolutionFailed,
-                        "URI could not be converted to file path"
-                    )
-                };
-                return None;
+                        "failed to file remapping for URI ({remapped_uri}): {e}"
+                    );
+                } else {
+                    ediagnostic!(context, Warning, YamlResolutionFailed, e);
+                }
+                None
             }
-        };
-
-    // Read the file.
-    match std::fs::read(path) {
-        Ok(data) => Some(Box::new(data)),
-        Err(e) => {
+        },
+        Err(_) => {
             if is_remapped {
                 diagnostic!(
                     context,
                     Warning,
                     YamlResolutionFailed,
-                    "failed to file remapping for URI ({remapped_uri}): {e}"
-                );
+                    "configured URI remapping ({remapped_uri}) could not be converted to file path"
+                )
             } else {
-                ediagnostic!(context, Warning, YamlResolutionFailed, e);
-            }
+                diagnostic!(
+                    context,
+                    Warning,
+                    YamlResolutionFailed,
+                    "URI could not be converted to file path"
+                )
+            };
             None
         }
+    }
+
+    #[cfg(not(any(unix, windows, target_os = "redox", target_os = "wasi")))]
+    {
+        diagnostic!(
+            context,
+            Warning,
+            YamlResolutionFailed,
+            "could not resolve file (unsupported target)"
+        );
+        None
     }
 }
 
