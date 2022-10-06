@@ -10,14 +10,13 @@ use crate::output::type_system::meta;
 use crate::output::type_system::meta::pattern::Pattern;
 
 /// A definition of a user-defined type class.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug)]
 pub struct Definition {
-    /// Unique number within the tree that can be used to refer to this
-    /// extension when exporting in protobuf form.
-    pub extension_id: u64,
+    /// Identifier for the extension.
+    pub identifier: extension::simple::common::Identifier,
 
-    /// Description of the type class.
-    pub description: String,
+    /// Common metadata for the extension.
+    pub metadata: extension::simple::common::Metadata,
 
     /// The parameters expected by the data type.
     pub parameter_slots: Vec<ParameterSlot>,
@@ -32,8 +31,21 @@ pub struct Definition {
     pub structure: Option<meta::pattern::Value>,
 }
 
+impl From<extension::simple::common::Identifier> for Definition {
+    fn from(identifier: extension::simple::common::Identifier) -> Self {
+        Definition {
+            identifier,
+            metadata: Default::default(),
+            parameter_slots: Default::default(),
+            parameters_variadic: Default::default(),
+            contraints: Default::default(),
+            structure: Default::default(),
+        }
+    }
+}
+
 /// A parameter slot for a user-defined data type.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub struct ParameterSlot {
     /// Name of the parameter.
     pub name: String,

@@ -347,7 +347,7 @@ impl From<&extension::simple::type_class::Reference> for validator::data_type::U
             extension_id: node
                 .definition
                 .as_ref()
-                .map(|x| x.extension_id)
+                .map(|x| x.identifier.extension_id)
                 .unwrap_or_default(),
         }
     }
@@ -369,7 +369,7 @@ impl From<&data::Variation> for validator::data_type::Variation {
                         extension_id: variation
                             .definition
                             .as_ref()
-                            .map(|x| x.extension_id)
+                            .map(|x| x.identifier.extension_id)
                             .unwrap_or_default(),
                     },
                 )

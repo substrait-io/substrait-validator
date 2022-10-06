@@ -583,4 +583,12 @@ impl<T> ResolutionResult<T> {
             .next()
             .flatten()
     }
+
+    /// Calls the given function for each visible item.
+    pub fn for_each_visible_item<F: FnMut(&T)>(&self, mut f: F) {
+        self.visible
+            .iter()
+            .filter_map(|x| x.1.as_item())
+            .for_each(|x| f(&x))
+    }
 }

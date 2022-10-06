@@ -253,6 +253,11 @@ fn parse_extension_mapping_data(
                 extension::namespace::ResolutionResult::new(reference_data)
             });
 
+            // Link to YAML definitions.
+            resolution_result.for_each_visible_item(|item| {
+                link!(y, item.identifier.definition_path.clone(), "Possible YAML definition was here.");
+            });
+
             // If the specified anchor is valid, insert a mapping for it.
             if let Some(anchor) = anchor {
                 if let Err((prev_data, prev_path)) = y.define_type(anchor, resolution_result) {
@@ -298,6 +303,11 @@ fn parse_extension_mapping_data(
                 })
             }).unwrap_or_else(|| {
                 extension::namespace::ResolutionResult::new(reference_data)
+            });
+
+            // Link to YAML definitions.
+            resolution_result.for_each_visible_item(|item| {
+                link!(y, item.identifier.definition_path.clone(), "Possible YAML definition was here.");
             });
 
             // If the specified anchor is valid, insert a mapping for it.
@@ -365,6 +375,11 @@ fn parse_extension_mapping_data(
                 })
             }).unwrap_or_else(|| {
                 extension::namespace::ResolutionResult::new(reference_data)
+            });
+
+            // Link to YAML definitions.
+            resolution_result.for_each_visible_item(|item| {
+                link!(y, item.identifier.definition_path.clone(), "Possible YAML definition was here.");
             });
 
             // If the specified anchor is valid, insert a mapping for it.

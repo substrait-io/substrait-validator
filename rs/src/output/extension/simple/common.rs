@@ -3,6 +3,8 @@
 //! Module for the common types involved with representing extension
 //! definitions.
 
+use crate::output;
+
 /// Identifying information associated with an extension, that can be used to
 /// refer to the extension from elsewhere.
 #[derive(Clone, Debug)]
@@ -18,6 +20,9 @@ pub struct Identifier {
     /// number is only unique within the scope of a single run of the
     /// validator, and may change between runs.
     pub extension_id: u64,
+
+    /// The path that the extension is defined in.
+    pub definition_path: output::path::PathBuf,
 }
 
 /// Non-functional metadata common to all extension types.

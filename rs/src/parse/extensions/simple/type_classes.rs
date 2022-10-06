@@ -15,7 +15,9 @@ use crate::parse::context;
 use crate::parse::extensions::simple::common;
 use crate::parse::extensions::simple::derivations;
 use crate::parse::extensions::simple::modules;
+use crate::util;
 use std::collections::HashSet;
+use std::fmt::Write;
 use std::sync::Arc;
 
 /// Builder for type classes.
@@ -286,11 +288,6 @@ pub fn parse_type_class(
     y: &mut context::Context,
     z: &mut modules::Builder,
 ) -> Result<()> {
-    let mut builder = Builder {
-        definition: Default::default(),
-        analysis_context: derivations::AnalysisContext::new(Some(z)),
-    };
-
     // Parse name.
     let name = yaml_required_field!(
         x,
@@ -306,6 +303,17 @@ pub fn parse_type_class(
             .resolve_local(&name[..])
             .expect_not_yet_defined(y);
     }
+
+    // Make identifier and builder.
+    let mut identifier = y.make_extension_id();
+    if let Some(name) = &name {
+        identifier.names.push(name.to_string());
+    }
+    identifier.uri = z.identifier.uri.clone();
+    let mut builder = Builder {
+        definition: identifier.into(),
+        analysis_context: derivations::AnalysisContext::new(Some(z)),
+    };
 
     // Parse parameters.
     builder.definition.parameter_slots =
@@ -333,14 +341,63 @@ pub fn parse_type_class(
     // Parse structure.
     yaml_field!(x, y, "structure", parse_structure, &mut builder)?;
 
+    // Describe the type class.
+    let mut description = if builder.definition.structure.is_none() {
+        if builder.definition.parameter_slots.is_empty() {
+            "Opaque simple"
+        } else {
+            "Opaque compound"
+        }
+    } else if builder.definition.parameter_slots.is_empty() {
+        "Simple"
+    } else {
+        "Compound"
+    }
+    .to_string();
+    write!(description, " type class declaration: ").unwrap();
+    if let Some(name) = &name {
+        write!(description, "{name}").unwrap();
+    } else {
+        write!(description, "!").unwrap();
+    }
+    if !builder.definition.parameter_slots.is_empty() {
+        let mut parameters = builder
+            .definition
+            .parameter_slots
+            .iter()
+            .map(|slot| {
+                let mut description = String::new();
+                if !slot.name.is_empty() {
+                    write!(
+                        description,
+                        "{}: ",
+                        util::string::as_ident_or_string(&slot.name)
+                    )
+                    .unwrap();
+                };
+                if slot.optional {
+                    write!(description, "opt ").unwrap();
+                };
+                if let meta::pattern::Value::Intersection(isec) = &slot.pattern {
+                    write!(description, "{}", isec.last().unwrap()).unwrap();
+                } else {
+                    write!(description, "{}", slot.pattern).unwrap();
+                };
+                description
+            })
+            .join(", ");
+        if builder.definition.parameters_variadic {
+            write!(parameters, "...").unwrap();
+        }
+        write!(description, "<{parameters}>").unwrap();
+    }
+    describe!(y, Misc, "{description}");
+
     // Register the type class.
     if let Some(name) = name {
         z.type_classes
             .define_item(name, Arc::new(builder.definition), true);
     }
-
-    // Describe the type class.
-    // TODO
 
     Ok(())
 }

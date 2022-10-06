@@ -439,6 +439,7 @@ impl<'a> Context<'a> {
             uri: Default::default(),
             names: Default::default(),
             extension_id: self.state.extension_id_counter,
+            definition_path: self.path_buf(),
         }
     }
 }
