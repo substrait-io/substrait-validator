@@ -31,9 +31,14 @@ TEST(BasicTest, BasicTest) {
   ASSERT_NE(data_ptr, nullptr);
   EXPECT_GT(data_size, 0);
   EXPECT_EQ(strlen(reinterpret_cast<const char *>(data_ptr)), data_size);
-  EXPECT_EQ(reinterpret_cast<const char *>(data_ptr),
-            std::string("Error at plan: failed to decode Protobuf message: "
-                        "invalid wire type value: 7 (code 1001)\n"));
+  EXPECT_EQ(
+      reinterpret_cast<const char *>(data_ptr),
+      std::string("Error at plan: failed to parse as substrait.Plan: "
+                  "failed to decode Protobuf message: "
+                  "invalid wire type value: 7 (code 1001) (code 1001)\n"
+                  "Error at plan: failed to parse as substrait.PlanVersion: "
+                  "failed to decode Protobuf message: "
+                  "invalid wire type value: 7 (code 1001) (code 1001)\n"));
 
   // Free the buffer.
   substrait_validator_free_exported(data_ptr);
