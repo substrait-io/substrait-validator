@@ -116,6 +116,9 @@ fn parse_file_format(
         substrait::read_rel::local_files::file_or_files::FileFormat::Orc(_) => {
             Some(String::from("Orc"))
         }
+        substrait::read_rel::local_files::file_or_files::FileFormat::Dwrf(_) => {
+            Some(String::from("Dwrf"))
+        }
         substrait::read_rel::local_files::file_or_files::FileFormat::Extension(x) => {
             extensions::advanced::parse_functional_any(x, y)?;
             None
