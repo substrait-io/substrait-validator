@@ -112,30 +112,37 @@ fn parse_version(x: &substrait::Version, y: &mut context::Context) -> diagnostic
     let minor = proto_primitive_field!(x, y, minor).1.unwrap_or_default();
     let patch = proto_primitive_field!(x, y, patch).1.unwrap_or_default();
     let version = version::Version(major, minor, patch);
-    match crate::substrait_version().compatible_substrait(&version) {
-        Some(true) => (),
-        Some(false) => {
-            diagnostic!(
-                y,
-                Warning,
-                Versioning,
-                "plan version ({}) is not compatible with the Substrait \
-                version that this version of the validator validates ({}).",
-                version,
-                crate::substrait_version()
-            );
-        }
-        None => {
-            diagnostic!(
-                y,
-                Warning,
-                Versioning,
-                "cannot automatically determine whether plan version ({}) is \
-                compatible with the Substrait version that this version of \
-                the validator validates ({}).",
-                version,
-                crate::substrait_version()
-            );
+    if version == version::Version(0, 0, 0) {
+        diagnostic!(y, Error, Versioning, "invalid plan version (0.0.0)");
+    } else {
+        match crate::substrait_version().compatible_substrait(&version) {
+            Some(true) => (),
+            Some(false) => {
+                diagnostic!(
+                    y,
+                    Warning,
+                    Versioning,
+                    "plan version ({}) is not compatible with the Substrait \
+                    version that this version of the validator validates ({}).",
+                    version,
+                    crate::substrait_version()
+                );
+            }
+            None => {
+                diagnostic!(
+                    y,
+                    Warning,
+                    Versioning,
+                    "cannot automatically determine whether plan version ({}) is \
+                    compatible with the Substrait version that this version of \
+                    the validator validates ({}). Please check the release notes \
+                    between these versions, or install the correct version of the \
+                    validator. See also \
+                    https://github.com/substrait-io/substrait/pull/210#discussion_r881965837",
+                    version,
+                    crate::substrait_version()
+                );
+            }
         }
     }
 

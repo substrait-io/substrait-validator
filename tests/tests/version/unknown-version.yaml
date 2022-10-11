@@ -1,0 +1,11 @@
+name: version-unknown
+diags:
+- { code: 0007 } # Disable the default override for versioning diags
+- { code: 5001, max: i } # Disable missing root relation diag
+plan:
+  __test:
+  - level: i
+  version:
+    minor: 1
+    producer: validator-test
+    __test: [ diag: { level: w, code: 0007, msg: "*cannot automatically determine*compat*" } ]

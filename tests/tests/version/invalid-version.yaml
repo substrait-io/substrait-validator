@@ -1,0 +1,10 @@
+name: version-invalid
+diags:
+- { code: 0007 } # Disable the default override for versioning diags
+- { code: 5001, max: i } # Disable missing root relation diag
+plan:
+  __test:
+  - level: i
+  version:
+    __test: [ diag: { level: e, code: 0007, msg: "*invalid*version*" } ]
+    producer: validator-test
