@@ -124,6 +124,9 @@ def test_resolver_callback():
     # Disable "not yet implemented" warnings.
     config.override_diagnostic_level(1, "info", "info")
 
+    # Disable versioning warnings.
+    config.override_diagnostic_level(7, "info", "info")
+
     # Disable missing root relation error, so we don't have to supply one.
     config.override_diagnostic_level(5001, "info", "info")
 
@@ -136,12 +139,16 @@ def test_resolver_callback():
 
     sv.check_plan_valid(
         {
+            "version": {
+                "minor": 1,
+                "producer": "validator-test",
+            },
             "extensionUris": [
                 {
                     "extension_uri_anchor": 1,
                     "uri": "test:hello",
                 }
-            ]
+            ],
         },
         config,
     )
@@ -152,12 +159,16 @@ def test_resolver_callback():
     ):
         sv.check_plan_valid(
             {
+                "version": {
+                    "minor": 1,
+                    "producer": "validator-test",
+                },
                 "extensionUris": [
                     {
                         "extension_uri_anchor": 1,
                         "uri": "test:bye",
                     }
-                ]
+                ],
             },
             config,
         )
