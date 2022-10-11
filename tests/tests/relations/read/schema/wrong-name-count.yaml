@@ -1,6 +1,7 @@
 name: read-schema-wrong-name-count
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

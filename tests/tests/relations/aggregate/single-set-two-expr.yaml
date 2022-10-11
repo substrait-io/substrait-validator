@@ -1,6 +1,7 @@
 name: aggregate-single-set-two-expr
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       aggregate:

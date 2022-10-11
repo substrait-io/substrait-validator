@@ -1,6 +1,7 @@
 name: read-extension-basic
 plan:
   __test: [ level: w ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

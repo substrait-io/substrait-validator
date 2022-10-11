@@ -1,6 +1,7 @@
 name: scalar-list-ref
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       project:

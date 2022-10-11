@@ -1,6 +1,7 @@
 name: read-virtual-field-count-mismatch
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

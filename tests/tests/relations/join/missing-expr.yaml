@@ -1,6 +1,7 @@
 name: join-missing-expr
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       join:

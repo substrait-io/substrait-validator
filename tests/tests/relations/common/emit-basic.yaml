@@ -1,6 +1,7 @@
 name: rel-common-emit-basic
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

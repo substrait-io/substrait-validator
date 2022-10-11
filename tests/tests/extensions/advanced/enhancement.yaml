@@ -1,6 +1,7 @@
 name: adv-ext-enhancement
 plan:
   __test: [ level: w ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

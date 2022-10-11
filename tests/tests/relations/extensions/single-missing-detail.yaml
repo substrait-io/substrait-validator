@@ -1,6 +1,7 @@
 name: rel-extension-single-missing-detail
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       extensionSingle:

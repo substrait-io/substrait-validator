@@ -1,6 +1,7 @@
 name: rel-extension-leaf
 plan:
   __test: [ level: w ]
+  version: { producer: validator-test }
   relations:
   - rel:
       extensionLeaf:

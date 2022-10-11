@@ -1,6 +1,7 @@
 name: aggregate-missing-set-or-measure
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       aggregate:

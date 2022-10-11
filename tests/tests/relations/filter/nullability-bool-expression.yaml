@@ -1,6 +1,7 @@
 name: filter-nullability-bool-expression
 plan:
   __test: [level: i]
+  version: { producer: validator-test }
   relations:
     - rel:
         filter:

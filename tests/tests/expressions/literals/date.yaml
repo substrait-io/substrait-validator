@@ -1,6 +1,7 @@
 name: date
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

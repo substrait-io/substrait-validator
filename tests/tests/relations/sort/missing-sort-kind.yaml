@@ -1,6 +1,7 @@
 name: rel-sort-missing-sort-kind
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       sort:

@@ -174,6 +174,9 @@ pub enum Classification {
     #[strum(props(Description = "deprecation"))]
     Deprecation = 6,
 
+    #[strum(props(HiddenDescription = "versioning"))]
+    Versioning = 7,
+
     #[strum(props(HiddenDescription = "experimental"))]
     Experimental = 999,
 

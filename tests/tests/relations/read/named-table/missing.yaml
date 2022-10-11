@@ -1,6 +1,7 @@
 name: read-named-missing
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:
