@@ -5,7 +5,6 @@
 use crate::input::proto::substrait;
 use crate::output::diagnostic;
 use crate::output::type_system::data;
-use crate::output::version;
 use crate::parse::context;
 use crate::parse::extensions;
 use crate::parse::relations;
@@ -108,43 +107,37 @@ fn parse_producer_id(x: &String, y: &mut context::Context) -> diagnostic::Result
 /// Parse a version node.
 fn parse_version(x: &substrait::Version, y: &mut context::Context) -> diagnostic::Result<()> {
     // Parse the version information.
-    let major = proto_primitive_field!(x, y, major).1.unwrap_or_default();
-    let minor = proto_primitive_field!(x, y, minor).1.unwrap_or_default();
-    let patch = proto_primitive_field!(x, y, patch).1.unwrap_or_default();
-    let version = version::Version(major, minor, patch);
-    if version == version::Version(0, 0, 0) {
+    let major = proto_primitive_field!(x, y, major).1.unwrap_or_default() as u64;
+    let minor = proto_primitive_field!(x, y, minor).1.unwrap_or_default() as u64;
+    let patch = proto_primitive_field!(x, y, patch).1.unwrap_or_default() as u64;
+    let version = semver::Version::new(major, minor, patch);
+    if version == semver::Version::new(0, 0, 0) {
         diagnostic!(y, Error, Versioning, "invalid plan version (0.0.0)");
-    } else {
-        match crate::substrait_version().compatible_substrait(&version) {
-            Some(true) => (),
-            Some(false) => {
-                diagnostic!(
-                    y,
-                    Warning,
-                    Versioning,
-                    "plan version ({}) is not compatible with the Substrait \
-                    version that this version of the validator validates ({}).",
-                    version,
-                    crate::substrait_version()
-                );
-            }
-            None => {
-                diagnostic!(
-                    y,
-                    Warning,
-                    Versioning,
-                    "cannot automatically determine whether plan version ({}) is \
-                    compatible with the Substrait version that this version of \
-                    the validator validates ({}). Please check the release notes \
-                    between these versions, or install the correct version of the \
-                    validator. See also \
-                    https://github.com/substrait-io/substrait/pull/210#discussion_r881965837",
-                    version,
-                    crate::substrait_version()
-                );
-            }
-        }
-    }
+    } else if !crate::substrait_version_req_loose().matches(&version) {
+        diagnostic!(
+            y,
+            Warning,
+            Versioning,
+            "plan version ({}) is not compatible with the Substrait \
+            version that this version of the validator validates ({}).",
+            version,
+            crate::substrait_version()
+        );
+    } else if !crate::substrait_version_req().matches(&version) {
+        diagnostic!(
+            y,
+            Warning,
+            Versioning,
+            "cannot automatically determine whether plan version ({}) is \
+            compatible with the Substrait version that this version of \
+            the validator validates ({}). Please check the release notes \
+            between these versions, or install the correct version of the \
+            validator. See also \
+            https://github.com/substrait-io/substrait/pull/210#discussion_r881965837",
+            version,
+            crate::substrait_version()
+        );
+    };
 
     // Check hash.
     proto_primitive_field!(x, y, git_hash, parse_git_hash);

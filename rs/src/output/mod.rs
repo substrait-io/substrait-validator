@@ -15,4 +15,3 @@ pub mod path;
 pub mod primitive_data;
 pub mod tree;
 pub mod type_system;
-pub mod version;

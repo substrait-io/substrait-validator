@@ -194,14 +194,31 @@ pub fn iter_diagnostics() -> impl Iterator<Item = Classification> {
 }
 
 /// Returns the version of the validator.
-pub fn version() -> output::version::Version {
-    output::version::Version::from_str(env!("CARGO_PKG_VERSION"))
-        .expect("invalid embedded crate version")
+pub fn version() -> semver::Version {
+    semver::Version::from_str(env!("CARGO_PKG_VERSION")).expect("invalid embedded crate version")
 }
 
 /// Returns the version of Substrait that this version of the validator was
 /// built against.
-pub fn substrait_version() -> output::version::Version {
-    output::version::Version::from_str(include_str!("resources/substrait-version"))
+pub fn substrait_version() -> semver::Version {
+    semver::Version::from_str(include_str!("resources/substrait-version"))
         .expect("invalid embedded Substrait version")
+}
+
+/// Returns the Substrait version requirement for plans to be known to be
+/// supported.
+pub fn substrait_version_req() -> semver::VersionReq {
+    let version = substrait_version();
+    if version.major == 0 {
+        semver::VersionReq::parse(&format!("={}.{}", version.major, version.minor)).unwrap()
+    } else {
+        semver::VersionReq::parse(&format!("={}", version.major)).unwrap()
+    }
+}
+
+/// Returns the Substrait version requirement for plans to possibly be
+/// supported.
+pub fn substrait_version_req_loose() -> semver::VersionReq {
+    let version = substrait_version();
+    semver::VersionReq::parse(&format!("={}", version.major)).unwrap()
 }
