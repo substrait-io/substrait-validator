@@ -590,30 +590,28 @@ where
     F: FnOnce(&T, &mut context::Context) -> diagnostic::Result<()>,
     B: prost::bytes::Buf,
 {
-    match T::decode(buffer) {
-        Err(err) => Err(ecause!(ProtoParseFailed, err)),
-        Ok(input) => {
-            // Create the root node.
-            let mut root = input.data_to_node();
+    // Run protobuf deserialization.
+    let input = T::decode(buffer).map_err(|e| ecause!(ProtoParseFailed, e))?;
 
-            // Create the root context.
-            let mut context = context::Context::new(root_name, &mut root, state, config);
+    // Create the root node.
+    let mut root = input.data_to_node();
 
-            // Call the provided parser function.
-            let success = root_parser(&input, &mut context)
-                .map_err(|cause| {
-                    diagnostic!(&mut context, Error, cause);
-                })
-                .is_ok();
+    // Create the root context.
+    let mut context = context::Context::new(root_name, &mut root, state, config);
 
-            // Handle any fields not handled by the provided parse function.
-            // Only generate a warning diagnostic for unhandled children if the
-            // parse function succeeded.
-            handle_unknown_children(&input, &mut context, success);
+    // Call the provided parser function.
+    let success = root_parser(&input, &mut context)
+        .map_err(|cause| {
+            diagnostic!(&mut context, Error, cause);
+        })
+        .is_ok();
 
-            Ok(parse_result::ParseResult { root })
-        }
-    }
+    // Handle any fields not handled by the provided parse function.
+    // Only generate a warning diagnostic for unhandled children if the
+    // parse function succeeded.
+    handle_unknown_children(&input, &mut context, success);
+
+    Ok(parse_result::ParseResult { root })
 }
 
 //=============================================================================
