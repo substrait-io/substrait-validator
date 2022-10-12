@@ -46,6 +46,7 @@ diags:
 plan:
   __test:
   - level: i
+  version: { producer: validator-test }
   extensionUris:
   - extensionUriAnchor: 1
     uri: /functions_boolean.yaml

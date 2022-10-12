@@ -1,6 +1,7 @@
 name: aggregate-multi-set
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       aggregate:

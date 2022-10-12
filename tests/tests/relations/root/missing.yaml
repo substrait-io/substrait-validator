@@ -1,5 +1,6 @@
 name: rel-root-missing
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations: []
   __test: [ diag: { level: e, code: 5001, msg: "*must have at least one relation*" } ]

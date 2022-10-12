@@ -1,6 +1,7 @@
 name: rel-common-omitted
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

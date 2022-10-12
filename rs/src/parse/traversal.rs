@@ -584,55 +584,34 @@ pub fn parse_proto<T, F, B>(
     root_parser: F,
     state: &mut context::State,
     config: &config::Config,
-) -> parse_result::ParseResult
+) -> diagnostic::Result<parse_result::ParseResult>
 where
     T: prost::Message + InputNode + Default,
     F: FnOnce(&T, &mut context::Context) -> diagnostic::Result<()>,
     B: prost::bytes::Buf,
 {
-    match T::decode(buffer) {
-        Err(err) => {
-            // Create a minimal root node with just the decode error
-            // diagnostic.
-            let mut root = T::type_to_node();
+    // Run protobuf deserialization.
+    let input = T::decode(buffer).map_err(|e| ecause!(ProtoParseFailed, e))?;
 
-            // Create a root context for it.
-            let mut context = context::Context::new(root_name, &mut root, state, config);
+    // Create the root node.
+    let mut root = input.data_to_node();
 
-            // Push the diagnostic using the context.
-            context.push_diagnostic(diagnostic::RawDiagnostic {
-                cause: ecause!(ProtoParseFailed, err),
-                level: diagnostic::Level::Error,
-                path: path::PathBuf {
-                    root: root_name,
-                    elements: vec![],
-                },
-            });
+    // Create the root context.
+    let mut context = context::Context::new(root_name, &mut root, state, config);
 
-            parse_result::ParseResult { root }
-        }
-        Ok(input) => {
-            // Create the root node.
-            let mut root = input.data_to_node();
+    // Call the provided parser function.
+    let success = root_parser(&input, &mut context)
+        .map_err(|cause| {
+            diagnostic!(&mut context, Error, cause);
+        })
+        .is_ok();
 
-            // Create the root context.
-            let mut context = context::Context::new(root_name, &mut root, state, config);
+    // Handle any fields not handled by the provided parse function.
+    // Only generate a warning diagnostic for unhandled children if the
+    // parse function succeeded.
+    handle_unknown_children(&input, &mut context, success);
 
-            // Call the provided parser function.
-            let success = root_parser(&input, &mut context)
-                .map_err(|cause| {
-                    diagnostic!(&mut context, Error, cause);
-                })
-                .is_ok();
-
-            // Handle any fields not handled by the provided parse function.
-            // Only generate a warning diagnostic for unhandled children if the
-            // parse function succeeded.
-            handle_unknown_children(&input, &mut context, success);
-
-            parse_result::ParseResult { root }
-        }
-    }
+    Ok(parse_result::ParseResult { root })
 }
 
 //=============================================================================

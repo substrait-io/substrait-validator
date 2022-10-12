@@ -192,18 +192,75 @@ mod types;
 
 use crate::input::config;
 use crate::input::proto;
+use crate::input::traits::InputNode;
+use crate::output::diagnostic;
 use crate::output::parse_result;
+use crate::output::path;
 
 /// Validates the given substrait.Plan message and returns the parse tree.
-pub fn parse<B: prost::bytes::Buf>(
+pub fn parse<B: prost::bytes::Buf + Clone>(
     buffer: B,
     config: &config::Config,
 ) -> parse_result::ParseResult {
-    traversal::parse_proto::<proto::substrait::Plan, _, _>(
-        buffer,
+    let mut state = context::State::default();
+
+    // Parse the normal way.
+    let err1 = match traversal::parse_proto::<proto::substrait::Plan, _, _>(
+        buffer.clone(),
         "plan",
         plan::parse_plan,
-        &mut context::State::default(),
+        &mut state,
         config,
-    )
+    ) {
+        Ok(parse_result) => return parse_result,
+        Err(err) => err,
+    };
+
+    // Parse the fallback PlanVersion message that only includes the version
+    // information.
+    let err2 = match traversal::parse_proto::<proto::substrait::PlanVersion, _, _>(
+        buffer,
+        "plan",
+        |x, y| plan::parse_plan_version(x, y, err1.clone()),
+        &mut state,
+        config,
+    ) {
+        Ok(parse_result) => return parse_result,
+        Err(err) => err,
+    };
+
+    // Create a minimal root node with just the decode error
+    // diagnostic.
+    let mut root = proto::substrait::Plan::type_to_node();
+
+    // Create a root context for it.
+    let mut context = context::Context::new("plan", &mut root, &mut state, config);
+
+    // Push the earlier diagnostic.
+    context.push_diagnostic(diagnostic::RawDiagnostic {
+        cause: cause!(
+            ProtoParseFailed,
+            "failed to parse as substrait.Plan: {err1}"
+        ),
+        level: diagnostic::Level::Error,
+        path: path::PathBuf {
+            root: "plan",
+            elements: vec![],
+        },
+    });
+
+    // Push the PlanVersion diagnostic.
+    context.push_diagnostic(diagnostic::RawDiagnostic {
+        cause: cause!(
+            ProtoParseFailed,
+            "failed to parse as substrait.PlanVersion: {err2}"
+        ),
+        level: diagnostic::Level::Error,
+        path: path::PathBuf {
+            root: "plan",
+            elements: vec![],
+        },
+    });
+
+    parse_result::ParseResult { root }
 }

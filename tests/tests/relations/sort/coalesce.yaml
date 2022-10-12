@@ -1,6 +1,7 @@
 name: rel-sort-coalesce
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       sort:

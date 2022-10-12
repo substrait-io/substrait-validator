@@ -1,6 +1,7 @@
 name: set-insufficient-inputs
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       set:

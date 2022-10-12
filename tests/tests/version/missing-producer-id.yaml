@@ -1,0 +1,8 @@
+name: version-missing-producer-id
+diags:
+- { code: 0007 } # Disable the default override for versioning diags
+- { code: 5001, max: i } # Disable missing root relation diag
+plan:
+  version:
+    producer__test:
+    - diag: { level: i, code: 0007, msg: "*producer identifier is missing*" }

@@ -1,6 +1,7 @@
 name: fetch-discard-first-n
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       fetch:

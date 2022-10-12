@@ -1,6 +1,7 @@
 name: rel-sort-key-lt
 plan:
   __test: [ level: iw ]
+  version: { producer: validator-test }
   extensionUris:
   - extensionUriAnchor: 1
     uri__yaml:

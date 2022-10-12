@@ -1,0 +1,17 @@
+name: read-files-dwrf
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      read:
+        baseSchema:
+          names: [a]
+          struct:
+            nullability: NULLABILITY_REQUIRED
+            types:
+            - string: { nullability: NULLABILITY_REQUIRED }
+        localFiles:
+          items:
+          - uriPath: "1/2/3"
+            dwrf: {}

@@ -833,7 +833,7 @@ pub extern "C" fn substrait_validator_export_proto(
 pub extern "C" fn substrait_validator_version() -> *const libc::c_char {
     static VERSION: once_cell::sync::OnceCell<std::ffi::CString> = once_cell::sync::OnceCell::new();
     VERSION
-        .get_or_init(|| std::ffi::CString::new(substrait_validator::version()).unwrap())
+        .get_or_init(|| std::ffi::CString::new(substrait_validator::version().to_string()).unwrap())
         .as_bytes_with_nul()
         .as_ptr() as *const libc::c_char
 }
@@ -843,7 +843,9 @@ pub extern "C" fn substrait_validator_version() -> *const libc::c_char {
 pub extern "C" fn substrait_validator_substrait_version() -> *const libc::c_char {
     static VERSION: once_cell::sync::OnceCell<std::ffi::CString> = once_cell::sync::OnceCell::new();
     VERSION
-        .get_or_init(|| std::ffi::CString::new(substrait_validator::substrait_version()).unwrap())
+        .get_or_init(|| {
+            std::ffi::CString::new(substrait_validator::substrait_version().to_string()).unwrap()
+        })
         .as_bytes_with_nul()
         .as_ptr() as *const libc::c_char
 }

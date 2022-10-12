@@ -1,6 +1,7 @@
 name: rel-root-with-names-nested
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - root:
       names: [x, y, a, b, z]

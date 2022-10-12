@@ -1,6 +1,7 @@
 name: aggregate-multi-set-reused
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       aggregate:

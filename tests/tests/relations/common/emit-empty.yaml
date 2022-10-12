@@ -1,6 +1,7 @@
 name: rel-common-emit-empty
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:

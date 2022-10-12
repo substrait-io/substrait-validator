@@ -74,6 +74,7 @@ def parse_path_element(s):
 def parse_diag_overrides(diags):
     """Parses and checks the input syntax for diagnostic overrides into the
     Rust/serde syntax."""
+    versioning_diag_specified = False
     diag_overrides = []
     if diags is not None:
         if not isinstance(diags, list):
@@ -85,6 +86,8 @@ def parse_diag_overrides(diags):
             if not isinstance(code, int):
                 raise Exception("diags[].code must be an integer")
             diag_data["code"] = code
+            if code == 7:
+                versioning_diag_specified = True
 
             level = diag.pop("min", "i")
             if level not in ("i", "w", "e"):
@@ -101,6 +104,13 @@ def parse_diag_overrides(diags):
                     "Found unknown key(s) in diag[]: {}".format(", ".join(diag.keys()))
                 )
             diag_overrides.append(diag_data)
+
+    # Unless otherwise specified, force version difference diags to info, so
+    # we don't have to update all tests every time the Substrait version
+    # changes.
+    if not versioning_diag_specified:
+        diag_overrides.append({"code": 7, "min": "i", "max": "i"})
+
     return diag_overrides
 
 

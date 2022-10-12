@@ -85,6 +85,9 @@ float-pretty-print = "0.1"
 base64 = "0.13"
 percent-encoding = "2.1"
 
+# Used for representing and checking Substrait versions.
+semver = "1.0"
+
 [build-dependencies]
 
 # Used for generating Rust structs from the protobuf definitions.

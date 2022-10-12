@@ -1,6 +1,7 @@
 name: comparison-subquery
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       project:

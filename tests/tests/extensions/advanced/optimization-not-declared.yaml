@@ -1,6 +1,7 @@
 name: adv-ext-optimization-not-declared
 plan:
   __test: [ level: i ]
+  version: { producer: validator-test }
   relations:
   - rel:
       read:
