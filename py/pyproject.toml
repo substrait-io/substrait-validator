@@ -5,7 +5,7 @@ backend-path = ["."]
 
 [project]
 name = "substrait-validator"
-version = "0.0.8"
+version = "0.0.9"
 description = "Validator for Substrait query plans"
 readme = "README.md"
 license = {file = "LICENSE"}
