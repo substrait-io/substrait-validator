@@ -54,6 +54,8 @@ Probably not a problem! Getting a Rust dev environment up and running is [very](
 
 After getting all the dependencies set up and playing around with the validator [command line](https://github.com/substrait-io/substrait-validator/tree/main/py) for a bit, run `cargo doc --all-features --document-private-items --open` to generate and open the internal documentation. The toplevel `substrait_validator` crate documentation includes the overview of the validator project as a whole (i.e. including some pointers for the foreign language bindings).
 
+There are also some slides that give an overview of the validator as of November 2022 in the docs directory.
+
 ### What if I'm still really confused after that?
 
 [Ask us](https://substrait.io/community/)!
