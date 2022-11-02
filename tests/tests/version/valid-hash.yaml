@@ -1,13 +1,13 @@
 name: version-valid-hash
 diags:
-- { code: 0007 } # Disable the default override for versioning diags
-- { code: 5001, max: i } # Disable missing root relation diag
+  - { code: 0007 } # Disable the default override for versioning diags
+  - { code: 5001, max: i } # Disable missing root relation diag
 plan:
   __test:
-  - level: iw
+    - level: iw
   version:
-    minor: 1
+    minorNumber: 1
     gitHash: "0123456789012345678901234567890123456789"
     gitHash__test:
-    - diag: { level: w, code: 0007, msg: "*git hash was specified*" }
+      - diag: { level: w, code: 0007, msg: "*git hash was specified*" }
     producer: validator-test

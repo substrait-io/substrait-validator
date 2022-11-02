@@ -1,13 +1,18 @@
 name: version-invalid-hash
 diags:
-- { code: 0007 } # Disable the default override for versioning diags
-- { code: 5001, max: i } # Disable missing root relation diag
+  - { code: 0007 } # Disable the default override for versioning diags
+  - { code: 5001, max: i } # Disable missing root relation diag
 plan:
   __test:
-  - level: iw
+    - level: iw
   version:
-    minor: 1
+    minorNumber: 1
     gitHash: foobar
     gitHash__test:
-    - diag: { level: e, code: 0002, msg: "*40-character lowercase hexadecimal string*" }
+      - diag:
+          {
+            level: e,
+            code: 0002,
+            msg: "*40-character lowercase hexadecimal string*",
+          }
     producer: validator-test

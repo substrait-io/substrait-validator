@@ -1,11 +1,11 @@
 name: version-incompatible
 diags:
-- { code: 0007 } # Disable the default override for versioning diags
-- { code: 5001, max: i } # Disable missing root relation diag
+  - { code: 0007 } # Disable the default override for versioning diags
+  - { code: 5001, max: i } # Disable missing root relation diag
 plan:
   __test:
-  - level: i
+    - level: i
   version:
-    major: 1
+    majorNumber: 1
     producer: validator-test
-    __test: [ diag: { level: w, code: 0007, msg: "*version*is not compatible*" } ]
+    __test: [diag: { level: w, code: 0007, msg: "*version*is not compatible*" }]

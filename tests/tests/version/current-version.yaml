@@ -1,10 +1,10 @@
 name: version-current
 diags:
-- { code: 0007, min: e } # Make all versioning messages errors; there shouldn't be any
-- { code: 5001, max: i } # Disable missing root relation diag
+  - { code: 0007, min: e } # Make all versioning messages errors; there shouldn't be any
+  - { code: 5001, max: i } # Disable missing root relation diag
 plan:
   __test:
-  - level: i
+    - level: i
   version:
-    minor: 18
+    minorNumber: 18
     producer: validator-test
