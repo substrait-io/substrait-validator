@@ -1,15 +1,14 @@
-Substrait validator
-===================
+# Substrait validator
 
 [![Build status]][actions] [![Docs]][docs.rs] [![Latest crate]][crates.io] [![Latest wheels]][pypi.org]
 
-[Build status]: https://img.shields.io/github/workflow/status/substrait-io/substrait-validator/Rust
+[build status]: https://img.shields.io/github/workflow/status/substrait-io/substrait-validator/Rust
 [actions]: https://github.com/substrait-io/substrait-validator/actions?query=branch%3Amain
-[Docs]: https://img.shields.io/docsrs/substrait-validator
+[docs]: https://img.shields.io/docsrs/substrait-validator
 [docs.rs]: https://docs.rs/substrait-validator/latest/substrait_validator/
-[Latest crate]: https://img.shields.io/crates/v/substrait-validator.svg
+[latest crate]: https://img.shields.io/crates/v/substrait-validator.svg
 [crates.io]: https://crates.io/crates/substrait-validator
-[Latest wheels]: https://img.shields.io/pypi/v/substrait-validator.svg
+[latest wheels]: https://img.shields.io/pypi/v/substrait-validator.svg
 [pypi.org]: https://pypi.org/project/substrait-validator
 
 This repository contains an EXPERIMENTAL validator for
@@ -17,8 +16,7 @@ This repository contains an EXPERIMENTAL validator for
 Rust, but bindings are available for Python and C. Other languages may use the
 C API via their respective foreign function interface systems.
 
-Substrait version support
--------------------------
+## Substrait version support
 
 Currently, each version of the validator only targets a subset of the available
 Substrait versions. Whenever Substrait makes a breaking change that affects
@@ -27,7 +25,8 @@ older version. Refer to the table below for the version compatibility matrix.
 
 | Substrait...   | ... is supported by validator ...    |
 | -------------- | ------------------------------------ |
-| 0.18.x         | current version                      |
+| 0.19.x         | current version                      |
+| 0.18.x         | 0.0.9                                |
 | 0.9.x - 0.17.x | 0.0.8                                |
 | 0.7.x - 0.8.x  | 0.0.7                                |
 | 0.5.x - 0.6.x  | 0.0.6                                |
@@ -38,8 +37,7 @@ As Substrait and the validator stabilize and breaking changes become less
 frequent, the intention is to support more versions within a single validator
 version.
 
-Command-line interface
-----------------------
+## Command-line interface
 
 The easiest way to play around with the validator is via the command-line
 interface provided by the Python `substrait-validator` module. You can install
@@ -67,24 +65,24 @@ around with it:
 
 ```yaml
 relations:
-- rel:
-    read:
-      namedTable:
-        names:
-        - person
-      baseSchema:
-        names:
-        - name
-        struct:
-          nullability: NULLABILITY_REQUIRED
-          types:
-          - string:
-              nullability: NULLABILITY_REQUIRED
+  - rel:
+      read:
+        namedTable:
+          names:
+            - person
+        baseSchema:
+          names:
+            - name
+          struct:
+            nullability: NULLABILITY_REQUIRED
+            types:
+              - string:
+                  nullability: NULLABILITY_REQUIRED
 ```
 
 When you save that as a `.yaml` file and pass it to the validator, it will
 simply exit with code 0 without printing anything. Of course, it's more
-interesting to try a plan that *isn't* valid, but we'll leave that as an
+interesting to try a plan that _isn't_ valid, but we'll leave that as an
 excercise to the reader. Note that the validator supports other file types as
 well, including JSON, [JDOT](https://github.com/saulpw/jdot), and binary
 protobuf files, distinguishing between them using the file extension by
@@ -106,16 +104,16 @@ with code 1 if validation fails, to play nicely with build systems like `make`.
 `--mode ignore` just tells the validator to ignore the validation result, so it
 always emits the file. The full list of modes is:
 
- - `strict`: fail unless the plan was proven to be valid;
- - `loose` (default): fail if the plan was proven to be invalid;
- - `ignore`: ignore the validation result (the plan still needs some level of
-   sanity for the validator to succeed; for example, the file must exist, and
-   must decode according to the specified file format);
- - `convert`: don't run validation at all; instead, only convert between
-   different representations of the given `substrait.Plan` message. For
-   example, you can use this to convert between the binary protobuf
-   serialization format and any of the text-based formats supported by the
-   validator.
+- `strict`: fail unless the plan was proven to be valid;
+- `loose` (default): fail if the plan was proven to be invalid;
+- `ignore`: ignore the validation result (the plan still needs some level of
+  sanity for the validator to succeed; for example, the file must exist, and
+  must decode according to the specified file format);
+- `convert`: don't run validation at all; instead, only convert between
+  different representations of the given `substrait.Plan` message. For
+  example, you can use this to convert between the binary protobuf
+  serialization format and any of the text-based formats supported by the
+  validator.
 
 Note that, without `--mode convert`, the output message type will be
 `subtrait.validator.ParseResult` rather than `substrait.Plan` if you use any of
@@ -128,31 +126,29 @@ type is available in
 
 For more information, use the `--help` option.
 
-Library usage
--------------
+## Library usage
 
 For library usage information, refer to the readme files for the language that
 you want to use the library from.
 
-Diagnostics
------------
+## Diagnostics
 
 The primary output of the validator (beyond its validity verdict) is a list of
 diagnostics. In fact, the validator derives its verdict from this list. Each
 diagnostic consists of the following bits of information:
 
- - a severity, being either info, warning, or error;
- - a classification, represented using a 4-digit diagnostic code;
- - a cause description; and
- - a path into the protobuf/YAML tree, pointing to the node that the diagnostic
-   originated from.
+- a severity, being either info, warning, or error;
+- a classification, represented using a 4-digit diagnostic code;
+- a cause description; and
+- a path into the protobuf/YAML tree, pointing to the node that the diagnostic
+  originated from.
 
 The severity levels strictly map as follows:
 
- - an error means that something is invalid;
- - a warning means that something may or may not be invalid (i.e. validity
-   could not be determined for some reason); and
- - info has no effect on validity.
+- an error means that something is invalid;
+- a warning means that something may or may not be invalid (i.e. validity
+  could not be determined for some reason); and
+- info has no effect on validity.
 
 Once the validator as gathered all diagnostics, the validity of the plan is
 simply determined by the above mapping applied to the highest severity level
