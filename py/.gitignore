@@ -76,4 +76,3 @@ docs/_build/
 /proto/
 /LICENSE
 /protoc_out/
-/substrait_validator/substrait/

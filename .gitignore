@@ -6,3 +6,7 @@
 gen
 /target/
 **/*.rs.bk
+
+# Generated python module
+# Moved here to avoid https://github.com/PyO3/maturin/pull/695
+py/substrait_validator/substrait/
