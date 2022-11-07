@@ -517,7 +517,7 @@ fn format_node_tree(
         tree::NodeType::ResolvedUri(uri) => {
             format!(
                 "= {} {brief} {}",
-                format_span("value", &uri),
+                format_span("value", uri),
                 format_span("type", "string, resolved as URI")
             )
         }

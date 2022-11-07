@@ -57,7 +57,7 @@ fn main() {
     let proto_files = input_paths
         .iter()
         .flat_map(|p| {
-            WalkDir::new(&p)
+            WalkDir::new(p)
                 .into_iter()
                 .filter_map(|e| e.ok())
                 .filter(|e| {
@@ -82,7 +82,7 @@ fn main() {
     for input_path in input_paths.iter() {
         let mut proto_path_arg = OsString::new();
         proto_path_arg.push("--proto_path=");
-        proto_path_arg.push(&input_path);
+        proto_path_arg.push(input_path);
         cmd.arg(proto_path_arg);
     }
     let mut python_out_arg = OsString::new();

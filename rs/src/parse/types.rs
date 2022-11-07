@@ -1121,8 +1121,8 @@ fn assert_equal_internal(
                             Warning,
                             TypeMismatch,
                             "{message}: field name {} vs. {}{path}",
-                            util::string::as_ident_or_string(&other_name),
-                            util::string::as_ident_or_string(&base_name)
+                            util::string::as_ident_or_string(other_name),
+                            util::string::as_ident_or_string(base_name)
                         );
                     }
                 }
