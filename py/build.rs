@@ -147,4 +147,7 @@ fn main() {
             writeln!(output, "{}", line).unwrap();
         }
     }
+
+    // https://pyo3.github.io/pyo3/v0.17.3/building_and_distribution.html#macos
+    pyo3_build_config::add_extension_module_link_args();
 }

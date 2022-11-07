@@ -13,7 +13,7 @@ use pyo3::types::{PyBytes, PyDict, PyTuple};
 /// Represents a validator/parser configuration.
 #[pyclass]
 struct Config {
-    config: substrait_validator::Config,
+    config: ::substrait_validator::Config,
 }
 
 #[pymethods]
@@ -21,7 +21,7 @@ impl Config {
     #[new]
     pub fn new() -> Self {
         Config {
-            config: substrait_validator::Config::new(),
+            config: ::substrait_validator::Config::new(),
         }
     }
 
@@ -42,7 +42,7 @@ impl Config {
     /// https://docs.rs/glob/latest/glob/struct.Pattern.html for the complete
     /// syntax).
     pub fn allow_proto_any_url(&mut self, pattern: &str) -> PyResult<()> {
-        let pattern = match substrait_validator::Pattern::new(pattern) {
+        let pattern = match ::substrait_validator::Pattern::new(pattern) {
             Ok(p) => p,
             Err(e) => {
                 return Err(PyValueError::new_err(format!(
@@ -63,17 +63,17 @@ impl Config {
         minimum: &str,
         maximum: &str,
     ) -> PyResult<()> {
-        fn str_to_level(level: &str) -> PyResult<substrait_validator::Level> {
+        fn str_to_level(level: &str) -> PyResult<::substrait_validator::Level> {
             match level {
-                "info" => Ok(substrait_validator::Level::Info),
-                "warning" => Ok(substrait_validator::Level::Warning),
-                "error" => Ok(substrait_validator::Level::Error),
+                "info" => Ok(::substrait_validator::Level::Info),
+                "warning" => Ok(::substrait_validator::Level::Warning),
+                "error" => Ok(::substrait_validator::Level::Error),
                 level => Err(PyValueError::new_err(format!(
                     "invalid level {level:?}; must be \"info\", \"warning\", or \"error\""
                 ))),
             }
         }
-        let class = match substrait_validator::Classification::from_code(class) {
+        let class = match ::substrait_validator::Classification::from_code(class) {
             Some(c) => c,
             None => {
                 return Err(PyValueError::new_err(format!(
@@ -95,7 +95,7 @@ impl Config {
     /// be resolved; otherwise it should be a string representing the URI it
     /// should be resolved as.
     pub fn override_uri(&mut self, pattern: &str, resolve_as: Option<&str>) -> PyResult<()> {
-        let pattern = match substrait_validator::Pattern::new(pattern) {
+        let pattern = match ::substrait_validator::Pattern::new(pattern) {
             Ok(p) => p,
             Err(e) => {
                 return Err(PyValueError::new_err(format!(
@@ -143,7 +143,7 @@ impl Config {
 /// check(), check_valid(), or check_not_invalid() to check validity.
 #[pyclass]
 struct ResultHandle {
-    root: substrait_validator::ParseResult,
+    root: ::substrait_validator::ParseResult,
 }
 
 #[pymethods]
@@ -152,9 +152,9 @@ impl ResultHandle {
     pub fn new(data: &[u8], config: Option<&Config>) -> Self {
         Self {
             root: if let Some(config) = config {
-                substrait_validator::parse(data, &config.config)
+                ::substrait_validator::parse(data, &config.config)
             } else {
-                substrait_validator::parse(data, &substrait_validator::Config::default())
+                ::substrait_validator::parse(data, &::substrait_validator::Config::default())
             },
         }
     }
@@ -165,9 +165,9 @@ impl ResultHandle {
     /// or 1 for valid plans.
     pub fn check(&self) -> i32 {
         match self.root.check() {
-            substrait_validator::Validity::Valid => 1,
-            substrait_validator::Validity::MaybeValid => 0,
-            substrait_validator::Validity::Invalid => -1,
+            ::substrait_validator::Validity::Valid => 1,
+            ::substrait_validator::Validity::MaybeValid => 0,
+            ::substrait_validator::Validity::Invalid => -1,
         }
     }
 
@@ -176,7 +176,7 @@ impl ResultHandle {
     /// validator.
     pub fn check_valid(&self) -> PyResult<()> {
         if let Some(diag) = self.root.get_diagnostic() {
-            if diag.adjusted_level >= substrait_validator::Level::Warning {
+            if diag.adjusted_level >= ::substrait_validator::Level::Warning {
                 return Err(PyValueError::new_err(diag.to_string()));
             }
         }
@@ -187,7 +187,7 @@ impl ResultHandle {
     /// in the plan if the plan was proven to be invalid by the validator.
     pub fn check_not_invalid(&self) -> PyResult<()> {
         if let Some(diag) = self.root.get_diagnostic() {
-            if diag.adjusted_level >= substrait_validator::Level::Error {
+            if diag.adjusted_level >= ::substrait_validator::Level::Error {
                 return Err(PyValueError::new_err(diag.to_string()));
             }
         }
@@ -200,7 +200,7 @@ impl ResultHandle {
         let mut result: Vec<u8> = vec![];
         self.root.export(
             &mut result,
-            substrait_validator::export::Format::Diagnostics,
+            ::substrait_validator::export::Format::Diagnostics,
         )?;
         let result = String::from_utf8(result)?;
         Ok(result)
@@ -211,7 +211,7 @@ impl ResultHandle {
     pub fn export_html(&self) -> PyResult<String> {
         let mut result: Vec<u8> = vec![];
         self.root
-            .export(&mut result, substrait_validator::export::Format::Html)?;
+            .export(&mut result, ::substrait_validator::export::Format::Html)?;
         let result = String::from_utf8(result)?;
         Ok(result)
     }
@@ -221,7 +221,7 @@ impl ResultHandle {
     pub fn export_proto(&self, py: Python) -> PyResult<PyObject> {
         let mut result = vec![];
         self.root
-            .export(&mut result, substrait_validator::export::Format::Proto)?;
+            .export(&mut result, ::substrait_validator::export::Format::Proto)?;
         let result = PyBytes::new(py, &result).into();
         Ok(result)
     }
@@ -239,7 +239,7 @@ fn substrait_validator(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyo3(name = "get_diagnostic_codes")]
     fn get_diagnostic_codes_py(py: Python) -> PyResult<PyObject> {
         let dict = PyDict::new(py);
-        for class in substrait_validator::iter_diagnostics() {
+        for class in ::substrait_validator::iter_diagnostics() {
             dict.set_item(
                 class.code(),
                 PyTuple::new(
@@ -250,7 +250,8 @@ fn substrait_validator(_py: Python, m: &PyModule) -> PyResult<()> {
                         if class.code() == 0 {
                             py.None()
                         } else {
-                            substrait_validator::Classification::parent(class.code()).to_object(py)
+                            ::substrait_validator::Classification::parent(class.code())
+                                .to_object(py)
                         },
                     ],
                 ),
@@ -263,14 +264,14 @@ fn substrait_validator(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m)]
     #[pyo3(name = "get_version")]
     fn get_version_py(py: Python) -> PyResult<PyObject> {
-        Ok(substrait_validator::version().to_string().to_object(py))
+        Ok(::substrait_validator::version().to_string().to_object(py))
     }
 
     /// Returns the version of Substrait that the validator was built against.
     #[pyfn(m)]
     #[pyo3(name = "get_substrait_version")]
     fn get_substrait_version_py(py: Python) -> PyResult<PyObject> {
-        Ok(substrait_validator::substrait_version()
+        Ok(::substrait_validator::substrait_version()
             .to_string()
             .to_object(py))
     }
