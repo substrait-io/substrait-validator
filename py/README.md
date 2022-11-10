@@ -19,7 +19,7 @@ If you want to create wheels or sdists of your own, you can do so using
 maturin (note the manual prepare_build.py invocation, see hints):
 
 ```console
-user@host:~$ pip install "maturin>=0.13,<0.14"
+user@host:~$ pip install "maturin==0.14.0b6"
 ...
 user@host:~$ ./prepare_build.py populate
 user@host:~$ maturin build
@@ -32,14 +32,14 @@ user@host:~$ maturin sdist
 
 Some hints if you run into issues:
 
- - This project relies on submodules, so you need to check those out first.
- - Out-of-tree builds are not supported, so you may need to beat pip into
-   submission if you're using an old version or it otherwise insists on
-   building from a temp directory.
- - If you get weird errors, try running `./prepare_build.py populate` manually
-   first. The protobuf generation logic has to be run very early in the build
-   process, and while this is done automatically for most build methods, not
-   all methods provide a hook for this.
+- This project relies on submodules, so you need to check those out first.
+- Out-of-tree builds are not supported, so you may need to beat pip into
+  submission if you're using an old version or it otherwise insists on
+  building from a temp directory.
+- If you get weird errors, try running `./prepare_build.py populate` manually
+  first. The protobuf generation logic has to be run very early in the build
+  process, and while this is done automatically for most build methods, not
+  all methods provide a hook for this.
 
 ## Building wheels and source distributions
 
@@ -79,12 +79,12 @@ throw an exception if the plan could not be proven to be valid, while
 
 The `plan` argument can be a number of things:
 
- - `bytes`: treated as a binary serialization of `substrait.Plan`.
- - `str`: treated as a protobuf JSON serialization of `substrait.Plan`.
- - `dict`: treated as the above using Python's data model (JSON objects map
-   to `dict`s, JSON arrays map to `list`s).
- - `substrait_validator.substrait.Plan`: a previously deserialized plan.
- - `substrait_validator.ResultHandle`: a previously validated plan.
+- `bytes`: treated as a binary serialization of `substrait.Plan`.
+- `str`: treated as a protobuf JSON serialization of `substrait.Plan`.
+- `dict`: treated as the above using Python's data model (JSON objects map
+  to `dict`s, JSON arrays map to `list`s).
+- `substrait_validator.substrait.Plan`: a previously deserialized plan.
+- `substrait_validator.ResultHandle`: a previously validated plan.
 
 `config` can be `None`/unspecified, or can be set to a
 `substrait_validator.Config` object to configure the validator with.

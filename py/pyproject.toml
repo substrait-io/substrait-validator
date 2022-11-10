@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=0.13,<0.14"]
+requires = ["maturin==0.14.0b6"]
 build-backend = "substrait_validator_build"
 backend-path = ["."]
 
@@ -27,3 +27,6 @@ repository = "https://github.com/substrait-io/substrait-validator"
 
 [project.scripts]
 substrait-validator = "substrait_validator:cli"
+
+[tool.maturin]
+include = ["substrait_validator/substrait/"]

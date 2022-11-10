@@ -76,5 +76,4 @@ docs/_build/
 /proto/
 /LICENSE
 /protoc_out/
-# TODO(mbrobbel): maturin patch
-# /substrait_validator/substrait/
+/substrait_validator/substrait/
