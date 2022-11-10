@@ -29,4 +29,4 @@ repository = "https://github.com/substrait-io/substrait-validator"
 substrait-validator = "substrait_validator:cli"
 
 [tool.maturin]
-include = ["substrait_validator/substrait/"]
+include = ["substrait_validator/substrait/**/*.py"]
