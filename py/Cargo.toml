@@ -13,7 +13,7 @@ include = [
     "/src",
     "/substrait_validator/*.py",
     "/substrait_validator_build/*.py",
-    "/tests"
+    "/tests",
 ]
 
 [lib]
@@ -30,9 +30,10 @@ doc = false
 
 [dependencies]
 substrait-validator = { path = "../rs", version = "0.0.9" }
-pyo3 = { version = "0.15.1", features = ["extension-module"] }
+pyo3 = { version = "0.17.3", features = ["extension-module"] }
 
 [build-dependencies]
 prost-build = "0.10"
+pyo3-build-config = "0.17.3"
 walkdir = "2"
 dunce = "1"

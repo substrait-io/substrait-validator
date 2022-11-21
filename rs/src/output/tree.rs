@@ -156,7 +156,7 @@ impl Node {
             // For other levels, update only if the incoming diagnostic is of a
             // higher level/severity than the current one.
             if let Some(cur) = result.as_mut() {
-                if diag.adjusted_level > (*cur).adjusted_level {
+                if diag.adjusted_level > cur.adjusted_level {
                     *cur = diag;
                 }
             } else {
