@@ -67,7 +67,7 @@ jobs:
       with:
         manylinux: auto
         command: build
-        args: --release -o dist -m py/Cargo.toml
+        args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
     - name: Build Windows wheels
       if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
       uses: PyO3/maturin-action@v1.31.0
