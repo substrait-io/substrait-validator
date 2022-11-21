@@ -140,7 +140,7 @@ def test_resolver_callback():
     sv.check_plan_valid(
         {
             "version": {
-                "minor": 1,
+                "minorNumber": 1,
                 "producer": "validator-test",
             },
             "extensionUris": [
@@ -160,7 +160,7 @@ def test_resolver_callback():
         sv.check_plan_valid(
             {
                 "version": {
-                    "minor": 1,
+                    "minorNumber": 1,
                     "producer": "validator-test",
                 },
                 "extensionUris": [

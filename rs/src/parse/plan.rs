@@ -107,9 +107,15 @@ fn parse_producer_id(x: &String, y: &mut context::Context) -> diagnostic::Result
 /// Parse a version node.
 fn parse_version(x: &substrait::Version, y: &mut context::Context) -> diagnostic::Result<()> {
     // Parse the version information.
-    let major = proto_primitive_field!(x, y, major).1.unwrap_or_default() as u64;
-    let minor = proto_primitive_field!(x, y, minor).1.unwrap_or_default() as u64;
-    let patch = proto_primitive_field!(x, y, patch).1.unwrap_or_default() as u64;
+    let major = proto_primitive_field!(x, y, major_number)
+        .1
+        .unwrap_or_default() as u64;
+    let minor = proto_primitive_field!(x, y, minor_number)
+        .1
+        .unwrap_or_default() as u64;
+    let patch = proto_primitive_field!(x, y, patch_number)
+        .1
+        .unwrap_or_default() as u64;
     let version = semver::Version::new(major, minor, patch);
     if version == semver::Version::new(0, 0, 0) {
         diagnostic!(y, Error, Versioning, "invalid plan version (0.0.0)");

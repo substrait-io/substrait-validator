@@ -3,7 +3,7 @@
 BASIC_PLAN = """
 {
  "version": {
-  "minor": 1,
+  "minorNumber": 1,
   "producer": "validator-test"
  },
  "extensionUris": [],
