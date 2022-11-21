@@ -1,6 +1,6 @@
 [package]
 name = "substrait-validator-py"
-version = "0.0.9"
+version = "0.0.10"
 edition = "2018"
 license = "Apache-2.0"
 include = [
@@ -29,7 +29,7 @@ name = "substrait_validator"
 doc = false
 
 [dependencies]
-substrait-validator = { path = "../rs", version = "0.0.9" }
+substrait-validator = { path = "../rs", version = "0.0.10" }
 pyo3 = { version = "0.17.3", features = ["extension-module"] }
 
 [build-dependencies]
