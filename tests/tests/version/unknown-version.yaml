@@ -6,6 +6,6 @@ plan:
   __test:
   - level: i
   version:
-    minor: 1
+    minorNumber: 1
     producer: validator-test
     __test: [ diag: { level: w, code: 0007, msg: "*cannot automatically determine*compat*" } ]

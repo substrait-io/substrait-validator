@@ -6,6 +6,6 @@ plan:
   __test:
   - level: i
   version:
-    major: 1
+    majorNumber: 1
     producer: validator-test
     __test: [ diag: { level: w, code: 0007, msg: "*version*is not compatible*" } ]

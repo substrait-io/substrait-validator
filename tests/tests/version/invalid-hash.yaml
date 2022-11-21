@@ -6,7 +6,7 @@ plan:
   __test:
   - level: iw
   version:
-    minor: 1
+    minorNumber: 1
     gitHash: foobar
     gitHash__test:
     - diag: { level: e, code: 0002, msg: "*40-character lowercase hexadecimal string*" }
