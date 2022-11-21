@@ -13,9 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
         type: [wheel]
         include:
         - os: ubuntu-latest
+          python-version: "3.7"
           type: sdist
     runs-on: ${{ matrix.os }}
     steps:
@@ -45,33 +47,36 @@ jobs:
       # ^ this ensures that its build.rs is run, which is all we need. Sadly
       # there doesn't seem to be a way to do this that doesn't pull in all
       # normal dependencies: https://github.com/rust-lang/cargo/issues/7178
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
     - name: Install Python build dependencies
-      run: python3 -m pip install --upgrade pip maturin
+      run: python3 -m pip install --upgrade pip "maturin>=0.14,<0.15"
     - name: Prepare build environment
       working-directory: py
       run: python3 prepare_build.py populate
     - name: Create sdist
       if: ${{ matrix.type == 'sdist' }}
-      uses: messense/maturin-action@v1
+      uses: PyO3/maturin-action@v1.31.0
       with:
         command: sdist
         args: -o dist -m py/Cargo.toml
     - name: Build manylinux wheels
       if: ${{ matrix.type == 'wheel' && matrix.os == 'ubuntu-latest' }}
-      uses: messense/maturin-action@v1
+      uses: PyO3/maturin-action@v1.31.0
       with:
         manylinux: auto
         command: build
         args: --release --no-sdist -o dist -m py/Cargo.toml
     - name: Build Windows wheels
       if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
-      uses: messense/maturin-action@v1
+      uses: PyO3/maturin-action@v1.31.0
       with:
         command: build
         args: --release --no-sdist -o dist -m py/Cargo.toml
     - name: Build MacOS wheels
       if: ${{ matrix.type == 'wheel' && matrix.os == 'macos-latest' }}
-      uses: messense/maturin-action@v1
+      uses: PyO3/maturin-action@v1.31.0
       with:
         command: build
         args: --release --no-sdist -o dist --universal2 -m py/Cargo.toml
@@ -110,7 +115,7 @@ jobs:
             *.whl
             *.tar.gz
       - name: Publish to PyPI
-        uses: messense/maturin-action@v1
+        uses: PyO3/maturin-action@v1.31.0
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
