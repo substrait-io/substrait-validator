@@ -3,7 +3,7 @@ name: Protobuf
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   style:
@@ -24,6 +24,8 @@ jobs:
         with:
           submodules: recursive
       - uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: bufbuild/buf-setup-action@v0.7.0
       - uses: bufbuild/buf-lint-action@v1
       - name: Compile protobuf

@@ -3,8 +3,8 @@ name: Python
 on:
   pull_request:
   push:
-    branches: [ main ]
-    tags: [ 'v*.*.*' ]
+    branches: [main]
+    tags: ["v*.*.*"]
 
 jobs:
   build:
@@ -16,93 +16,89 @@ jobs:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
         type: [wheel]
         include:
-        - os: ubuntu-latest
-          python-version: "3.7"
-          type: sdist
+          - os: ubuntu-latest
+            python-version: "3.7"
+            type: sdist
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-    - name: Fetch Substrait submodule tags
-      working-directory: substrait
-      run: |
-        git fetch --recurse-submodules=no origin +refs/tags/*:refs/tags/*
-        git describe --dirty --tags
-    - name: Install latest protoc
-      uses: arduino/setup-protoc@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Install sdist-only dependencies
-      if: ${{ matrix.type == 'sdist' }}
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-    - name: sdist-only build prep
-      if: ${{ matrix.type == 'sdist' }}
-      working-directory: rs
-      run: cargo check
-      # ^ this ensures that its build.rs is run, which is all we need. Sadly
-      # there doesn't seem to be a way to do this that doesn't pull in all
-      # normal dependencies: https://github.com/rust-lang/cargo/issues/7178
-    - uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install Python build dependencies
-      run: python3 -m pip install --upgrade pip "maturin>=0.14,<0.15"
-    - name: Prepare build environment
-      working-directory: py
-      run: python3 prepare_build.py populate
-    - name: Create sdist
-      if: ${{ matrix.type == 'sdist' }}
-      uses: PyO3/maturin-action@v1.31.0
-      with:
-        command: sdist
-        args: -o dist -m py/Cargo.toml
-    - name: Build manylinux wheels
-      if: ${{ matrix.type == 'wheel' && matrix.os == 'ubuntu-latest' }}
-      uses: PyO3/maturin-action@v1.31.0
-      with:
-        manylinux: auto
-        command: build
-        args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
-    - name: Build Windows wheels
-      if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
-      uses: PyO3/maturin-action@v1.31.0
-      with:
-        command: build
-        args: --release -o dist -m py/Cargo.toml
-    - name: Build MacOS wheels
-      if: ${{ matrix.type == 'wheel' && matrix.os == 'macos-latest' }}
-      uses: PyO3/maturin-action@v1.31.0
-      with:
-        command: build
-        args: --release -o dist --universal2 -m py/Cargo.toml
-    - name: Install runtime dependencies
-      run: python3 -m pip install --upgrade protobuf pytest click pyyaml jdot toml
-    - name: Install generated sdist
-      if: ${{ matrix.type == 'sdist' }}
-      run: python3 -m pip install dist/substrait_validator-*.tar.gz
-    - name: Install generated wheel
-      if: ${{ matrix.type == 'wheel' }}
-      run: python3 -m pip install --no-index --find-links=dist substrait-validator
-    - name: Test
-      working-directory: py/tests
-      run: python3 -m pytest
-    - name: Upload wheels
-      if: "startsWith(github.ref, 'refs/tags/')"
-      uses: actions/upload-artifact@v2
-      with:
-        name: wheels
-        path: dist
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Fetch Substrait submodule tags
+        working-directory: substrait
+        run: |
+          git fetch --recurse-submodules=no origin +refs/tags/*:refs/tags/*
+          git describe --dirty --tags
+      - name: Install latest protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install sdist-only dependencies
+        if: ${{ matrix.type == 'sdist' }}
+        uses: dtolnay/rust-toolchain@stable
+      - name: sdist-only build prep
+        if: ${{ matrix.type == 'sdist' }}
+        working-directory: rs
+        run: cargo check
+        # ^ this ensures that its build.rs is run, which is all we need. Sadly
+        # there doesn't seem to be a way to do this that doesn't pull in all
+        # normal dependencies: https://github.com/rust-lang/cargo/issues/7178
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Python build dependencies
+        run: python3 -m pip install --upgrade pip "maturin>=0.14,<0.15"
+      - name: Prepare build environment
+        working-directory: py
+        run: python3 prepare_build.py populate
+      - name: Create sdist
+        if: ${{ matrix.type == 'sdist' }}
+        uses: PyO3/maturin-action@v1.31.0
+        with:
+          command: sdist
+          args: -o dist -m py/Cargo.toml
+      - name: Build manylinux wheels
+        if: ${{ matrix.type == 'wheel' && matrix.os == 'ubuntu-latest' }}
+        uses: PyO3/maturin-action@v1.31.0
+        with:
+          manylinux: auto
+          command: build
+          args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
+      - name: Build Windows wheels
+        if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
+        uses: PyO3/maturin-action@v1.31.0
+        with:
+          command: build
+          args: --release -o dist -m py/Cargo.toml
+      - name: Build MacOS wheels
+        if: ${{ matrix.type == 'wheel' && matrix.os == 'macos-latest' }}
+        uses: PyO3/maturin-action@v1.31.0
+        with:
+          command: build
+          args: --release -o dist --universal2 -m py/Cargo.toml
+      - name: Install runtime dependencies
+        run: python3 -m pip install --upgrade protobuf pytest click pyyaml jdot toml
+      - name: Install generated sdist
+        if: ${{ matrix.type == 'sdist' }}
+        run: python3 -m pip install dist/substrait_validator-*.tar.gz
+      - name: Install generated wheel
+        if: ${{ matrix.type == 'wheel' }}
+        run: python3 -m pip install --no-index --find-links=dist substrait-validator
+      - name: Test
+        working-directory: py/tests
+        run: python3 -m pytest
+      - name: Upload wheels
+        if: "startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v2
+        with:
+          name: wheels
+          path: dist
 
   release:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [ build ]
+    needs: [build]
     environment: VALIDATOR_RELEASE
     steps:
       - uses: actions/download-artifact@v2
@@ -126,10 +122,10 @@ jobs:
     name: Style & lint
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Install dependencies
-      run: python3 -m pip install --upgrade pip black==22.3.0 flake8==4.0.1
-    - name: Black
-      run: python3 -m black --diff --check .
-    - name: Flake8
-      run: python3 -m flake8 .
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: python3 -m pip install --upgrade pip black==22.3.0 flake8==4.0.1
+      - name: Black
+        run: python3 -m black --diff --check .
+      - name: Flake8
+        run: python3 -m flake8 .
