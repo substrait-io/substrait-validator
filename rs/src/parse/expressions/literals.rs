@@ -174,7 +174,7 @@ impl Describe for Literal {
                 _ => write!(f, "{i}"),
             },
             LiteralValue::Float(v) => {
-                let max = std::cmp::min(std::cmp::max(3, limit.chars()), 10);
+                let max = limit.chars().clamp(3, 10);
                 write!(f, "{:3.1$}", float_pretty_print::PrettyPrintFloat(*v), max)
             }
             LiteralValue::Data16(d) => match self.data_type.class() {
