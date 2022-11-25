@@ -41,8 +41,8 @@ pub enum FunctionArgument {
     /// Used for type arguments.
     Type(data::Type),
 
-    /// Used for enum option arguments.
-    Enum(Option<String>),
+    /// Used for enum arguments.
+    Enum(String),
 }
 
 impl Default for FunctionArgument {
@@ -61,8 +61,7 @@ impl Describe for FunctionArgument {
             FunctionArgument::Unresolved => write!(f, "!"),
             FunctionArgument::Value(_, e) => e.describe(f, limit),
             FunctionArgument::Type(t) => t.describe(f, limit),
-            FunctionArgument::Enum(Some(s)) => util::string::describe_identifier(f, s, limit),
-            FunctionArgument::Enum(None) => write!(f, "-"),
+            FunctionArgument::Enum(s) => util::string::describe_identifier(f, s, limit),
         }
     }
 }
@@ -154,36 +153,13 @@ impl FunctionBinding {
     }
 }
 
-/// Parse an enum option argument type.
-fn parse_enum_type(
-    x: &substrait::function_argument::r#enum::EnumKind,
-    _y: &mut context::Context,
-) -> diagnostic::Result<Option<String>> {
-    match x {
-        substrait::function_argument::r#enum::EnumKind::Specified(x) => Ok(Some(x.clone())),
-        substrait::function_argument::r#enum::EnumKind::Unspecified(_) => Ok(None),
-    }
-}
-
-/// Parse an enum option argument.
-fn parse_enum(
-    x: &substrait::function_argument::Enum,
-    y: &mut context::Context,
-) -> diagnostic::Result<Option<String>> {
-    Ok(proto_required_field!(x, y, enum_kind, parse_enum_type)
-        .1
-        .flatten())
-}
-
 /// Parse a 0.3.0+ function argument type.
 fn parse_function_argument_type(
     x: &substrait::function_argument::ArgType,
     y: &mut context::Context,
 ) -> diagnostic::Result<FunctionArgument> {
     match x {
-        substrait::function_argument::ArgType::Enum(x) => {
-            Ok(FunctionArgument::Enum(parse_enum(x, y)?))
-        }
+        substrait::function_argument::ArgType::Enum(x) => Ok(FunctionArgument::Enum(x.to_string())),
         substrait::function_argument::ArgType::Type(x) => {
             types::parse_type(x, y)?;
             Ok(FunctionArgument::Type(y.data_type()))
@@ -214,7 +190,18 @@ fn parse_legacy_function_argument(
 ) -> diagnostic::Result<FunctionArgument> {
     expressions::parse_legacy_function_argument(x, y).map(|x| match x {
         expressions::ExpressionOrEnum::Value(x) => FunctionArgument::Value(y.data_type(), x),
-        expressions::ExpressionOrEnum::Enum(x) => FunctionArgument::Enum(x),
+        expressions::ExpressionOrEnum::Enum(x) => match x {
+            Some(x) => FunctionArgument::Enum(x),
+            None => {
+                diagnostic!(
+                    y,
+                    Error,
+                    Deprecation,
+                    "support for optional enum arguments was removed in Substrait 0.20.0 (#342)"
+                );
+                FunctionArgument::Unresolved
+            }
+        },
     })
 }
 
