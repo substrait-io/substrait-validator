@@ -72,6 +72,7 @@ fn parse_comparison_function_reference(
     let context = expressions::functions::FunctionContext {
         function_type: expressions::functions::FunctionType::Scalar,
         arguments: vec![argument.clone(), argument],
+        options: vec![],
         return_type: data::new_unresolved_type(),
     };
     let binding = expressions::functions::FunctionBinding::new(Some(&functions), &context, y);

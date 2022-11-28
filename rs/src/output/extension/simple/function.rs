@@ -25,6 +25,9 @@ pub struct Definition {
     /// The expected arguments of the function.
     pub arguments: Vec<ArgumentSlot>,
 
+    /// The options of the function.
+    pub options: HashMap<OptionName, OptionValues>,
+
     /// Specifies the variadic behavior of the last argument slot, if any.
     pub variadic: VariadicBehavior,
 
@@ -134,6 +137,20 @@ pub struct EnumerationArgumentSlot {
     /// This leaves the choice of the option up to the consumer; it is then to
     /// pick the first option in definition order that it supports.
     pub required: bool,
+}
+
+/// Definition of a function option name.
+#[derive(Clone, Debug)]
+pub struct OptionName {
+    /// A human-readable name for this option.
+    pub name: String,
+}
+
+/// Definition of a valid options for a function option.
+#[derive(Clone, Debug)]
+pub struct OptionValues {
+    /// A list of valid strings for this option.
+    pub values: Vec<String>,
 }
 
 /// Definition of the variadic behavior of the last argument slot.

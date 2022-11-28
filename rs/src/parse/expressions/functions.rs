@@ -72,6 +72,16 @@ impl std::fmt::Display for FunctionArgument {
     }
 }
 
+/// An optional function argument.  Typically used for specifying behavior in
+/// invalid or corner cases.
+#[derive(Clone, Debug)]
+pub struct FunctionOption {
+    /// Name of the option to set.
+    pub name: String,
+    /// List of behavior options allowed by the producer.
+    pub preference: Vec<String>,
+}
+
 /// Information about the context in which a function is being called.
 #[derive(Clone, Debug)]
 pub struct FunctionContext {
@@ -80,6 +90,9 @@ pub struct FunctionContext {
 
     /// The list of arguments bound to the function.
     pub arguments: Vec<FunctionArgument>,
+
+    /// The list of optional function arguments.
+    pub options: Vec<FunctionOption>,
 
     /// If known, the expected return type of the function. If not known this
     /// can just be set to unresolved.
@@ -100,17 +113,16 @@ pub struct FunctionBinding {
 }
 
 impl FunctionBinding {
-    /// Try to bind one of the provided function implementations to the
-    /// provided function context.
+    /// Try to bind one of the provided function implementations to the provided
+    /// function context.
     ///
     /// This is purely a validator thing. For valid plans, there should only
     /// ever be one implementation after name resolution, and the return type
-    /// should already have been specified. Much more intelligence was thrown
-    /// in here just to help people find and correct mistakes efficiently.
-    /// Common misconceptions and mistakes, like using the simple function name
-    /// vs. the compound name, not specifying optional arguments, or not
-    /// specifying the (correct) return type should yield more than just a
-    /// generic error message here!
+    /// should already have been specified. Much more intelligence was thrown in
+    /// here just to help people find and correct mistakes efficiently. Common
+    /// misconceptions and mistakes, like using the simple function name vs. the
+    /// compound name. or not specifying the (correct) return type should yield
+    /// more than just a generic error message here!
     pub fn new(
         functions: Option<&extension::simple::function::ResolutionResult>,
         function_context: &FunctionContext,
@@ -181,6 +193,26 @@ fn parse_function_argument(
             .1
             .unwrap_or_default(),
     )
+}
+
+fn parse_function_option(
+    x: &substrait::FunctionOption,
+    y: &mut context::Context,
+) -> diagnostic::Result<FunctionOption> {
+    if x.preference.is_empty() {
+        let err = cause!(IllegalValue, "at least one option must be specified");
+        diagnostic!(y, Error, err.clone());
+        comment!(
+            y,
+            "To leave an option unspecified, simply don't add an entry to `options`"
+        );
+        Err(err)
+    } else {
+        Ok(FunctionOption {
+            name: x.name.clone(),
+            preference: x.preference.clone(),
+        })
+    }
 }
 
 /// Parse a pre-0.3.0 function argument expression.
@@ -266,6 +298,11 @@ pub fn parse_scalar_function(
         .into_iter()
         .map(|x| x.unwrap_or_default())
         .collect();
+    let options = proto_repeated_field!(x, y, options, parse_function_option)
+        .1
+        .into_iter()
+        .filter_map(|x| x)
+        .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
@@ -275,6 +312,7 @@ pub fn parse_scalar_function(
     let context = FunctionContext {
         function_type: FunctionType::Scalar,
         arguments,
+        options,
         return_type,
     };
     let binding = FunctionBinding::new(functions.as_ref(), &context, y);
@@ -328,6 +366,11 @@ pub fn parse_window_function(
         .into_iter()
         .map(|x| x.unwrap_or_default())
         .collect();
+    let options = proto_repeated_field!(x, y, options, parse_function_option)
+        .1
+        .into_iter()
+        .filter_map(|x| x)
+        .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
@@ -346,6 +389,7 @@ pub fn parse_window_function(
     let context = FunctionContext {
         function_type: FunctionType::Window,
         arguments,
+        options,
         return_type,
     };
     let binding = FunctionBinding::new(functions.as_ref(), &context, y);
@@ -382,6 +426,11 @@ pub fn parse_aggregate_function(
         .into_iter()
         .map(|x| x.unwrap_or_default())
         .collect();
+    let options = proto_repeated_field!(x, y, options, parse_function_option)
+        .1
+        .into_iter()
+        .filter_map(|x| x)
+        .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
@@ -403,6 +452,7 @@ pub fn parse_aggregate_function(
     let context = FunctionContext {
         function_type: FunctionType::Aggregate,
         arguments,
+        options,
         return_type,
     };
     let binding = FunctionBinding::new(functions.as_ref(), &context, y);
