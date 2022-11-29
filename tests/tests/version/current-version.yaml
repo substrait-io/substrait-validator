@@ -6,5 +6,5 @@ plan:
   __test:
   - level: i
   version:
-    minorNumber: 19
+    minorNumber: 20
     producer: validator-test

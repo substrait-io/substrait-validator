@@ -339,6 +339,10 @@ pub fn parse_read_rel(x: &substrait::ReadRel, y: &mut context::Context) -> diagn
     // Handle filter.
     let filter = proto_boxed_field!(x, y, filter, expressions::parse_predicate);
 
+    // Handle best effort filter.
+    let best_effort_filter =
+        proto_boxed_field!(x, y, best_effort_filter, expressions::parse_predicate);
+
     // Handle projection.
     if x.projection.is_some() {
         schema =
@@ -363,6 +367,17 @@ pub fn parse_read_rel(x: &substrait::ReadRel, y: &mut context::Context) -> diagn
             y,
             "This relation discards all rows for which the expression {} yields {}.",
             filter_expr,
+            if nullable { "false or null" } else { "false" }
+        );
+    }
+
+    // Add best effort filter summary.
+    if let (Some(best_effort_filter_node), Some(best_effort_filter_expr)) = best_effort_filter {
+        let nullable = best_effort_filter_node.data_type().nullable();
+        summary!(
+            y,
+            "This relation may discards all rows for which the expression {} yields {}.",
+            best_effort_filter_expr,
             if nullable { "false or null" } else { "false" }
         );
     }

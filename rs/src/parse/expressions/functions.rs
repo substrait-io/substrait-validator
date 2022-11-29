@@ -41,8 +41,8 @@ pub enum FunctionArgument {
     /// Used for type arguments.
     Type(data::Type),
 
-    /// Used for enum option arguments.
-    Enum(Option<String>),
+    /// Used for enum arguments.
+    Enum(String),
 }
 
 impl Default for FunctionArgument {
@@ -61,8 +61,7 @@ impl Describe for FunctionArgument {
             FunctionArgument::Unresolved => write!(f, "!"),
             FunctionArgument::Value(_, e) => e.describe(f, limit),
             FunctionArgument::Type(t) => t.describe(f, limit),
-            FunctionArgument::Enum(Some(s)) => util::string::describe_identifier(f, s, limit),
-            FunctionArgument::Enum(None) => write!(f, "-"),
+            FunctionArgument::Enum(s) => util::string::describe_identifier(f, s, limit),
         }
     }
 }
@@ -73,6 +72,16 @@ impl std::fmt::Display for FunctionArgument {
     }
 }
 
+/// An optional function argument.  Typically used for specifying behavior in
+/// invalid or corner cases.
+#[derive(Clone, Debug)]
+pub struct FunctionOption {
+    /// Name of the option to set.
+    pub name: String,
+    /// List of behavior options allowed by the producer.
+    pub preference: Vec<String>,
+}
+
 /// Information about the context in which a function is being called.
 #[derive(Clone, Debug)]
 pub struct FunctionContext {
@@ -81,6 +90,9 @@ pub struct FunctionContext {
 
     /// The list of arguments bound to the function.
     pub arguments: Vec<FunctionArgument>,
+
+    /// The list of optional function arguments.
+    pub options: Vec<FunctionOption>,
 
     /// If known, the expected return type of the function. If not known this
     /// can just be set to unresolved.
@@ -101,17 +113,16 @@ pub struct FunctionBinding {
 }
 
 impl FunctionBinding {
-    /// Try to bind one of the provided function implementations to the
-    /// provided function context.
+    /// Try to bind one of the provided function implementations to the provided
+    /// function context.
     ///
     /// This is purely a validator thing. For valid plans, there should only
     /// ever be one implementation after name resolution, and the return type
-    /// should already have been specified. Much more intelligence was thrown
-    /// in here just to help people find and correct mistakes efficiently.
-    /// Common misconceptions and mistakes, like using the simple function name
-    /// vs. the compound name, not specifying optional arguments, or not
-    /// specifying the (correct) return type should yield more than just a
-    /// generic error message here!
+    /// should already have been specified. Much more intelligence was thrown in
+    /// here just to help people find and correct mistakes efficiently. Common
+    /// misconceptions and mistakes, like using the simple function name vs. the
+    /// compound name. or not specifying the (correct) return type should yield
+    /// more than just a generic error message here!
     pub fn new(
         functions: Option<&extension::simple::function::ResolutionResult>,
         function_context: &FunctionContext,
@@ -154,36 +165,13 @@ impl FunctionBinding {
     }
 }
 
-/// Parse an enum option argument type.
-fn parse_enum_type(
-    x: &substrait::function_argument::r#enum::EnumKind,
-    _y: &mut context::Context,
-) -> diagnostic::Result<Option<String>> {
-    match x {
-        substrait::function_argument::r#enum::EnumKind::Specified(x) => Ok(Some(x.clone())),
-        substrait::function_argument::r#enum::EnumKind::Unspecified(_) => Ok(None),
-    }
-}
-
-/// Parse an enum option argument.
-fn parse_enum(
-    x: &substrait::function_argument::Enum,
-    y: &mut context::Context,
-) -> diagnostic::Result<Option<String>> {
-    Ok(proto_required_field!(x, y, enum_kind, parse_enum_type)
-        .1
-        .flatten())
-}
-
 /// Parse a 0.3.0+ function argument type.
 fn parse_function_argument_type(
     x: &substrait::function_argument::ArgType,
     y: &mut context::Context,
 ) -> diagnostic::Result<FunctionArgument> {
     match x {
-        substrait::function_argument::ArgType::Enum(x) => {
-            Ok(FunctionArgument::Enum(parse_enum(x, y)?))
-        }
+        substrait::function_argument::ArgType::Enum(x) => Ok(FunctionArgument::Enum(x.to_string())),
         substrait::function_argument::ArgType::Type(x) => {
             types::parse_type(x, y)?;
             Ok(FunctionArgument::Type(y.data_type()))
@@ -207,6 +195,29 @@ fn parse_function_argument(
     )
 }
 
+fn parse_function_option(
+    x: &substrait::FunctionOption,
+    y: &mut context::Context,
+) -> diagnostic::Result<FunctionOption> {
+    proto_primitive_field!(x, y, name);
+    proto_required_repeated_field!(x, y, preference);
+
+    if x.preference.is_empty() {
+        let err = cause!(IllegalValue, "at least one option must be specified");
+        diagnostic!(y, Error, err.clone());
+        comment!(
+            y,
+            "To leave an option unspecified, simply don't add an entry to `options`"
+        );
+        Err(err)
+    } else {
+        Ok(FunctionOption {
+            name: x.name.clone(),
+            preference: x.preference.clone(),
+        })
+    }
+}
+
 /// Parse a pre-0.3.0 function argument expression.
 fn parse_legacy_function_argument(
     x: &substrait::Expression,
@@ -214,7 +225,18 @@ fn parse_legacy_function_argument(
 ) -> diagnostic::Result<FunctionArgument> {
     expressions::parse_legacy_function_argument(x, y).map(|x| match x {
         expressions::ExpressionOrEnum::Value(x) => FunctionArgument::Value(y.data_type(), x),
-        expressions::ExpressionOrEnum::Enum(x) => FunctionArgument::Enum(x),
+        expressions::ExpressionOrEnum::Enum(x) => match x {
+            Some(x) => FunctionArgument::Enum(x),
+            None => {
+                diagnostic!(
+                    y,
+                    Error,
+                    Deprecation,
+                    "support for optional enum arguments was removed in Substrait 0.20.0 (#342)"
+                );
+                FunctionArgument::Unresolved
+            }
+        },
     })
 }
 
@@ -279,6 +301,11 @@ pub fn parse_scalar_function(
         .into_iter()
         .map(|x| x.unwrap_or_default())
         .collect();
+    let options = proto_repeated_field!(x, y, options, parse_function_option)
+        .1
+        .into_iter()
+        .flatten()
+        .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
@@ -288,6 +315,7 @@ pub fn parse_scalar_function(
     let context = FunctionContext {
         function_type: FunctionType::Scalar,
         arguments,
+        options,
         return_type,
     };
     let binding = FunctionBinding::new(functions.as_ref(), &context, y);
@@ -341,6 +369,11 @@ pub fn parse_window_function(
         .into_iter()
         .map(|x| x.unwrap_or_default())
         .collect();
+    let options = proto_repeated_field!(x, y, options, parse_function_option)
+        .1
+        .into_iter()
+        .flatten()
+        .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
@@ -359,6 +392,7 @@ pub fn parse_window_function(
     let context = FunctionContext {
         function_type: FunctionType::Window,
         arguments,
+        options,
         return_type,
     };
     let binding = FunctionBinding::new(functions.as_ref(), &context, y);
@@ -395,6 +429,11 @@ pub fn parse_aggregate_function(
         .into_iter()
         .map(|x| x.unwrap_or_default())
         .collect();
+    let options = proto_repeated_field!(x, y, options, parse_function_option)
+        .1
+        .into_iter()
+        .flatten()
+        .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
         .data_type();
@@ -416,6 +455,7 @@ pub fn parse_aggregate_function(
     let context = FunctionContext {
         function_type: FunctionType::Aggregate,
         arguments,
+        options,
         return_type,
     };
     let binding = FunctionBinding::new(functions.as_ref(), &context, y);

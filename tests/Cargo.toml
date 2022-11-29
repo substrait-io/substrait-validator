@@ -1,6 +1,6 @@
 [package]
 name = "test-runner"
-version = "0.0.10"
+version = "0.0.11"
 edition = "2018"
 license = "Apache-2.0"
 default-run = "runner"
@@ -14,7 +14,7 @@ name = "find_protoc"
 path = "src/find_protoc.rs"
 
 [dependencies]
-substrait-validator = { path = "../rs", version = "0.0.10" }
+substrait-validator = { path = "../rs", version = "0.0.11" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 walkdir = "2"
