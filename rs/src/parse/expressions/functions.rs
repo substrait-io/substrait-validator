@@ -199,6 +199,9 @@ fn parse_function_option(
     x: &substrait::FunctionOption,
     y: &mut context::Context,
 ) -> diagnostic::Result<FunctionOption> {
+    proto_primitive_field!(x, y, name);
+    proto_required_repeated_field!(x, y, preference);
+
     if x.preference.is_empty() {
         let err = cause!(IllegalValue, "at least one option must be specified");
         diagnostic!(y, Error, err.clone());
