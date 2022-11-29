@@ -301,7 +301,7 @@ pub fn parse_scalar_function(
     let options = proto_repeated_field!(x, y, options, parse_function_option)
         .1
         .into_iter()
-        .filter_map(|x| x)
+        .flatten()
         .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
@@ -369,7 +369,7 @@ pub fn parse_window_function(
     let options = proto_repeated_field!(x, y, options, parse_function_option)
         .1
         .into_iter()
-        .filter_map(|x| x)
+        .flatten()
         .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
@@ -429,7 +429,7 @@ pub fn parse_aggregate_function(
     let options = proto_repeated_field!(x, y, options, parse_function_option)
         .1
         .into_iter()
-        .filter_map(|x| x)
+        .flatten()
         .collect();
     let return_type = proto_required_field!(x, y, output_type, types::parse_type)
         .0
