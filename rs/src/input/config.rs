@@ -72,12 +72,12 @@ pub struct Config {
     /// pre-downloaded files.
     pub uri_overrides: Vec<(glob::Pattern, Option<String>)>,
 
-    /// Optional callback function for resolving URIs. If specified, all
-    /// URIs (after processing yaml_uri_overrides) are resolved using this
-    /// function. The function takes the URI as its argument, and should either
-    /// return the download contents as a Vec<u8> or return a String-based
-    /// error. If no downloader is specified, only file:// URLs with an
-    /// absolute path are supported.
+    /// Optional callback function for resolving URIs. If specified, all URIs
+    /// (after processing yaml_uri_overrides) are resolved using this function.
+    /// The function takes the URI as its argument, and should either return the
+    /// download contents as a `Vec<u8>` or return a String-based error. If no
+    /// downloader is specified, only file:// URLs with an absolute path are
+    /// supported.
     pub uri_resolver: Option<UriResolver>,
 
     /// Optional URI resolution depth. If specified, dependencies are only

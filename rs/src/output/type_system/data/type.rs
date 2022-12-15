@@ -210,7 +210,7 @@ impl Definition {
         )
     }
 
-    /// Returns Some(Vec<T>)) when this is a STRUCT or NSTRUCT type, where the
+    /// Returns `Some(Vec<T>))` when this is a STRUCT or NSTRUCT type, where the
     /// vector contains the field types. Returns None otherwise.
     pub fn unwrap_struct(&self) -> Option<Vec<Arc<Definition>>> {
         if self.is_struct() {

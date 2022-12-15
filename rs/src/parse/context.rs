@@ -152,13 +152,7 @@ impl<'a> Context<'a> {
             .unwrap_or(&(diagnostic::Level::Info, diagnostic::Level::Error));
 
         // Adjust the level.
-        let adjusted_level = if diag.level < *min {
-            *min
-        } else if diag.level > *max {
-            *max
-        } else {
-            diag.level
-        };
+        let adjusted_level = diag.level.clamp(*min, *max);
         let adjusted = diag.adjust_level(adjusted_level);
 
         // Actually push the data item.
