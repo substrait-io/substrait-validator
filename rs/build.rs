@@ -137,6 +137,10 @@ fn main() -> Result<()> {
     // Compile the protobuf files using prost.
     let mut config = prost_build::Config::new();
     config.type_attribute(".", "#[derive(::substrait_validator_derive::ProtoMeta)]");
+    config.disable_comments([
+        "substrait.AggregateRel.Measure.filter",
+        "substrait.Type.Parameter.data_type",
+    ]);
     config.compile_protos(&proto_files, &[&proto_path.display().to_string()])?;
 
     // Inform cargo that changes to the .proto files require a rerun.
