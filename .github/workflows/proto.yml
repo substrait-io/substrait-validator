@@ -3,28 +3,30 @@ name: Protobuf
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   style:
     name: Style
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: bufbuild/buf-setup-action@v1.4.0
+      - uses: bufbuild/buf-setup-action@v1.9.0
       - run: buf format --diff --exit-code
 
   check:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
       - uses: arduino/setup-protoc@v1
-      - uses: bufbuild/buf-setup-action@v0.7.0
-      - uses: bufbuild/buf-lint-action@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: bufbuild/buf-setup-action@v1.9.0
+      - uses: bufbuild/buf-lint-action@v1.0.3
       - name: Compile protobuf
         run: buf generate

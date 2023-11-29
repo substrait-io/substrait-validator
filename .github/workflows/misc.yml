@@ -8,31 +8,31 @@ jobs:
     name: Check license headers
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Check License Header
-      uses: enarx/spdx@master
-      with:
-        licenses: Apache-2.0 MIT
+      - uses: actions/checkout@v3
+      - name: Check License Header
+        uses: enarx/spdx@master
+        with:
+          licenses: Apache-2.0 MIT
 
   editorconfig:
     name: Check editorconfig
     runs-on: ubuntu-latest
     steps:
-    - uses: editorconfig-checker/action-editorconfig-checker@v1
+      - uses: editorconfig-checker/action-editorconfig-checker@v1
 
   check-version-patch:
     name: Check version update patch file
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Check version update patch file
-      run: python3 ci/version.py check
+      - uses: actions/checkout@v3
+      - name: Check version update patch file
+        run: python3 ci/version.py check
 
   verify-antlr:
     name: Verify ANTLR-generated code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check
         working-directory: rs/antlr
         run: python3 generate.py --ci
@@ -41,10 +41,10 @@ jobs:
     name: Lint commits for semantic-release
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-node@v2
-      with:
-        node-version: "14"
-    - run: npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+      - run: npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
