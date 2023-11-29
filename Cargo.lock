@@ -429,15 +429,6 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9a9d19fa1e79b6215ff29b9d6880b706147f16e9b1dbb1e4e5947b5b02bc5e3"
@@ -810,7 +801,7 @@ dependencies = [
  "cfg-if",
  "cmake",
  "heck 0.4.0",
- "itertools 0.10.3",
+ "itertools",
  "lazy_static",
  "log",
  "multimap",
@@ -829,7 +820,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b670f45da57fb8542ebdbb6105a925fe571b67f9e7ed9f47a06a84e72b4e7cc"
 dependencies = [
  "anyhow",
- "itertools 0.10.3",
+ "itertools",
  "proc-macro2",
  "quote",
  "syn",
@@ -1113,7 +1104,7 @@ dependencies = [
  "float-pretty-print",
  "glob",
  "heck 0.4.0",
- "itertools 0.8.2",
+ "itertools",
  "jsonschema",
  "num-derive",
  "num-traits",
