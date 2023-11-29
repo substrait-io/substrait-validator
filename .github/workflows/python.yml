@@ -53,26 +53,26 @@ jobs:
         run: python3 prepare_build.py populate
       - name: Create sdist
         if: ${{ matrix.type == 'sdist' }}
-        uses: PyO3/maturin-action@v1.31.0
+        uses: PyO3/maturin-action@v1.40.7
         with:
           command: sdist
           args: -o dist -m py/Cargo.toml
       - name: Build manylinux wheels
         if: ${{ matrix.type == 'wheel' && matrix.os == 'ubuntu-latest' }}
-        uses: PyO3/maturin-action@v1.31.0
+        uses: PyO3/maturin-action@v1.40.7
         with:
           manylinux: auto
           command: build
           args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
       - name: Build Windows wheels
         if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
-        uses: PyO3/maturin-action@v1.31.0
+        uses: PyO3/maturin-action@v1.40.7
         with:
           command: build
           args: --release -o dist -m py/Cargo.toml
       - name: Build MacOS wheels
         if: ${{ matrix.type == 'wheel' && matrix.os == 'macos-latest' }}
-        uses: PyO3/maturin-action@v1.31.0
+        uses: PyO3/maturin-action@v1.40.7
         with:
           command: build
           args: --release -o dist --universal2 -m py/Cargo.toml
@@ -111,7 +111,7 @@ jobs:
             *.whl
             *.tar.gz
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1.31.0
+        uses: PyO3/maturin-action@v1.40.7
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
