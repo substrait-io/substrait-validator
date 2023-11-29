@@ -58,11 +58,12 @@ pub trait Pattern {
 /// it acts like an expression and is evaluated; see [Pattern::evaluate()]
 /// and [Pattern::evaluate_with_context()]. This either fails or yields a
 /// [meta::Value].
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum Value {
     /// Used when a pattern is unknown due to validator-specific error
     /// recovery. Matches all values, and evaluates to an unresolved value.
     /// Syntax (only for printing): `!`.
+    #[default]
     Unresolved,
 
     /// Accepts any meta::Value. Cannot be evaluated. Syntax: `?`.
@@ -158,12 +159,6 @@ impl Describe for Value {
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.display().fmt(f)
-    }
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Value::Unresolved
     }
 }
 

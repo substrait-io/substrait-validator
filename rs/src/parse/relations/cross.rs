@@ -28,7 +28,7 @@ pub fn parse_cross_rel(
     if let (Some(mut fields), Some(additional_fields)) =
         (left.unwrap_struct(), right.unwrap_struct())
     {
-        fields.extend(additional_fields.into_iter());
+        fields.extend(additional_fields);
         let schema = data::new_struct(fields, false);
         y.set_schema(schema);
     } else {

@@ -5,19 +5,14 @@
 use crate::output::extension;
 
 /// A type variation.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum Variation {
     /// The special system-preferred variation, also known as \[0\].
+    #[default]
     SystemPreferred,
 
     /// Reference to a user-defined variation.
     UserDefined(extension::simple::type_variation::Reference),
-}
-
-impl Default for Variation {
-    fn default() -> Self {
-        Variation::SystemPreferred
-    }
 }
 
 impl std::fmt::Display for Variation {

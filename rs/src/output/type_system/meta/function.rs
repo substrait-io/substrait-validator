@@ -10,10 +10,12 @@ use super::Pattern;
 /// A function that operates on zero or more values.
 #[derive(Clone, Debug, PartialEq, Eq, strum_macros::Display, strum_macros::EnumString)]
 #[strum(serialize_all = "snake_case")]
+#[derive(Default)]
 pub enum Function {
     /// Used for unknown functions. Takes any number of arguments, doesn't
     /// evaluate them, and yields an unresolved value.
     #[strum(serialize = "!")]
+    #[default]
     Unresolved,
 
     /// Boolean not: `not(metabool) -> metabool`
@@ -74,12 +76,6 @@ pub enum Function {
 
     /// If/then/else: `if_then_else(metabool, T, T) -> T`. Evaluated lazily.
     IfThenElse,
-}
-
-impl Default for Function {
-    fn default() -> Self {
-        Function::Unresolved
-    }
 }
 
 impl Function {

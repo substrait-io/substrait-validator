@@ -8,10 +8,11 @@ use crate::util;
 use crate::util::string::Describe;
 
 /// The value enumeration for metatypes ([`meta::Type`]).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum Value {
     /// Special validator-specific value used when the value is unknown due to
     /// recovery from previous errors.
+    #[default]
     Unresolved,
 
     /// Used for boolean values. Syntax: `true` or `false`.
@@ -53,12 +54,6 @@ impl Describe for Value {
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.display().fmt(f)
-    }
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Value::Unresolved
     }
 }
 

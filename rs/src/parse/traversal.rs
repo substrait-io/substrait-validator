@@ -811,7 +811,6 @@ where
     if let serde_json::Value::Array(input) = input {
         let size = std::cmp::max(min_size, input.len());
         Ok((0..size)
-            .into_iter()
             .map(|index| {
                 push_yaml_required_element(input, context, index, unknown_subtree, &mut parser)
             })

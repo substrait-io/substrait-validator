@@ -29,10 +29,11 @@ pub enum FunctionType {
 }
 
 /// A function argument; either a value, a type, or an enum option.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum FunctionArgument {
     /// Used when a function argument is so malformed that not even the type of
     /// argument is known.
+    #[default]
     Unresolved,
 
     /// Used for value arguments or normal expressions.
@@ -43,12 +44,6 @@ pub enum FunctionArgument {
 
     /// Used for enum arguments.
     Enum(String),
-}
-
-impl Default for FunctionArgument {
-    fn default() -> Self {
-        FunctionArgument::Unresolved
-    }
 }
 
 impl Describe for FunctionArgument {
