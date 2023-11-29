@@ -16,8 +16,9 @@ pub mod mask;
 pub mod scalar;
 
 /// Description of the root of a reference.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 enum Root {
+    #[default]
     Unresolved,
     Expression(expressions::Expression),
     Schema(usize),
@@ -26,12 +27,6 @@ enum Root {
 impl From<expressions::Expression> for Root {
     fn from(e: expressions::Expression) -> Self {
         Root::Expression(e)
-    }
-}
-
-impl Default for Root {
-    fn default() -> Self {
-        Root::Unresolved
     }
 }
 

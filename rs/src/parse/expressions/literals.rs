@@ -14,9 +14,10 @@ use crate::util::string::Describe;
 use std::sync::Arc;
 
 /// The value of a literal, not including type information.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 enum LiteralValue {
     /// May be used for any nullable type.
+    #[default]
     Null,
 
     /// May be used only for booleans.
@@ -48,12 +49,6 @@ enum LiteralValue {
 
     /// A literal for a user-defined type, cannot parse more information.
     UserDefined,
-}
-
-impl Default for LiteralValue {
-    fn default() -> Self {
-        LiteralValue::Null
-    }
 }
 
 /// A complete literal, including type information.

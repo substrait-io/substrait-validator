@@ -766,7 +766,7 @@ fn describe_type(y: &mut context::Context, data_type: &data::Type) {
         data::Class::Compound(data::class::Compound::FixedChar) => {
             let length = data_type
                 .parameters()
-                .get(0)
+                .first()
                 .map(|x| x.to_string())
                 .unwrap_or_else(|| String::from("?"));
             summary!(
@@ -780,7 +780,7 @@ fn describe_type(y: &mut context::Context, data_type: &data::Type) {
         data::Class::Compound(data::class::Compound::VarChar) => {
             let length = data_type
                 .parameters()
-                .get(0)
+                .first()
                 .map(|x| x.to_string())
                 .unwrap_or_else(|| String::from("?"));
             summary!(
@@ -793,7 +793,7 @@ fn describe_type(y: &mut context::Context, data_type: &data::Type) {
         data::Class::Compound(data::class::Compound::FixedBinary) => {
             let length = data_type
                 .parameters()
-                .get(0)
+                .first()
                 .map(|x| x.to_string())
                 .unwrap_or_else(|| String::from("?"));
             summary!(
