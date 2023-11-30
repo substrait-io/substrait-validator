@@ -8,7 +8,7 @@ jobs:
     name: Check license headers
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check License Header
         uses: enarx/spdx@master
         with:
@@ -24,7 +24,7 @@ jobs:
     name: Check version update patch file
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check version update patch file
         run: python3 ci/version.py check
 
@@ -32,7 +32,7 @@ jobs:
     name: Verify ANTLR-generated code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check
         working-directory: rs/antlr
         run: python3 generate.py --ci
@@ -41,7 +41,7 @@ jobs:
     name: Lint commits for semantic-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
