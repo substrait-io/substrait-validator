@@ -30,7 +30,7 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
     if let (Some(mut fields), Some(additional_fields)) =
         (left.unwrap_struct(), right.unwrap_struct())
     {
-        fields.extend(additional_fields.into_iter());
+        fields.extend(additional_fields);
         let schema = data::new_struct(fields, false);
         y.set_schema(schema);
     } else {
@@ -66,13 +66,13 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         if left_nullable {
             fields.extend(left_fields.into_iter().map(|x| x.make_nullable()))
         } else {
-            fields.extend(left_fields.into_iter())
+            fields.extend(left_fields)
         }
         if let Some(right_nullable) = right_nullable {
             if right_nullable {
                 fields.extend(right_fields.into_iter().map(|x| x.make_nullable()))
             } else {
-                fields.extend(right_fields.into_iter())
+                fields.extend(right_fields)
             }
         }
         let schema = data::new_struct(fields, false);

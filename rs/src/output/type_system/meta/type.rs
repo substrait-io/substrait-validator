@@ -10,10 +10,11 @@
 ///
 /// Note that the meta type system is much simpler than the data type system,
 /// and cannot be extended.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Type {
     /// Special validator-specific value used when the type is unknown due to
     /// recovery from previous errors.
+    #[default]
     Unresolved,
 
     /// Type for booleans and predicates. Syntax: `metabool` (to disambiguate
@@ -50,11 +51,5 @@ impl std::fmt::Display for Type {
             Type::String => write!(f, "metastr"),
             Type::DataType => write!(f, "typename"),
         }
-    }
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::Unresolved
     }
 }

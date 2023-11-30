@@ -150,10 +150,12 @@ impl From<jsonschema::error::ValidationError<'_>> for Message {
     strum_macros::EnumIter,
     strum_macros::EnumProperty,
     num_derive::FromPrimitive,
+    Default,
 )]
 pub enum Classification {
     // Unclassified diagnostics (group 0).
     #[strum(props(HiddenDescription = "unclassified diagnostic"))]
+    #[default]
     Unclassified = 0,
 
     #[strum(props(Description = "not yet implemented"))]
@@ -366,12 +368,6 @@ pub enum Classification {
 
     #[strum(props(Description = "redundant enum variant"))]
     RedundantEnumVariant = 7008,
-}
-
-impl Default for Classification {
-    fn default() -> Self {
-        Classification::Unclassified
-    }
 }
 
 impl Classification {

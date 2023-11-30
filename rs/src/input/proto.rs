@@ -3,7 +3,7 @@
 //! Module for representing Substrait protobuf input.
 //!
 //! The structures here are generated using [`prost`], but have a bunch of
-//! extra traits from [`traits`](crate::input::traits) associated with them,
+//! extra traits from [`traits`] associated with them,
 //! for which the implementations are generated using
 //! [`substrait_validator_derive`]. The purpose of these traits is to add basic
 //! introspection capabilities to the prost structures. One of the use cases

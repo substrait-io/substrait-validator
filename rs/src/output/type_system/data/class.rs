@@ -38,9 +38,10 @@ pub trait ParameterInfo {
 }
 
 /// Type class.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub enum Class {
     /// Unresolved type. Used for error recovery.
+    #[default]
     Unresolved,
 
     /// Well-known simple type.
@@ -51,12 +52,6 @@ pub enum Class {
 
     /// User-defined type.
     UserDefined(extension::simple::type_class::Reference),
-}
-
-impl Default for Class {
-    fn default() -> Self {
-        Class::Unresolved
-    }
 }
 
 impl std::fmt::Display for Class {
