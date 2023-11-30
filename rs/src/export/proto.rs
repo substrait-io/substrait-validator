@@ -347,27 +347,8 @@ impl From<&extension::simple::type_class::Reference> for validator::data_type::U
             extension_id: node
                 .definition
                 .as_ref()
-                .map(|x| x.extension_id)
+                .map(|x| x.identifier.extension_id)
                 .unwrap_or_default(),
-        }
-    }
-}
-
-impl From<&extension::simple::type_class::Definition>
-    for validator::data_type::user_defined_type::Definition
-{
-    fn from(node: &extension::simple::type_class::Definition) -> Self {
-        Self {
-            structure: node
-                .structure
-                .iter()
-                .map(
-                    |(name, simple)| validator::data_type::user_defined_type::Element {
-                        name: name.to_string(),
-                        kind: simple.into(),
-                    },
-                )
-                .collect(),
         }
     }
 }
@@ -388,7 +369,7 @@ impl From<&data::Variation> for validator::data_type::Variation {
                         extension_id: variation
                             .definition
                             .as_ref()
-                            .map(|x| x.extension_id)
+                            .map(|x| x.identifier.extension_id)
                             .unwrap_or_default(),
                     },
                 )

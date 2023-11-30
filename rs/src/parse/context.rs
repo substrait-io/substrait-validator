@@ -425,6 +425,17 @@ impl<'a> Context<'a> {
     pub fn uri_stack(&mut self) -> &mut Vec<String> {
         &mut self.state.uri_stack
     }
+
+    /// Returns the next extension ID. Extension IDs just count up from 1.
+    pub fn make_extension_id(&mut self) -> extension::simple::common::Identifier {
+        self.state.extension_id_counter += 1;
+        extension::simple::common::Identifier {
+            uri: Default::default(),
+            names: Default::default(),
+            extension_id: self.state.extension_id_counter,
+            definition_path: self.path_buf(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -536,6 +547,10 @@ pub struct State {
 
     /// Stack for URIs being parsed. Used to detect recursion and limit depth.
     pub uri_stack: Vec<String>,
+
+    /// Used to generate unique extension IDs. Set to the latest ID handed out,
+    /// or 0 if no ID has been handed out yet.
+    pub extension_id_counter: u64,
 }
 
 /// Breadcrumbs structure. Each breadcrumb is associated with a node, and

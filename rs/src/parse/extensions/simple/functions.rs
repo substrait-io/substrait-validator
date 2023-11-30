@@ -6,13 +6,13 @@
 use crate::input::yaml;
 use crate::output::diagnostic::Result;
 use crate::parse::context;
-use crate::parse::extensions::simple::builder;
+use crate::parse::extensions::simple::modules;
 
 /// Parse a scalar function declaration.
 pub fn parse_scalar_function(
     _x: &yaml::Value,
     _y: &mut context::Context,
-    _z: &mut builder::Builder,
+    _z: &mut modules::Builder,
 ) -> Result<()> {
     // TODO
     Ok(())
@@ -22,7 +22,7 @@ pub fn parse_scalar_function(
 pub fn parse_aggregate_function(
     _x: &yaml::Value,
     _y: &mut context::Context,
-    _z: &mut builder::Builder,
+    _z: &mut modules::Builder,
 ) -> Result<()> {
     // TODO
     Ok(())

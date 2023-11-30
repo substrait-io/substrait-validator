@@ -118,6 +118,26 @@ pub enum Value {
     ///    `a >= b`;
     ///  - Ternary: `if a then b else c`.
     Function(meta::Function, Vec<Value>),
+
+    /// A union acting on the set of values that the patterns match. That is,
+    /// a union pattern matches iff any of the contained patterns match. The
+    /// patterns are matched lazily from left to right. At least two patterns
+    /// should be specified. Cannot be evaluated.
+    /// FIXME: syntax TBD.
+    Union(Vec<Value>),
+
+    /// An intersection acting on the set of values that the patterns match.
+    /// That is, an intersection pattern matches iff all of the contained
+    /// patterns match. The patterns are matched lazily from left to right.
+    /// At least two patterns should be specified. Cannot be evaluated.
+    /// FIXME: syntax TBD.
+    Intersection(Vec<Value>),
+
+    /// Inverts the match result of a pattern. That is, if the contained
+    /// pattern matches, the complement does not match, and vice versa. Cannot
+    /// be evaluated.
+    /// FIXME: syntax TBD.
+    Complement(Arc<Value>),
 }
 
 impl Describe for Value {
@@ -150,7 +170,36 @@ impl Describe for Value {
                 write!(f, "{func}(")?;
                 util::string::describe_sequence(f, args, limit, 10, |f, arg, _, limit| {
                     arg.describe(f, limit)
-                })
+                })?;
+                write!(f, ")")
+            }
+            Value::Union(args) => {
+                write!(f, "(")?;
+                util::string::describe_sequence_with_sep(
+                    f,
+                    args,
+                    limit,
+                    10,
+                    " | ",
+                    |f, arg, _, limit| arg.describe(f, limit),
+                )?;
+                write!(f, ")")
+            }
+            Value::Intersection(args) => {
+                write!(f, "(")?;
+                util::string::describe_sequence_with_sep(
+                    f,
+                    args,
+                    limit,
+                    10,
+                    " & ",
+                    |f, arg, _, limit| arg.describe(f, limit),
+                )?;
+                write!(f, ")")
+            }
+            Value::Complement(arg) => {
+                write!(f, "~")?;
+                arg.describe(f, limit)
             }
         }
     }
@@ -229,6 +278,23 @@ impl Value {
             }
             Value::Function(func, args) => Value::exactly(func.evaluate(context, args)?)
                 .match_pattern_with_context(context, value)?,
+            Value::Union(expected) => {
+                for expected in expected.iter() {
+                    if expected.match_pattern_with_context(context, value)? {
+                        return Ok(true);
+                    }
+                }
+                false
+            }
+            Value::Intersection(expected) => {
+                for expected in expected.iter() {
+                    if !expected.match_pattern_with_context(context, value)? {
+                        return Ok(false);
+                    }
+                }
+                true
+            }
+            Value::Complement(expected) => !expected.match_pattern_with_context(context, value)?,
         })
     }
 
@@ -253,7 +319,7 @@ impl Value {
     /// multiple types can be matched, yield unresolved.
     pub fn determine_type(&self) -> meta::Type {
         match self {
-            Value::Unresolved | Value::Any => meta::Type::Unresolved,
+            Value::Unresolved | Value::Any | Value::Complement(_) => meta::Type::Unresolved,
             Value::Binding(binding) => binding.determine_type(),
             Value::Boolean(_) => meta::Type::Boolean,
             Value::Integer(_, _) => meta::Type::Integer,
@@ -261,7 +327,26 @@ impl Value {
             Value::String(_) => meta::Type::String,
             Value::DataType(_) => meta::Type::DataType,
             Value::Function(function, arguments) => function.determine_type(arguments),
+            Value::Union(patterns) | Value::Intersection(patterns) => {
+                let mut result = meta::Type::Unresolved;
+                for pattern in patterns.iter() {
+                    let pattern_type = pattern.determine_type();
+                    if !matches!(pattern_type, meta::Type::Unresolved) {
+                        if matches!(result, meta::Type::Unresolved) {
+                            result = pattern_type;
+                        } else if pattern_type != result {
+                            return meta::Type::Unresolved;
+                        }
+                    }
+                }
+                result
+            }
         }
+    }
+
+    /// Returns whether this could be a data type pattern.
+    pub fn is_data_type(&self) -> bool {
+        matches!(self, Value::Unresolved | Value::DataType(_))
     }
 }
 
@@ -347,6 +432,18 @@ impl Pattern for Value {
             }
             Value::DataType(value) => value.evaluate_with_context(context).map(meta::Value::from),
             Value::Function(func, args) => func.evaluate(context, args),
+            Value::Union(_) => Err(cause!(
+                TypeDerivationInvalid,
+                "cannot evaluate union pattern"
+            )),
+            Value::Intersection(_) => Err(cause!(
+                TypeDerivationInvalid,
+                "cannot evaluate intersection pattern"
+            )),
+            Value::Complement(_) => Err(cause!(
+                TypeDerivationInvalid,
+                "cannot evaluate complement pattern"
+            )),
         }
     }
 
@@ -361,6 +458,9 @@ impl Pattern for Value {
             Value::String(x) => x.is_some(),
             Value::DataType(x) => x.can_evaluate(),
             Value::Function(_, _) => true,
+            Value::Union(_) => false,
+            Value::Intersection(_) => false,
+            Value::Complement(_) => false,
         }
     }
 }

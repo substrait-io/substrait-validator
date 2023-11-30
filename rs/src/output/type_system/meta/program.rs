@@ -41,7 +41,7 @@ impl Describe for Program {
                 &self.statements,
                 stmts_limit,
                 50,
-                ';',
+                "; ",
                 |f, stmt, _, limit| stmt.describe(f, limit),
             )?;
             write!(f, "; ")?;

@@ -1,0 +1,35 @@
+name: core-type-extensions
+plan:
+  __test:
+  - level: i
+  extensionUris:
+  - extensionUriAnchor: 1
+    uri: /extension_types.yaml
+  extensions:
+  - extensionType:
+      extensionUriReference: 1
+      typeAnchor: 1
+      name: point
+  - extensionType:
+      extensionUriReference: 1
+      typeAnchor: 2
+      name: line
+  relations:
+  - rel:
+      read:
+        common:
+          direct: {}
+        baseSchema:
+          names: [x, y]
+          struct:
+            nullability: NULLABILITY_REQUIRED
+            types:
+            - user_defined:
+                typeReference: 1
+                nullability: NULLABILITY_REQUIRED
+            - user_defined:
+                typeReference: 2
+                nullability: NULLABILITY_REQUIRED
+        namedTable:
+          names: ["test"]
+        __test: [ type: "NSTRUCT<x: /extension_types.yaml::point, y: /extension_types.yaml::line>" ]

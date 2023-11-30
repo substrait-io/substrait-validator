@@ -211,6 +211,25 @@ message ExtensionDefinition {
       WindowProperties window_function = 9;
     }
 
+    // For table functions, when defined; to be added to above oneof.
+    reserved 10;
+
+    // Nullability behavior that the function was declared with. Note that the
+    // patterns have already been desugared to represent this, so this can be
+    // ignored; it exists only for completeness.
+    oneof consistency {
+      // Nullability of toplevel binding and data type patterns of all argument
+      // and return types was overridden to `??nullable`.
+      google.protobuf.Empty mirror = 11;
+
+      // Nullability of toplevel binding and data type patterns of all argument
+      // types was overridden to `??nullable`.
+      google.protobuf.Empty declared_output = 12;
+
+      // No desugaring overrides were applied.
+      google.protobuf.Empty discrete = 13;
+    }
+
     // Properties common to aggregate and window functions.
     message AggregateProperties {
       // When specified, the function is decomposable.
@@ -250,9 +269,8 @@ message ExtensionDefinition {
     }
   }
 
-  // Represents a parameter pack for a user-defined compound type class or a
-  // function argument slot list. In the latter case, the patterns will only
-  // ever be passed typenames.
+  // Represents a positional parameter pack for a user-defined compound type
+  // class or a function argument slot list.
   //
   // The order of operations for the various patterns is:
   //
@@ -303,7 +321,7 @@ message ExtensionDefinition {
         // for aggregate and window functions.
         google.protobuf.Empty literal = 6;
 
-        // An data value must be bound to the slot. This is done by means of
+        // A data value must be bound to the slot. This is done by means of
         // binding an expression, but the expression can always be evaluated or
         // reduced before the function is invoked. This is used for value
         // function arguments that are not marked as constant. The data type of
@@ -350,6 +368,18 @@ message ExtensionDefinition {
       // The maximum number of arguments that can be bound to the slot. Zero
       // is treated as unspecified/no upper limit.
       uint64 maximum = 2;
+
+      // Consistency that the variadic slot was declared with. Note that the
+      // patterns have already been desugared to represent this, so this can be
+      // ignored; it exists only for completeness.
+      oneof consistency {
+        // No desugaring overrides were applied.
+        google.protobuf.Empty consistent = 3;
+
+        // All consistent bindings in the last argument slot were overridden to
+        // inconsistent bindings.
+        google.protobuf.Empty inconsistent = 4;
+      }
     }
 
     // Optional additional constraints to apply when determining whether a

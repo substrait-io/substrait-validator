@@ -6,11 +6,13 @@ use crate::output::extension;
 use crate::output::type_system::data;
 
 /// Type variation extension.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug)]
 pub struct Definition {
-    /// Unique number within the tree that can be used to refer to this
-    /// extension when exporting in protobuf form.
-    pub extension_id: u64,
+    /// Identifier for the extension.
+    pub identifier: extension::simple::common::Identifier,
+
+    /// Common metadata for the extension.
+    pub metadata: extension::simple::common::Metadata,
 
     /// Description of the type variation.
     pub description: String,

@@ -122,12 +122,7 @@ impl<'a> AnalysisContext<'a> {
             if let Some(def) = &type_class.definition {
                 for slot in def.parameter_slots.iter() {
                     if let meta::pattern::Value::Enum(Some(variants)) = &slot.pattern {
-                        for variant in variants {
-                            self.pattern_names.insert(
-                                variant.to_ascii_lowercase(),
-                                PatternObject::EnumVariant(variant.clone()),
-                            );
-                        }
+                        self.register_enum_variants(variants);
                     }
                 }
             }
@@ -140,6 +135,16 @@ impl<'a> AnalysisContext<'a> {
         // Declare the new reference and return the referred object.
         self.pattern_names.insert(key, object.clone());
         object
+    }
+
+    /// Registers the given list of enum variants as enum identifiers.
+    pub fn register_enum_variants(&mut self, variants: &[String]) {
+        for variant in variants {
+            self.pattern_names.insert(
+                variant.to_ascii_lowercase(),
+                PatternObject::EnumVariant(variant.clone()),
+            );
+        }
     }
 
     /// Resolve a type variation identifier path.
@@ -1052,6 +1057,7 @@ fn analyze_pattern_misc(
                 TypeDerivationNotSupported,
                 "the enum set pattern is not officially supported"
             );
+            z.register_enum_variants(&names);
             Ok(meta::pattern::Value::Enum(Some(names)))
         }
         PatternMiscContextAll::StrAnyContext(_) => {

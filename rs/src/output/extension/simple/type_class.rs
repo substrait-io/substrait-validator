@@ -10,32 +10,47 @@ use crate::output::type_system::meta;
 use crate::output::type_system::meta::pattern::Pattern;
 
 /// A definition of a user-defined type class.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug)]
 pub struct Definition {
-    /// Unique number within the tree that can be used to refer to this
-    /// extension when exporting in protobuf form.
-    pub extension_id: u64,
+    /// Identifier for the extension.
+    pub identifier: extension::simple::common::Identifier,
 
-    /// Description of the type class.
-    pub description: String,
-
-    /// The underlying structure of the type.
-    pub structure: Vec<(String, data::class::Simple)>,
+    /// Common metadata for the extension.
+    pub metadata: extension::simple::common::Metadata,
 
     /// The parameters expected by the data type.
     pub parameter_slots: Vec<ParameterSlot>,
 
     /// Whether or not the last parameter slot is variadic.
     pub parameters_variadic: bool,
+
+    /// Constraint program for checking the parameters.
+    pub contraints: Vec<meta::Statement>,
+
+    /// The underlying structure of the type. Empty for opaque types.
+    pub structure: Option<meta::pattern::Value>,
+}
+
+impl From<extension::simple::common::Identifier> for Definition {
+    fn from(identifier: extension::simple::common::Identifier) -> Self {
+        Definition {
+            identifier,
+            metadata: Default::default(),
+            parameter_slots: Default::default(),
+            parameters_variadic: Default::default(),
+            contraints: Default::default(),
+            structure: Default::default(),
+        }
+    }
 }
 
 /// A parameter slot for a user-defined data type.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub struct ParameterSlot {
-    /// YAML-provided name of the parameter.
+    /// Name of the parameter.
     pub name: String,
 
-    /// YAML-provided human-readable description of the parameter.
+    /// Human-readable description of the parameter.
     pub description: String,
 
     /// Pattern for type- and bounds-checking parameters bound to this slot.
@@ -89,6 +104,7 @@ impl ParameterInfo for Definition {
         }
 
         // Match parameters to slots positionally.
+        let mut context = meta::Context::default();
         for (index, param) in params.iter().enumerate() {
             // Determine the slot that corresponds to this parameter.
             let slot = self
@@ -119,7 +135,10 @@ impl ParameterInfo for Definition {
                 ));
             }
             if let Some(value) = &param.value {
-                if !slot.pattern.match_pattern(value)? {
+                if !slot
+                    .pattern
+                    .match_pattern_with_context(&mut context, value)?
+                {
                     return Err(cause!(
                         TypeMismatchedParameters,
                         "parameter {} does not match pattern {}",
@@ -135,6 +154,17 @@ impl ParameterInfo for Definition {
                 ));
             }
         }
+
+        // Check constraints.
+        for constraint in self.contraints.iter() {
+            constraint.execute(&mut context)?;
+        }
+
+        // If there is a structure pattern, check that it can be evaluated.
+        if let Some(structure) = &self.structure {
+            structure.evaluate_with_context(&mut context)?;
+        }
+
         Ok(())
     }
 
