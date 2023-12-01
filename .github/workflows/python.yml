@@ -30,7 +30,7 @@ jobs:
           git fetch --recurse-submodules=no origin +refs/tags/*:refs/tags/*
           git describe --dirty --tags
       - name: Install latest protoc
-        uses: arduino/setup-protoc@v1
+        uses: arduino/setup-protoc@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install sdist-only dependencies
