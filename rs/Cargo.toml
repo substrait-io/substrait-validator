@@ -58,7 +58,7 @@ once_cell = "1.9"
 # Various small helper crates for the diagnostic/error enums.
 thiserror = "1.0"
 strum = "0.23"
-strum_macros = "0.23"
+strum_macros = "0.24"
 num-traits = "0.2"
 num-derive = "0.3"
 
