@@ -491,8 +491,16 @@ fn parse_timestamp(
     variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time(*x)?;
-    if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
-        || dt >= chrono::NaiveDate::from_ymd(10000, 1, 1).and_hms(0, 0, 0)
+    if dt
+        < chrono::NaiveDate::from_ymd_opt(1000, 1, 1)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+        || dt
+            >= chrono::NaiveDate::from_ymd_opt(10000, 1, 1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
     {
         diagnostic!(
             y,
@@ -521,8 +529,16 @@ fn parse_timestamp_tz(
     variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time(*x)?;
-    if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
-        || dt >= chrono::NaiveDate::from_ymd(10000, 1, 1).and_hms(0, 0, 0)
+    if dt
+        < chrono::NaiveDate::from_ymd_opt(1000, 1, 1)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+        || dt
+            >= chrono::NaiveDate::from_ymd_opt(10000, 1, 1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
     {
         diagnostic!(
             y,
@@ -551,8 +567,16 @@ fn parse_date(
     variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
     let dt = to_date_time((*x as i64).saturating_mul(24 * 60 * 60 * 1_000_000))?;
-    if dt < chrono::NaiveDate::from_ymd(1000, 1, 1).and_hms(0, 0, 0)
-        || dt >= chrono::NaiveDate::from_ymd(10000, 1, 1).and_hms(0, 0, 0)
+    if dt
+        < chrono::NaiveDate::from_ymd_opt(1000, 1, 1)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+        || dt
+            >= chrono::NaiveDate::from_ymd_opt(10000, 1, 1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
     {
         diagnostic!(
             y,
