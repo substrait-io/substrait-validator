@@ -5,11 +5,9 @@ use std::env;
 fn main() {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-    let mut config = cbindgen::Config {
-        cpp_compat: true,
-        language: cbindgen::Language::C,
-        ..Default::default()
-    };
+    let mut config = cbindgen::Config::default();
+    config.cpp_compat = true;
+    config.language = cbindgen::Language::C;
     config.export.prefix = Some("substrait_validator_".to_string());
     config
         .export
