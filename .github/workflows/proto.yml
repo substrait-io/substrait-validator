@@ -10,23 +10,23 @@ jobs:
     name: Style
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: bufbuild/buf-setup-action@v1.9.0
+      - uses: bufbuild/buf-setup-action@v1.28.1
       - run: buf format --diff --exit-code
 
   check:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: arduino/setup-protoc@v1
+      - uses: arduino/setup-protoc@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: bufbuild/buf-setup-action@v1.9.0
-      - uses: bufbuild/buf-lint-action@v1.0.3
+      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-lint-action@v1.1.0
       - name: Compile protobuf
         run: buf generate
