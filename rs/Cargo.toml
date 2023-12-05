@@ -96,5 +96,5 @@ prost-build = "0.12"
 # Used to automatically find all protobuf files.
 walkdir = "2"
 
-[target.'cfg(not(target_os = "windows"))'.build-dependencies]
+[target.'cfg(not(target_family = "windows"))'.build-dependencies]
 protobuf-src = "1.1.0"

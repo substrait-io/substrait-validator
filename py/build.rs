@@ -78,7 +78,7 @@ fn main() {
     fs::create_dir_all(&intermediate_path).expect("failed to create protoc output directory");
 
     // Run protoc.
-    if cfg!(not(target_os = "windows")) {
+    if cfg!(not(target_family = "windows")) {
         std::env::set_var("PROTOC", protobuf_src::protoc());
         std::env::set_var("PROTOC_INCLUDE", protobuf_src::include());
     }

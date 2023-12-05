@@ -4,7 +4,7 @@
 //! the Python code as well...
 
 fn main() {
-    if cfg!(not(target_os = "windows")) {
+    if cfg!(not(target_family = "windows")) {
         println!("{}", protobuf_src::protoc().display());
     } else {
         println!("protoc");

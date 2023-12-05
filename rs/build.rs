@@ -135,7 +135,7 @@ fn main() -> Result<()> {
     let proto_files: Vec<_> = find_proto_files(&proto_path);
 
     // Compile the protobuf files using prost.
-    if cfg!(not(target_os = "windows")) {
+    if cfg!(not(target_family = "windows")) {
         std::env::set_var("PROTOC", protobuf_src::protoc());
         std::env::set_var("PROTOC_INCLUDE", protobuf_src::include());
     }

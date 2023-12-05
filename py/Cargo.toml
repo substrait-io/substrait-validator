@@ -38,5 +38,5 @@ pyo3-build-config = "0.17.3"
 walkdir = "2"
 dunce = "1"
 
-[target.'cfg(not(target_os = "windows"))'.build-dependencies]
+[target.'cfg(not(target_family = "windows"))'.build-dependencies]
 protobuf-src = "1.1.0"
