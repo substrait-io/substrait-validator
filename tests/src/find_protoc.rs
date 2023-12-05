@@ -4,5 +4,5 @@
 //! the Python code as well...
 
 fn main() {
-    println!("{}", prost_build::protoc().display());
+    println!("{}", protobuf_src::protoc().display());
 }
