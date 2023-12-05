@@ -78,7 +78,11 @@ fn main() {
     fs::create_dir_all(&intermediate_path).expect("failed to create protoc output directory");
 
     // Run protoc.
-    let mut cmd = Command::new(protobuf_src::protoc());
+    if cfg!(not(target_os = "windows")) {
+        std::env::set_var("PROTOC", protobuf_src::protoc());
+        std::env::set_var("PROTOC_INCLUDE", protobuf_src::include());
+    }
+    let mut cmd = Command::new(env::var("PROTOC").unwrap_or("protoc".to_string()));
     for input_path in input_paths.iter() {
         let mut proto_path_arg = OsString::new();
         proto_path_arg.push("--proto_path=");

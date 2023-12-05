@@ -135,7 +135,10 @@ fn main() -> Result<()> {
     let proto_files: Vec<_> = find_proto_files(&proto_path);
 
     // Compile the protobuf files using prost.
-    std::env::set_var("PROTOC", protobuf_src::protoc());
+    if cfg!(not(target_os = "windows")) {
+        std::env::set_var("PROTOC", protobuf_src::protoc());
+        std::env::set_var("PROTOC_INCLUDE", protobuf_src::include());
+    }
     let mut config = prost_build::Config::new();
     config.type_attribute(".", "#[derive(::substrait_validator_derive::ProtoMeta)]");
     config.disable_comments([

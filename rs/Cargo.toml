@@ -92,7 +92,9 @@ semver = "1.0"
 
 # Used for generating Rust structs from the protobuf definitions.
 prost-build = "0.12"
-protobuf-src = "1.1.0"
 
 # Used to automatically find all protobuf files.
 walkdir = "2"
+
+[target.'cfg(not(target_os = "windows"))'.build-dependencies]
+protobuf-src = "1.1.0"
