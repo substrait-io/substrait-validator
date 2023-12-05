@@ -9,6 +9,7 @@ use crate::output::path;
 use crate::output::tree;
 use crate::output::type_system::data;
 use crate::output::type_system::data::class::ParameterInfo;
+use base64::{engine::general_purpose, Engine as _};
 
 const HEADER1: &str = concat!(
     r#"
@@ -622,7 +623,7 @@ pub fn export<T: std::io::Write>(
     let path = path::Path::Root(root_name);
 
     // Generate and write header.
-    let font_awesome_b64 = base64::encode(FONT_AWESOME);
+    let font_awesome_b64 = general_purpose::STANDARD.encode(FONT_AWESOME);
     write!(out, "{HEADER1}{}{HEADER2}", font_awesome_b64)?;
 
     // Emit metadata.
