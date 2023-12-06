@@ -4,5 +4,9 @@
 //! the Python code as well...
 
 fn main() {
-    println!("{}", prost_build::protoc().display());
+    if cfg!(not(target_family = "windows")) {
+        println!("{}", protobuf_src::protoc().display());
+    } else {
+        println!("protoc");
+    }
 }
