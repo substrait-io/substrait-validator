@@ -2,6 +2,8 @@
 
 //! Module providing toplevel parse/validation functions for plans.
 
+#![allow(clippy::ptr_arg)]
+
 use crate::input::proto::substrait;
 use crate::output::diagnostic;
 use crate::output::type_system::data;
