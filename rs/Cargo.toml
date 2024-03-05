@@ -82,7 +82,7 @@ chrono = "0.4"
 float-pretty-print = "0.1"
 
 # Used by the HTML exporter.
-base64 = "0.21"
+base64 = "0.22"
 percent-encoding = "2.3"
 
 # Used for representing and checking Substrait versions.
