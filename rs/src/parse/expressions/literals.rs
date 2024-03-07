@@ -66,10 +66,12 @@ pub struct Literal {
 fn to_date_time(micros: i64) -> diagnostic::Result<chrono::NaiveDateTime> {
     let secs = micros.div_euclid(1_000_000);
     let nsecs = ((micros.rem_euclid(1_000_000)) * 1000) as u32;
-    chrono::NaiveDateTime::from_timestamp_opt(secs, nsecs).ok_or(ecause!(
-        ExpressionIllegalLiteralValue,
-        "timestamp out of range"
-    ))
+    chrono::DateTime::from_timestamp(secs, nsecs)
+        .map(|date_time| date_time.naive_utc())
+        .ok_or(ecause!(
+            ExpressionIllegalLiteralValue,
+            "timestamp out of range"
+        ))
 }
 
 /// Converts a value in microseconds since the epoch to a string.
