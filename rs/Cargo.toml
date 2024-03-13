@@ -30,7 +30,7 @@ substrait-validator-derive = { path = "../derive", version = "0.0.11" }
 # over the place) and prost remaps to Rust's conventions to boot. So, to
 # recover the original names as much as possible, we need some case conversion
 # of our own.
-heck = "0.4"
+heck = "0.5"
 
 # Used for dealing with deserializing the YAML extension files.
 serde_yaml = "0.9"
