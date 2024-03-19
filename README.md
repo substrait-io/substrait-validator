@@ -27,7 +27,8 @@ older version. Refer to the table below for the version compatibility matrix.
 
 | Substrait...   | ... is supported by validator ...    |
 | -------------- | ------------------------------------ |
-| 0.20.x         | 0.0.11 (current version)             |
+| 0.21.x         | 0.0.12 (current version)             |
+| 0.20.x         | 0.0.11                               |
 | 0.19.x         | 0.0.10                               |
 | 0.18.x         | 0.0.9                                |
 | 0.9.x - 0.17.x | 0.0.8                                |
@@ -87,7 +88,7 @@ relations:
 When you save that as a `.yaml` file and pass it to the validator, it will
 simply exit with code 0 without printing anything. Of course, it's more
 interesting to try a plan that *isn't* valid, but we'll leave that as an
-excercise to the reader. Note that the validator supports other file types as
+exercise to the reader. Note that the validator supports other file types as
 well, including JSON, [JDOT](https://github.com/saulpw/jdot), and binary
 protobuf files, distinguishing between them using the file extension by
 default. You can also specify the format manually using `--in-type`.
