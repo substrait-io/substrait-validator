@@ -27,6 +27,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: bufbuild/buf-setup-action@v1.30.0
-      - uses: bufbuild/buf-lint-action@v1.1.0
+      - uses: bufbuild/buf-lint-action@v1.1.1
       - name: Compile protobuf
         run: buf generate
