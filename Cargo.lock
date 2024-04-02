@@ -979,9 +979,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-build-config"
-version = "0.21.0"
+version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5eb0b6ecba38961f6f4bd6cd5906dfab3cd426ff37b2eed5771006aa31656f1"
+checksum = "650dca34d463b6cdbdb02b1d71bfd6eb6b6816afc708faebb3bac1380ff4aef7"
 dependencies = [
  "once_cell",
  "target-lexicon",
@@ -1298,7 +1298,7 @@ dependencies = [
  "dunce",
  "prost-build",
  "pyo3",
- "pyo3-build-config 0.21.0",
+ "pyo3-build-config 0.21.1",
  "substrait-validator",
  "walkdir",
 ]
