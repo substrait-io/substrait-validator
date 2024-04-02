@@ -117,7 +117,7 @@ impl Config {
                 pyo3::Python::with_gil(|py| {
                     Ok(callback
                         .call1(py, (uri,))?
-                        .as_ref(py)
+                        .bind(py)
                         .downcast::<pyo3::types::PyBytes>()?
                         .as_bytes()
                         .to_owned())
@@ -222,14 +222,14 @@ impl ResultHandle {
         let mut result = vec![];
         self.root
             .export(&mut result, ::substrait_validator::export::Format::Proto)?;
-        let result = PyBytes::new(py, &result).into();
+        let result = PyBytes::new_bound(py, &result).into();
         Ok(result)
     }
 }
 
 /// Rust-native module for the validator.
 #[pymodule]
-fn substrait_validator(_py: Python, m: &PyModule) -> PyResult<()> {
+fn substrait_validator(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     /// Returns a dictionary mapping all diagnostic codes currently defined
     /// to three-tuples consisting of:
     ///  - the name of the diagnostic as a str;
@@ -238,11 +238,11 @@ fn substrait_validator(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m)]
     #[pyo3(name = "get_diagnostic_codes")]
     fn get_diagnostic_codes_py(py: Python) -> PyResult<PyObject> {
-        let dict = PyDict::new(py);
+        let dict = PyDict::new_bound(py);
         for class in ::substrait_validator::iter_diagnostics() {
             dict.set_item(
                 class.code(),
-                PyTuple::new(
+                PyTuple::new_bound(
                     py,
                     [
                         class.name().to_object(py),
