@@ -70,6 +70,7 @@ impl std::fmt::Display for FunctionArgument {
 /// An optional function argument.  Typically used for specifying behavior in
 /// invalid or corner cases.
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct FunctionOption {
     /// Name of the option to set.
     pub name: String,
@@ -79,6 +80,7 @@ pub struct FunctionOption {
 
 /// Information about the context in which a function is being called.
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct FunctionContext {
     /// The type of function expected.
     pub function_type: FunctionType,
@@ -96,6 +98,7 @@ pub struct FunctionContext {
 
 /// Information about the context in which a function is being called.
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct FunctionBinding {
     /// Reference to the bound function, for as far as this is known.
     pub function: extension::simple::function::Reference,
