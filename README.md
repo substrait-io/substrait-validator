@@ -126,7 +126,7 @@ description of the incoming `substrait.Plan` message, with all the information
 gathered by the validator annotated to the nodes. The HTML format is pretty
 much just a pretty-printed version of this format. More information about this
 type is available in
-[the associated `.proto` file](proto/substrait/validator/validator.proto).
+[the associated `.proto` file](proto/substrait/validator/tree.proto).
 
 For more information, use the `--help` option.
 
