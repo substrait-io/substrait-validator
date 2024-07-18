@@ -30,7 +30,7 @@ doc = false
 
 [dependencies]
 substrait-validator = { path = "../rs", version = "0.0.11" }
-pyo3 = { version = "0.21.2", features = ["extension-module"] }
+pyo3 = { version = "0.22.2", features = ["extension-module"] }
 
 [build-dependencies]
 prost-build = "0.10"
