@@ -29,7 +29,7 @@ plan:
             namedTable:
               names:
               - test2
-        type: JOIN_TYPE_SEMI
+        type: JOIN_TYPE_LEFT_SEMI
         expression:
           selection:
             rootReference: {}

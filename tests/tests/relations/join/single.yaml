@@ -33,5 +33,5 @@ plan:
           selection:
             rootReference: {}
             directReference: { structField: { field: 3 } }
-        type: JOIN_TYPE_SINGLE
+        type: JOIN_TYPE_LEFT_SINGLE
         __test: [ type: "STRUCT<string, i32, fp32?, boolean?>" ]

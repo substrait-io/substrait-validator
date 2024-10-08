@@ -8,8 +8,8 @@ plan:
         common:
           advancedExtension:
             optimization:
-              "@type": substrait.Plan
-              __test: [ diag: { level: e, code: 1006, msg: '*missing protobuf "any" declaration*' } ]
+              - "@type": substrait.Plan
+                __test: [ diag: { level: e, code: 1006, msg: '*missing protobuf "any" declaration*' } ]
         baseSchema:
           names: [word, value]
           struct:

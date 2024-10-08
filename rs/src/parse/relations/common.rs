@@ -61,6 +61,7 @@ fn parse_runtime_constraint(
 fn parse_hint(x: &substrait::rel_common::Hint, y: &mut context::Context) -> diagnostic::Result<()> {
     proto_field!(x, y, stats, parse_stats);
     proto_field!(x, y, constraint, parse_runtime_constraint);
+    proto_primitive_field!(x, y, alias);
     proto_field!(
         x,
         y,

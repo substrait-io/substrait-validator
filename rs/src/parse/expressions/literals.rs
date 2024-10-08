@@ -687,7 +687,8 @@ fn parse_interval_day_to_second(
         if *x < -3650000 || *x > 3650000 {
             Err(cause!(
                 ExpressionIllegalLiteralValue,
-                "day count out of range -3_650_000 to 3_650_000"
+                "day count {} out of range -3_650_000 to 3_650_000",
+                *x
             ))
         } else {
             Ok(())
@@ -712,17 +713,7 @@ fn parse_interval_day_to_second(
             // Just use microseconds, I guess?
             (x.subseconds, 6)
         }
-        Some(PrecisionMode::Microseconds(n)) => {
-            if !(0..1_000_000).contains(&n) {
-                diagnostic!(
-                    ctx,
-                    Error,
-                    ExpressionIllegalLiteralValue,
-                    "precision out of range 0 to 1_000_000"
-                );
-            }
-            (n as i64, 6)
-        }
+        Some(PrecisionMode::Microseconds(n)) => (n as i64, 6),
         Some(PrecisionMode::Precision(n)) => {
             if !(1..=9).contains(&n) {
                 diagnostic!(
@@ -730,13 +721,6 @@ fn parse_interval_day_to_second(
                     Error,
                     ExpressionIllegalLiteralValue,
                     "precision out of range 1 to 9"
-                );
-            } else if x.subseconds.abs() >= 10i64.pow(n as u32) {
-                diagnostic!(
-                    ctx,
-                    Error,
-                    ExpressionIllegalLiteralValue,
-                    "subsecond count out of range 0 to 10^precision"
                 );
             }
             (x.subseconds, n)
