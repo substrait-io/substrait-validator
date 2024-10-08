@@ -68,8 +68,19 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
         (SetOp::IntersectionMultiset, _) => Operation::Intersect,
         (SetOp::UnionDistinct, _) => Operation::Union,
         (SetOp::UnionAll, _) => Operation::Merge,
-        (SetOp::MinusPrimaryAll, _) => todo!("minus primary all"),
-        (SetOp::IntersectionMultisetAll, _) => todo!("intersection multiset all"),
+        (SetOp::MinusPrimaryAll, _) | (SetOp::IntersectionMultisetAll, _) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "Variant {:?} not yet supported",
+                op
+            );
+
+            handle_rel_common!(x, y);
+            handle_advanced_extension!(x, y);
+            return Ok(());
+        }
     };
 
     // Describe the relation.

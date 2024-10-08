@@ -60,11 +60,20 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         JoinType::LeftSingle => (false, Some(true)),
         // TODO: Implement the following join types. I don't understand this
         // code or these types well enough to do so.
-        JoinType::RightSemi => todo!(),
-        JoinType::RightAnti => todo!(),
-        JoinType::RightSingle => todo!(),
-        JoinType::LeftMark => todo!(),
-        JoinType::RightMark => todo!(),
+        JoinType::RightSemi
+        | JoinType::RightAnti
+        | JoinType::RightSingle
+        | JoinType::LeftMark
+        | JoinType::RightMark => {
+            diagnostic!(y, Warning, NotYetImplemented, "{:?} joins", join_type);
+            handle_rel_common!(x, y);
+
+            // Handle the advanced extension field.
+            handle_advanced_extension!(x, y);
+
+            // Keep going; this node is not correct, but we can continue to validate.
+            return Ok(());
+        }
     };
 
     // Derive final schema.

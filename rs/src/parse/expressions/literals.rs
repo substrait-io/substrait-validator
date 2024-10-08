@@ -3,13 +3,11 @@
 //! Module for parsing/validating literals.
 
 use crate::input::proto::substrait;
-use crate::input::proto::substrait::expression::literal::interval_day_to_second::PrecisionMode;
 use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::extensions;
-use crate::parse::extensions::advanced::parse_functional_any;
 use crate::parse::types;
 use crate::util;
 use crate::util::string::Describe;
@@ -683,6 +681,8 @@ fn parse_interval_day_to_second(
     nullable: bool,
     variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
+    use substrait::expression::literal::interval_day_to_second::PrecisionMode;
+
     proto_primitive_field!(x, ctx, days, |x, _| {
         if *x < -3650000 || *x > 3650000 {
             Err(cause!(
@@ -1114,7 +1114,7 @@ fn parse_value(
     use substrait::expression::literal::user_defined::Val;
 
     match x {
-        Val::Value(x) => parse_functional_any(x, y),
+        Val::Value(x) => extensions::advanced::parse_functional_any(x, y),
         Val::Struct(_) => {
             diagnostic!(
                 y,
@@ -1193,9 +1193,18 @@ fn parse_literal_type(
         LiteralType::EmptyMap(x) => parse_empty_map(x, y),
         LiteralType::Null(x) => parse_null(x, y),
         LiteralType::UserDefined(x) => parse_user_defined(x, y, nullable, variations),
-        LiteralType::IntervalCompound(_) => unimplemented!("LiteralType::IntervalCompound"),
-        LiteralType::PrecisionTimestamp(_) => unimplemented!("LiteralType::PrecisionTimestamp"),
-        LiteralType::PrecisionTimestampTz(_) => unimplemented!("LiteralType::PrecisionTimestampTz"),
+        LiteralType::IntervalCompound(_) => Err(cause!(
+            NotYetImplemented,
+            "IntervalCompound literals are not yet implemented"
+        )),
+        LiteralType::PrecisionTimestamp(_) => Err(cause!(
+            NotYetImplemented,
+            "PrecisionTimestamp literals are not yet implemented"
+        )),
+        LiteralType::PrecisionTimestampTz(_) => Err(cause!(
+            NotYetImplemented,
+            "PrecisionTimestampTz literals are not yet implemented"
+        )),
     }
 }
 

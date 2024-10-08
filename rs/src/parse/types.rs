@@ -593,9 +593,18 @@ pub fn parse_type_kind(
         substrait::r#type::Kind::Map(x) => parse_map(x, y),
         substrait::r#type::Kind::UserDefinedTypeReference(x) => parse_legacy_user_defined(x, y),
         substrait::r#type::Kind::UserDefined(x) => parse_user_defined(x, y),
-        substrait::r#type::Kind::IntervalCompound(_) => todo!("IntervalCompound"),
-        substrait::r#type::Kind::PrecisionTimestamp(_) => todo!("PrecisionTimestamp"),
-        substrait::r#type::Kind::PrecisionTimestampTz(_) => todo!("PrecisionTimestampTz"),
+        substrait::r#type::Kind::IntervalCompound(_)
+        | substrait::r#type::Kind::PrecisionTimestamp(_)
+        | substrait::r#type::Kind::PrecisionTimestampTz(_) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "Unimplemented type kind {:?}",
+                x
+            );
+            Ok(())
+        }
     }
 }
 

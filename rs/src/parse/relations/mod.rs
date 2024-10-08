@@ -49,16 +49,25 @@ fn parse_rel_type(x: &substrait::rel::RelType, y: &mut context::Context) -> diag
         substrait::rel::RelType::Cross(x) => cross::parse_cross_rel(x, y),
 
         // TODO: New relational nodes
-        substrait::rel::RelType::Reference(_x) => todo!(),
-        substrait::rel::RelType::Write(_x) => todo!(),
-        substrait::rel::RelType::Ddl(_x) => todo!(),
-        substrait::rel::RelType::HashJoin(_x) => todo!(),
-        substrait::rel::RelType::MergeJoin(_x) => todo!(),
-        substrait::rel::RelType::NestedLoopJoin(_x) => todo!(),
-        substrait::rel::RelType::Window(_x) => todo!(),
-        substrait::rel::RelType::Exchange(_x) => todo!(),
-        substrait::rel::RelType::Expand(_x) => todo!(),
-        // _ => Ok(()),
+        substrait::rel::RelType::Reference(_)
+        | substrait::rel::RelType::Write(_)
+        | substrait::rel::RelType::Ddl(_)
+        | substrait::rel::RelType::HashJoin(_)
+        | substrait::rel::RelType::MergeJoin(_)
+        | substrait::rel::RelType::NestedLoopJoin(_)
+        | substrait::rel::RelType::Window(_)
+        | substrait::rel::RelType::Exchange(_)
+        | substrait::rel::RelType::Expand(_) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "Unimplemented relation type {}",
+                x.proto_oneof_variant()
+            );
+            Ok(())
+        } //
+          // _ => Ok(()),
     }
 }
 
