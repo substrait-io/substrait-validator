@@ -200,7 +200,7 @@ fn parse_expression_type(
         substrait::expression::RexType::Subquery(x) => {
             subqueries::parse_subquery(x.as_ref(), y)?.into()
         }
-        substrait::expression::RexType::Nested(nested) => todo!("nested expressions"),
+        substrait::expression::RexType::Nested(_nested) => todo!("nested expressions"),
     })
 }
 

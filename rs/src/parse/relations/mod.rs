@@ -49,15 +49,15 @@ fn parse_rel_type(x: &substrait::rel::RelType, y: &mut context::Context) -> diag
         substrait::rel::RelType::Cross(x) => cross::parse_cross_rel(x, y),
 
         // TODO: New relational nodes
-        substrait::rel::RelType::Reference(x) => todo!(),
-        substrait::rel::RelType::Write(x) => todo!(),
-        substrait::rel::RelType::Ddl(x) => todo!(),
-        substrait::rel::RelType::HashJoin(x) => todo!(),
-        substrait::rel::RelType::MergeJoin(x) => todo!(),
-        substrait::rel::RelType::NestedLoopJoin(x) => todo!(),
-        substrait::rel::RelType::Window(x) => todo!(),
-        substrait::rel::RelType::Exchange(x) => todo!(),
-        substrait::rel::RelType::Expand(x) => todo!(),
+        substrait::rel::RelType::Reference(_x) => todo!(),
+        substrait::rel::RelType::Write(_x) => todo!(),
+        substrait::rel::RelType::Ddl(_x) => todo!(),
+        substrait::rel::RelType::HashJoin(_x) => todo!(),
+        substrait::rel::RelType::MergeJoin(_x) => todo!(),
+        substrait::rel::RelType::NestedLoopJoin(_x) => todo!(),
+        substrait::rel::RelType::Window(_x) => todo!(),
+        substrait::rel::RelType::Exchange(_x) => todo!(),
+        substrait::rel::RelType::Expand(_x) => todo!(),
         // _ => Ok(()),
     }
 }

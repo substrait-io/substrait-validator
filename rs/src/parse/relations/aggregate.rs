@@ -86,6 +86,9 @@ fn parse_measure(
     }
 }
 
+// use of deprecated field `aggregate_rel::Grouping::grouping_expressions`. We
+// allow this for backwards-compatibility.
+#[allow(deprecated)]
 /// Parse aggregate relation.
 pub fn parse_aggregate_rel(
     x: &substrait::AggregateRel,

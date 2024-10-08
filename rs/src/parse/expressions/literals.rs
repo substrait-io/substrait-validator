@@ -3,6 +3,7 @@
 //! Module for parsing/validating literals.
 
 use crate::input::proto::substrait;
+use crate::input::proto::substrait::expression::literal::interval_day_to_second::PrecisionMode;
 use crate::output::diagnostic;
 use crate::output::extension;
 use crate::output::type_system::data;
@@ -39,8 +40,13 @@ enum LiteralValue {
     /// May be used only for binary and FixedBinary.
     Binary(Vec<u8>),
 
-    /// May be used only for IntervalYearToMonth and IntervalDayToSecond.
-    Interval(i64, i64),
+    /// For (year, month) intervals
+    IntervalYearToMonth(i64, i64),
+
+    /// For (day, second, subseconds, precision) intervals.
+    ///
+    /// Seconds are (second + subseconds*10^-precision)
+    IntervalDayToSecond(i64, i64, i64, i64),
 
     /// May be used only for structs and lists.
     Items(Vec<Literal>),
@@ -212,17 +218,12 @@ impl Describe for Literal {
             },
             LiteralValue::String(s) => util::string::describe_string(f, s, limit),
             LiteralValue::Binary(b) => util::string::describe_binary(f, b, limit),
-            LiteralValue::Interval(a, b) => match self.data_type.class() {
-                data::Class::Simple(data::class::Simple::IntervalYear) => {
-                    write!(f, "{a}y{b:+}m")
-                }
-                data::Class::Simple(data::class::Simple::IntervalDay) => {
-                    let s = b / 1000000;
-                    let us = if b > &0 { *b } else { -b } % 1000000;
-                    write!(f, "{a}d{s:+}.{us:06}s")
-                }
-                _ => write!(f, "({a}, {b})"),
-            },
+            LiteralValue::IntervalYearToMonth(a, b) => write!(f, "{a}y{b:+}m"),
+
+            &LiteralValue::IntervalDayToSecond(d, s, subs, prec) => {
+                write!(f, "{d}d{s:+}.{subs:width$}s", width = prec as usize)
+            }
+
             LiteralValue::Items(x) => match self.data_type.class() {
                 data::Class::Compound(data::class::Compound::Struct) => {
                     write!(f, "(")?;
@@ -664,7 +665,7 @@ fn parse_interval_year_to_month(
         );
     }
     Literal::new_simple(
-        LiteralValue::Interval(x.years.into(), x.months.into()),
+        LiteralValue::IntervalYearToMonth(x.years.into(), x.months.into()),
         data::class::Simple::IntervalYear,
         nullable,
         extensions::simple::resolve_variation_by_class(
@@ -678,11 +679,11 @@ fn parse_interval_year_to_month(
 /// Parses a day to second interval literal.
 fn parse_interval_day_to_second(
     x: &substrait::expression::literal::IntervalDayToSecond,
-    y: &mut context::Context,
+    ctx: &mut context::Context,
     nullable: bool,
     variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
-    proto_primitive_field!(x, y, days, |x, _| {
+    proto_primitive_field!(x, ctx, days, |x, _| {
         if *x < -3650000 || *x > 3650000 {
             Err(cause!(
                 ExpressionIllegalLiteralValue,
@@ -693,17 +694,73 @@ fn parse_interval_day_to_second(
         }
     });
 
-    proto_primitive_field!(x, y, seconds);
-    proto_primitive_field!(x, y, subseconds);
+    proto_primitive_field!(x, ctx, seconds);
+    proto_primitive_field!(x, ctx, subseconds);
+    proto_field!(x, ctx, precision_mode);
+
+    let (subseconds, prec) = match x.precision_mode {
+        // TODO: Is the default microseconds?
+        None => {
+            if x.subseconds != 0 {
+                diagnostic!(
+                    ctx,
+                    Error,
+                    ExpressionIllegalLiteralValue,
+                    "subsecond count out of range 0 to 999_999"
+                );
+            }
+            // Just use microseconds, I guess?
+            (x.subseconds, 6)
+        }
+        Some(PrecisionMode::Microseconds(n)) => {
+            if !(0..1_000_000).contains(&n) {
+                diagnostic!(
+                    ctx,
+                    Error,
+                    ExpressionIllegalLiteralValue,
+                    "precision out of range 0 to 1_000_000"
+                );
+            }
+            (n as i64, 6)
+        }
+        Some(PrecisionMode::Precision(n)) => {
+            if !(1..=9).contains(&n) {
+                diagnostic!(
+                    ctx,
+                    Error,
+                    ExpressionIllegalLiteralValue,
+                    "precision out of range 1 to 9"
+                );
+            } else if x.subseconds.abs() >= 10i64.pow(n as u32) {
+                diagnostic!(
+                    ctx,
+                    Error,
+                    ExpressionIllegalLiteralValue,
+                    "subsecond count out of range 0 to 10^precision"
+                );
+            }
+            (x.subseconds, n)
+        }
+    };
+
+    let any_positive = (x.days > 0) || (x.seconds > 0) || (subseconds > 0);
+    let any_negative = (x.days < 0) || (x.seconds < 0) || (subseconds < 0);
+
+    if any_positive && any_negative {
+        diagnostic!(
+            ctx,
+            Error,
+            ExpressionIllegalLiteralValue,
+            "interval cannot have both positive and negative components"
+        );
+    }
+
     Literal::new_simple(
-        LiteralValue::Interval(
-            x.days.into(),
-            i64::from(x.seconds) * 1000000 + i64::from(x.subseconds),
-        ),
+        LiteralValue::IntervalDayToSecond(x.days.into(), x.seconds.into(), subseconds, prec.into()),
         data::class::Simple::IntervalDay,
         nullable,
         extensions::simple::resolve_variation_by_class(
-            y,
+            ctx,
             variations,
             &data::Class::Simple(data::class::Simple::IntervalDay),
         ),
@@ -1083,7 +1140,7 @@ fn parse_user_defined(
         extensions::simple::parse_type_reference
     )
     .1;
-    proto_required_field!(x, y, val, |x, y| parse_value(x, y));
+    proto_required_field!(x, y, val, parse_value);
     let class = if let Some(extension_type) = extension_type {
         data::Class::UserDefined(extension_type)
     } else {
