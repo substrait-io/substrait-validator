@@ -8,6 +8,7 @@ use crate::output::extension;
 use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::extensions;
+use crate::parse::extensions::advanced::parse_functional_any;
 use crate::parse::types;
 use crate::util;
 use crate::util::string::Describe;
@@ -693,11 +694,11 @@ fn parse_interval_day_to_second(
     });
 
     proto_primitive_field!(x, y, seconds);
-    proto_primitive_field!(x, y, microseconds);
+    proto_primitive_field!(x, y, subseconds);
     Literal::new_simple(
         LiteralValue::Interval(
             x.days.into(),
-            i64::from(x.seconds) * 1000000 + i64::from(x.microseconds),
+            i64::from(x.seconds) * 1000000 + i64::from(x.subseconds),
         ),
         data::class::Simple::IntervalDay,
         nullable,
@@ -1049,6 +1050,26 @@ fn parse_null(x: &substrait::Type, y: &mut context::Context) -> diagnostic::Resu
     }
 }
 
+fn parse_value(
+    x: &substrait::expression::literal::user_defined::Val,
+    y: &mut context::Context,
+) -> diagnostic::Result<()> {
+    use substrait::expression::literal::user_defined::Val;
+
+    match x {
+        Val::Value(x) => parse_functional_any(x, y),
+        Val::Struct(_) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "UserDefined literals with Struct definitions"
+            );
+            Ok(())
+        }
+    }
+}
+
 fn parse_user_defined(
     x: &substrait::expression::literal::UserDefined,
     y: &mut context::Context,
@@ -1062,7 +1083,7 @@ fn parse_user_defined(
         extensions::simple::parse_type_reference
     )
     .1;
-    proto_required_field!(x, y, value, extensions::advanced::parse_functional_any);
+    proto_required_field!(x, y, val, |x, y| parse_value(x, y));
     let class = if let Some(extension_type) = extension_type {
         data::Class::UserDefined(extension_type)
     } else {
@@ -1115,6 +1136,9 @@ fn parse_literal_type(
         LiteralType::EmptyMap(x) => parse_empty_map(x, y),
         LiteralType::Null(x) => parse_null(x, y),
         LiteralType::UserDefined(x) => parse_user_defined(x, y, nullable, variations),
+        LiteralType::IntervalCompound(_) => unimplemented!("LiteralType::IntervalCompound"),
+        LiteralType::PrecisionTimestamp(_) => unimplemented!("LiteralType::PrecisionTimestamp"),
+        LiteralType::PrecisionTimestampTz(_) => unimplemented!("LiteralType::PrecisionTimestampTz"),
     }
 }
 

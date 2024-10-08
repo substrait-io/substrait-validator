@@ -55,9 +55,16 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         JoinType::Outer => (true, Some(true)),
         JoinType::Left => (false, Some(true)),
         JoinType::Right => (true, Some(false)),
-        JoinType::Semi => (false, None),
-        JoinType::Anti => (false, None),
-        JoinType::Single => (false, Some(true)),
+        JoinType::LeftSemi => (false, None),
+        JoinType::LeftAnti => (false, None),
+        JoinType::LeftSingle => (false, Some(true)),
+        // TODO: Implement the following join types. I don't understand this
+        // code or these types well enough to do so.
+        JoinType::RightSemi => todo!(),
+        JoinType::RightAnti => todo!(),
+        JoinType::RightSingle => todo!(),
+        JoinType::LeftMark => todo!(),
+        JoinType::RightMark => todo!(),
     };
 
     // Derive final schema.
@@ -96,12 +103,19 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         (JoinType::Left, false) => "Left",
         (JoinType::Right, true) => "Filtered right",
         (JoinType::Right, false) => "Right",
-        (JoinType::Semi, true) => "Filtered semi",
-        (JoinType::Semi, false) => "Semi",
-        (JoinType::Anti, true) => "Filtered anti",
-        (JoinType::Anti, false) => "Anti",
-        (JoinType::Single, true) => "Filtered single",
-        (JoinType::Single, false) => "Single",
+        (JoinType::LeftSemi, true) => "Filtered semi",
+        (JoinType::LeftSemi, false) => "Semi",
+        (JoinType::LeftAnti, true) => "Filtered anti",
+        (JoinType::LeftAnti, false) => "Anti",
+        (JoinType::LeftSingle, true) => "Filtered single",
+        (JoinType::LeftSingle, false) => "Single",
+        // TODO: Implement the following join types. I don't understand these
+        // types well enough to do so.
+        (JoinType::RightSemi, _) => todo!(),
+        (JoinType::RightAnti, _) => todo!(),
+        (JoinType::RightSingle, _) => todo!(),
+        (JoinType::LeftMark, _) => todo!(),
+        (JoinType::RightMark, _) => todo!(),
     };
     describe!(y, Relation, "{prefix} join by {join_expression}");
     summary!(y, "{prefix} join by {join_expression:#}.");
@@ -146,22 +160,44 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                 to the left input set to null.",
                 nullable
             ),
-            JoinType::Semi => "Filters rows from the left input, propagating a row only if \
+            JoinType::LeftSemi => "Filters rows from the left input, propagating a row only if \
                               the join expression yields true for that row combined with \
                               any row from the right input."
                 .to_string(),
-            JoinType::Anti => "Filters rows from the left input, propagating a row only if \
-                              the join expression does not yield true for that row combined \
-                              with any row from the right input."
+            JoinType::RightSemi => "Filters rows from the right input, propagating a row only if \
+                                  the join expression yields true for that row combined with \
+                                  any row from the left input."
                 .to_string(),
-            JoinType::Single => "Returns a row for each row from the left input, concatenating \
-                                it with the row from the right input for which the join \
-                                expression yields true. If the expression never yields true for \
-                                a left input, the fields corresponding to the right input are \
-                                set to null. If the expression yields true for a left row and \
-                                multiple right rows, this may return the first pair encountered \
-                                or throw an error."
+            JoinType::LeftAnti => "Filters rows from the left input, propagating a row only if \
+                                the join expression does not yield true for that row combined \
+                                with any row from the right input."
                 .to_string(),
+            JoinType::RightAnti => "Filters rows from the right input, propagating a row only if \
+                                the join expression does not yield true for that row combined \
+                                with any row from the left input."
+                .to_string(),
+                JoinType::LeftSingle => {
+                    "Returns a row for each row from the left input, concatenating \
+                                    it with the row from the right input for which the join \
+                                    expression yields true. If the expression never yields true for \
+                                    a left input, the fields corresponding to the right input are \
+                                    set to null. If the expression yields true for a left row and \
+                                    multiple right rows, this may return the first pair encountered \
+                                    or throw an error."
+                        .to_string()
+                }
+                JoinType::RightSingle => {
+                    "Returns a row for each row from the right input, concatenating \
+                                    it with the row from the left input for which the join \
+                                    expression yields true. If the expression never yields true for \
+                                    a right input, the fields corresponding to the left input are \
+                                    set to null. If the expression yields true for a right row and \
+                                    multiple left rows, this may return the first pair encountered \
+                                    or throw an error."
+                        .to_string()
+                }
+                JoinType::LeftMark => "TODO: What is LeftMark?".to_string(),
+                JoinType::RightMark => "TODO: What is RightMark?".to_string(),
         }),
     );
 

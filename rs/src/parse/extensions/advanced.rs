@@ -81,7 +81,7 @@ pub fn parse_advanced_extension(
     x: &substrait::extensions::AdvancedExtension,
     y: &mut context::Context,
 ) -> Result<bool> {
-    proto_field!(x, y, optimization, parse_hint_any);
+    proto_repeated_field!(x, y, optimization, parse_hint_any);
     Ok(proto_field!(x, y, enhancement, parse_functional_any)
         .0
         .is_some())
