@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         type: [wheel]
         include:
           - os: ubuntu-latest
@@ -64,12 +64,11 @@ jobs:
           manylinux: auto
           command: build
           args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
-          docker-options: --env PROTOC=$HOME/.local/bin/protoc
           before-script-linux: |
             PROTOC_VERSION=28.2
             PB_REL="https://github.com/protocolbuffers/protobuf/releases"
             curl -LO $PB_REL/download/v$PROTOC_VERSION/protoc-$PROTOC_VERSION-linux-x86_64.zip
-            unzip protoc-$PROTOC_VERSION-linux-x86_64.zip -d $HOME/.local
+            unzip protoc-$PROTOC_VERSION-linux-x86_64.zip -d /usr/local
       - name: Build Windows wheels
         if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
         uses: PyO3/maturin-action@v1.44.0
