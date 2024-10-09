@@ -1091,15 +1091,15 @@ fn parse_null(x: &substrait::Type, y: &mut context::Context) -> diagnostic::Resu
 
 fn parse_value(
     x: &substrait::expression::literal::user_defined::Val,
-    y: &mut context::Context,
+    ctx: &mut context::Context,
 ) -> diagnostic::Result<()> {
     use substrait::expression::literal::user_defined::Val;
 
     match x {
-        Val::Value(x) => extensions::advanced::parse_functional_any(x, y),
+        Val::Value(x) => extensions::advanced::parse_functional_any(x, ctx),
         Val::Struct(_) => {
             diagnostic!(
-                y,
+                ctx,
                 Warning,
                 NotYetImplemented,
                 "UserDefined literals with Struct definitions"
