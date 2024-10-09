@@ -701,12 +701,16 @@ fn parse_interval_day_to_second(
 
     let (subseconds, prec) = match x.precision_mode {
         None => {
-            diagnostic!(
-                ctx,
-                Error,
-                ExpressionIllegalLiteralValue,
-                "Precision mode required for interval day to second"
-            );
+            // If there are subseconds, precision mode is required.
+            // If not, it's irrelevant.
+            if x.subseconds > 0 {
+                diagnostic!(
+                    ctx,
+                    Error,
+                    ExpressionIllegalLiteralValue,
+                    "Precision mode required for interval day to second"
+                );
+            }
 
             // Unknown precision, use default of 0
             (x.subseconds, 0)
