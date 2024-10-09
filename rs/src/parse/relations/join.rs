@@ -205,8 +205,24 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                                     or throw an error."
                         .to_string()
                 }
-                JoinType::LeftMark => "TODO: What is LeftMark?".to_string(),
-                JoinType::RightMark => "TODO: What is RightMark?".to_string(),
+                JoinType::LeftMark => "Returns one record for each record from the left input. \
+                                    Appends one additional “mark” column to the output of the join. \
+                                    The new column will be listed after all columns from both sides \
+                                    and will be of type nullable boolean. If there is at least one \
+                                    join partner in the right input where the join condition evaluates \
+                                    to true then the mark column will be set to true. Otherwise, if \
+                                    there is at least one join partner in the right input where the \
+                                    join condition evaluates to NULL then the mark column will be set \
+                                    to NULL. Otherwise the mark column will be set to false.".to_string(),
+                JoinType::RightMark => "Returns records from the right input. Appends one additional \
+                                    “mark” column to the output of the join. The new column will be \
+                                    listed after all columns from both sides and will be of type \
+                                    nullable boolean. If there is at least one join partner in the \
+                                    left input where the join condition evaluates to true then the \
+                                    mark column will be set to true. Otherwise, if there is at least \
+                                    one join partner in the left input where the join condition \
+                                    evaluates to NULL then the mark column will be set to NULL. \
+                                    Otherwise the mark column will be set to false.".to_string(),
         }),
     );
 

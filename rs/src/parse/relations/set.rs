@@ -73,7 +73,7 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
                 y,
                 Warning,
                 NotYetImplemented,
-                "Variant {:?} not yet supported",
+                "Set variant {:?} not yet supported",
                 op
             );
 

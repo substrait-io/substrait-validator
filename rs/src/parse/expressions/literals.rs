@@ -700,18 +700,16 @@ fn parse_interval_day_to_second(
     proto_field!(x, ctx, precision_mode);
 
     let (subseconds, prec) = match x.precision_mode {
-        // TODO: Is the default microseconds?
         None => {
-            if x.subseconds != 0 {
-                diagnostic!(
-                    ctx,
-                    Error,
-                    ExpressionIllegalLiteralValue,
-                    "subsecond count out of range 0 to 999_999"
-                );
-            }
-            // Just use microseconds, I guess?
-            (x.subseconds, 6)
+            diagnostic!(
+                ctx,
+                Error,
+                ExpressionIllegalLiteralValue,
+                "Precision mode required for interval day to second"
+            );
+
+            // Unknown precision, use default of 0
+            (x.subseconds, 0)
         }
         Some(PrecisionMode::Microseconds(n)) => (n as i64, 6),
         Some(PrecisionMode::Precision(n)) => {
