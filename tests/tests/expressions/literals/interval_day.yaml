@@ -105,7 +105,11 @@ plan:
                 seconds: 0
                 subseconds: -2147483648
                 precision: 9
-                __test: [ diag: { level: e, code: 6002, msg: "*interval cannot have both positive and negative components*" } ]
+                __test:
+                  - diag:
+                      level: e
+                      code: 6002
+                      msg: "*interval cannot have both positive and negative components*"
               nullable: false
             - interval_day_to_second:
                 days: 1
