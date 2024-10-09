@@ -112,12 +112,12 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         (JoinType::Left, false) => "Left",
         (JoinType::Right, true) => "Filtered right",
         (JoinType::Right, false) => "Right",
-        (JoinType::LeftSemi, true) => "Filtered semi",
-        (JoinType::LeftSemi, false) => "Semi",
-        (JoinType::LeftAnti, true) => "Filtered anti",
-        (JoinType::LeftAnti, false) => "Anti",
-        (JoinType::LeftSingle, true) => "Filtered single",
-        (JoinType::LeftSingle, false) => "Single",
+        (JoinType::LeftSemi, true) => "Filtered left semi",
+        (JoinType::LeftSemi, false) => "Left semi",
+        (JoinType::LeftAnti, true) => "Filtered left anti",
+        (JoinType::LeftAnti, false) => "Left anti",
+        (JoinType::LeftSingle, true) => "Filtered left single",
+        (JoinType::LeftSingle, false) => "Left single",
         // TODO: Implement the following join types. I don't understand these
         // types well enough to do so.
         (JoinType::RightSemi, _) => todo!(),
