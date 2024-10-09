@@ -66,7 +66,9 @@ fn parse_rel_type(x: &substrait::rel::RelType, y: &mut context::Context) -> diag
                 x.proto_oneof_variant()
             );
             Ok(())
-        } //
+        } // Uncomment to allow the validator to throw a warning if it finds a new
+          // relation; see comment above
+          //
           // _ => Ok(()),
     }
 }
