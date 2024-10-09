@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python build dependencies
-        run: python3 -m pip install --upgrade pip "maturin>=0.14,<0.15"
+        run: python3 -m pip install --upgrade pip "maturin>=1,<2"
       - name: Prepare build environment
         working-directory: py
         run: python3 prepare_build.py populate
@@ -64,6 +64,12 @@ jobs:
           manylinux: auto
           command: build
           args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
+          docker-options: --env PROTOC=$HOME/.local/bin/protoc
+          before-script-linux: |
+            PROTOC_VERSION=28.2
+            PB_REL="https://github.com/protocolbuffers/protobuf/releases"
+            curl -LO $PB_REL/download/v$PROTOC_VERSION/protoc-$PROTOC_VERSION-linux-x86_64.zip
+            unzip protoc-$PROTOC_VERSION-linux-x86_64.zip -d $HOME/.local
       - name: Build Windows wheels
         if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
         uses: PyO3/maturin-action@v1.44.0
