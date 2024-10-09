@@ -78,7 +78,7 @@ index 6dbf6a8..d7e0c22 100644
  edition = "2021"
  license = "Apache-2.0"
  include = ["src", "build.rs", "README.md"]
-@@ -17,7 +17,7 @@ prost-types = "0.10"
+@@ -17,7 +17,7 @@ prost-types = "0.13.3"
  
  # Prost doesn't generate any introspection stuff, so we hack that stuff in with
  # our own procedural macros.

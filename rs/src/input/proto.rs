@@ -19,6 +19,7 @@ use heck::ToUpperCamelCase;
 
 #[allow(clippy::large_enum_variant)] // caused by generated code
 #[allow(clippy::derive_partial_eq_without_eq)] // caused by generated code
+#[allow(clippy::doc_lazy_continuation)] // caused by generated code
 pub mod substrait {
     include!(concat!(env!("OUT_DIR"), "/substrait.rs"));
     pub mod extensions {

@@ -78,7 +78,7 @@ fn main() {
     fs::create_dir_all(&intermediate_path).expect("failed to create protoc output directory");
 
     // Run protoc.
-    let mut cmd = Command::new(prost_build::protoc());
+    let mut cmd = Command::new(prost_build::protoc_from_env());
     for input_path in input_paths.iter() {
         let mut proto_path_arg = OsString::new();
         proto_path_arg.push("--proto_path=");
