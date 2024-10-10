@@ -8,7 +8,7 @@ plan:
         common:
           advancedExtension:
             optimization:
-              "@type": substrait.Plan
+              - "@type": substrait.Plan
         baseSchema:
           names: [word, value]
           struct:

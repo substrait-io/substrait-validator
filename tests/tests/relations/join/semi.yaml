@@ -33,5 +33,5 @@ plan:
           selection:
             rootReference: {}
             directReference: { structField: { field: 3 } }
-        type: JOIN_TYPE_SEMI
+        type: JOIN_TYPE_LEFT_SEMI
         __test: [ type: "STRUCT<string, i32>" ]

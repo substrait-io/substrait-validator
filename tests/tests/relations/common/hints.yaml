@@ -12,7 +12,7 @@ plan:
               recordSize: 100
               advancedExtension:
                 optimization:
-                  '@type': substrait.Plan
+                  - '@type': substrait.Plan
         baseSchema:
           names: [a]
           struct:

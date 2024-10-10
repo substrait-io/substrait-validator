@@ -123,6 +123,9 @@ fn parse_file_format(
             extensions::advanced::parse_functional_any(x, y)?;
             None
         }
+        substrait::read_rel::local_files::file_or_files::FileFormat::Text(_) => {
+            Some(String::from("Text"))
+        }
     })
 }
 

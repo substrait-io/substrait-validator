@@ -87,6 +87,37 @@ plan:
                 microseconds: 2147483647
               nullable: true
           - fields:
+            - interval_day_to_second:
+                days: 0
+                seconds: 0
+                subseconds: -2147483648
+                precision: 9
+              nullable: false
+            - interval_day_to_second:
+                days: 0
+                seconds: 0
+                subseconds: 2147483647
+                precision: 9
+              nullable: true
+          - fields:
+            - interval_day_to_second:
+                days: 20
+                seconds: 0
+                subseconds: -2147483648
+                precision: 9
+                __test:
+                  - diag:
+                      level: e
+                      code: 6002
+                      msg: "*interval cannot have both positive and negative components*"
+              nullable: false
+            - interval_day_to_second:
+                days: 1
+                seconds: 0
+                subseconds: 2147483647
+                precision: 9
+              nullable: true
+          - fields:
             - "null":
                 interval_day: { nullability: NULLABILITY_REQUIRED }
                 __test: [ diag: { level: e, code: 4008, msg: "*type of null literal must be nullable*" } ]
