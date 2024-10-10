@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=0.14,<0.15"]
+requires = ["maturin>=1,<2"]
 build-backend = "substrait_validator_build"
 backend-path = ["."]
 
@@ -10,7 +10,7 @@ description = "Validator for Substrait query plans"
 readme = "README.md"
 license = { file = "LICENSE" }
 keywords = ["substrait"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -29,4 +29,12 @@ repository = "https://github.com/substrait-io/substrait-validator"
 substrait-validator = "substrait_validator:cli"
 
 [tool.maturin]
-include = ["substrait_validator/substrait/**/*.py"]
+include = [
+    { path = "substrait_validator/substrait/**/*.py", format = [
+        "sdist",
+        "wheel",
+    ] },
+    { path = "substrait_validator_build/**/*", format = [
+        "sdist",
+    ] },
+]

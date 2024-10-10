@@ -14,6 +14,9 @@ jobs:
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
+      - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Configure
         run: mkdir -p build && cd build && cmake ../c -DSUBSTRAIT_VALIDATOR_BUILD_TESTS=ON
       - name: Build

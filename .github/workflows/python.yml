@@ -13,11 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
         type: [wheel]
         include:
           - os: ubuntu-latest
-            python-version: "3.8"
+            python-version: "3.9"
             type: sdist
     runs-on: ${{ matrix.os }}
     steps:
@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python build dependencies
-        run: python3 -m pip install --upgrade pip "maturin>=0.14,<0.15"
+        run: python3 -m pip install --upgrade pip "maturin>=1,<2"
       - name: Prepare build environment
         working-directory: py
         run: python3 prepare_build.py populate
@@ -64,6 +64,11 @@ jobs:
           manylinux: auto
           command: build
           args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
+          before-script-linux: |
+            PROTOC_VERSION=28.2
+            PB_REL="https://github.com/protocolbuffers/protobuf/releases"
+            curl -LO $PB_REL/download/v$PROTOC_VERSION/protoc-$PROTOC_VERSION-linux-x86_64.zip
+            unzip protoc-$PROTOC_VERSION-linux-x86_64.zip -d /usr/local
       - name: Build Windows wheels
         if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
         uses: PyO3/maturin-action@v1.44.0
@@ -75,7 +80,7 @@ jobs:
         uses: PyO3/maturin-action@v1.44.0
         with:
           command: build
-          args: --release -o dist --universal2 -m py/Cargo.toml
+          args: --release -o dist --target universal2-apple-darwin -m py/Cargo.toml
       - name: Install runtime dependencies
         run: python3 -m pip install --upgrade protobuf pytest click pyyaml jdot toml
       - name: Install generated sdist

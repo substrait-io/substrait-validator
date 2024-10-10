@@ -16,7 +16,7 @@ fn main() {
     // Directory that the proto files are stored in. If the local_dependencies
     // directory exists, we're building from an sdist package, in which case
     // the proto files should have been copied to a local directory.
-    let input_paths = if std::path::Path::new("local_dependencies").exists() {
+    let input_paths = if std::path::Path::new("proto/substrait").exists() {
         vec!["proto"]
     } else {
         assert!(
@@ -78,7 +78,7 @@ fn main() {
     fs::create_dir_all(&intermediate_path).expect("failed to create protoc output directory");
 
     // Run protoc.
-    let mut cmd = Command::new(prost_build::protoc());
+    let mut cmd = Command::new(prost_build::protoc_from_env());
     for input_path in input_paths.iter() {
         let mut proto_path_arg = OsString::new();
         proto_path_arg.push("--proto_path=");
