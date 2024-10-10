@@ -38,8 +38,13 @@ enum LiteralValue {
     /// May be used only for binary and FixedBinary.
     Binary(Vec<u8>),
 
-    /// May be used only for IntervalYearToMonth and IntervalDayToSecond.
-    Interval(i64, i64),
+    /// For (year, month) intervals
+    IntervalYearToMonth(i64, i64),
+
+    /// For (day, second, subseconds, precision) intervals.
+    ///
+    /// Seconds are (second + subseconds*10^-precision)
+    IntervalDayToSecond(i64, i64, i64, i64),
 
     /// May be used only for structs and lists.
     Items(Vec<Literal>),
@@ -211,17 +216,12 @@ impl Describe for Literal {
             },
             LiteralValue::String(s) => util::string::describe_string(f, s, limit),
             LiteralValue::Binary(b) => util::string::describe_binary(f, b, limit),
-            LiteralValue::Interval(a, b) => match self.data_type.class() {
-                data::Class::Simple(data::class::Simple::IntervalYear) => {
-                    write!(f, "{a}y{b:+}m")
-                }
-                data::Class::Simple(data::class::Simple::IntervalDay) => {
-                    let s = b / 1000000;
-                    let us = if b > &0 { *b } else { -b } % 1000000;
-                    write!(f, "{a}d{s:+}.{us:06}s")
-                }
-                _ => write!(f, "({a}, {b})"),
-            },
+            LiteralValue::IntervalYearToMonth(a, b) => write!(f, "{a}y{b:+}m"),
+
+            &LiteralValue::IntervalDayToSecond(d, s, subs, prec) => {
+                write!(f, "{d}d{s:+}.{subs:width$}s", width = prec as usize)
+            }
+
             LiteralValue::Items(x) => match self.data_type.class() {
                 data::Class::Compound(data::class::Compound::Struct) => {
                     write!(f, "(")?;
@@ -663,7 +663,7 @@ fn parse_interval_year_to_month(
         );
     }
     Literal::new_simple(
-        LiteralValue::Interval(x.years.into(), x.months.into()),
+        LiteralValue::IntervalYearToMonth(x.years.into(), x.months.into()),
         data::class::Simple::IntervalYear,
         nullable,
         extensions::simple::resolve_variation_by_class(
@@ -677,32 +677,76 @@ fn parse_interval_year_to_month(
 /// Parses a day to second interval literal.
 fn parse_interval_day_to_second(
     x: &substrait::expression::literal::IntervalDayToSecond,
-    y: &mut context::Context,
+    ctx: &mut context::Context,
     nullable: bool,
     variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
-    proto_primitive_field!(x, y, days, |x, _| {
+    use substrait::expression::literal::interval_day_to_second::PrecisionMode;
+
+    proto_primitive_field!(x, ctx, days, |x, _| {
         if *x < -3650000 || *x > 3650000 {
             Err(cause!(
                 ExpressionIllegalLiteralValue,
-                "day count out of range -3_650_000 to 3_650_000"
+                "day count {} out of range -3_650_000 to 3_650_000",
+                *x
             ))
         } else {
             Ok(())
         }
     });
 
-    proto_primitive_field!(x, y, seconds);
-    proto_primitive_field!(x, y, microseconds);
+    proto_primitive_field!(x, ctx, seconds);
+    proto_primitive_field!(x, ctx, subseconds);
+    proto_field!(x, ctx, precision_mode);
+
+    let (subseconds, prec) = match x.precision_mode {
+        None => {
+            // If there are subseconds, precision mode is required.
+            // If not, it's irrelevant.
+            if x.subseconds > 0 {
+                diagnostic!(
+                    ctx,
+                    Error,
+                    ExpressionIllegalLiteralValue,
+                    "Precision mode required for interval day to second"
+                );
+            }
+
+            // Unknown precision, use default of 0
+            (x.subseconds, 0)
+        }
+        Some(PrecisionMode::Microseconds(n)) => (n as i64, 6),
+        Some(PrecisionMode::Precision(n)) => {
+            if !(1..=9).contains(&n) {
+                diagnostic!(
+                    ctx,
+                    Error,
+                    ExpressionIllegalLiteralValue,
+                    "precision out of range 1 to 9"
+                );
+            }
+            (x.subseconds, n)
+        }
+    };
+
+    let any_positive = (x.days > 0) || (x.seconds > 0) || (subseconds > 0);
+    let any_negative = (x.days < 0) || (x.seconds < 0) || (subseconds < 0);
+
+    if any_positive && any_negative {
+        diagnostic!(
+            ctx,
+            Error,
+            ExpressionIllegalLiteralValue,
+            "interval cannot have both positive and negative components"
+        );
+    }
+
     Literal::new_simple(
-        LiteralValue::Interval(
-            x.days.into(),
-            i64::from(x.seconds) * 1000000 + i64::from(x.microseconds),
-        ),
+        LiteralValue::IntervalDayToSecond(x.days.into(), x.seconds.into(), subseconds, prec.into()),
         data::class::Simple::IntervalDay,
         nullable,
         extensions::simple::resolve_variation_by_class(
-            y,
+            ctx,
             variations,
             &data::Class::Simple(data::class::Simple::IntervalDay),
         ),
@@ -1049,6 +1093,26 @@ fn parse_null(x: &substrait::Type, y: &mut context::Context) -> diagnostic::Resu
     }
 }
 
+fn parse_value(
+    x: &substrait::expression::literal::user_defined::Val,
+    ctx: &mut context::Context,
+) -> diagnostic::Result<()> {
+    use substrait::expression::literal::user_defined::Val;
+
+    match x {
+        Val::Value(x) => extensions::advanced::parse_functional_any(x, ctx),
+        Val::Struct(_) => {
+            diagnostic!(
+                ctx,
+                Warning,
+                NotYetImplemented,
+                "UserDefined literals with Struct definitions"
+            );
+            Ok(())
+        }
+    }
+}
+
 fn parse_user_defined(
     x: &substrait::expression::literal::UserDefined,
     y: &mut context::Context,
@@ -1062,7 +1126,7 @@ fn parse_user_defined(
         extensions::simple::parse_type_reference
     )
     .1;
-    proto_required_field!(x, y, value, extensions::advanced::parse_functional_any);
+    proto_required_field!(x, y, val, parse_value);
     let class = if let Some(extension_type) = extension_type {
         data::Class::UserDefined(extension_type)
     } else {
@@ -1115,6 +1179,18 @@ fn parse_literal_type(
         LiteralType::EmptyMap(x) => parse_empty_map(x, y),
         LiteralType::Null(x) => parse_null(x, y),
         LiteralType::UserDefined(x) => parse_user_defined(x, y, nullable, variations),
+        LiteralType::IntervalCompound(_) => Err(cause!(
+            NotYetImplemented,
+            "IntervalCompound literals are not yet implemented"
+        )),
+        LiteralType::PrecisionTimestamp(_) => Err(cause!(
+            NotYetImplemented,
+            "PrecisionTimestamp literals are not yet implemented"
+        )),
+        LiteralType::PrecisionTimestampTz(_) => Err(cause!(
+            NotYetImplemented,
+            "PrecisionTimestampTz literals are not yet implemented"
+        )),
     }
 }
 

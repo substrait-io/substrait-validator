@@ -200,6 +200,11 @@ fn parse_expression_type(
         substrait::expression::RexType::Subquery(x) => {
             subqueries::parse_subquery(x.as_ref(), y)?.into()
         }
+        substrait::expression::RexType::Nested(_nested) => {
+            diagnostic!(y, Warning, NotYetImplemented, "nested expressions");
+            // Continue with the rest of the plan; this is not a fatal error.
+            return Ok(Expression::Unresolved.into());
+        }
     })
 }
 

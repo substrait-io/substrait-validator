@@ -55,9 +55,25 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         JoinType::Outer => (true, Some(true)),
         JoinType::Left => (false, Some(true)),
         JoinType::Right => (true, Some(false)),
-        JoinType::Semi => (false, None),
-        JoinType::Anti => (false, None),
-        JoinType::Single => (false, Some(true)),
+        JoinType::LeftSemi => (false, None),
+        JoinType::LeftAnti => (false, None),
+        JoinType::LeftSingle => (false, Some(true)),
+        // TODO: Implement the following join types. I don't understand this
+        // code or these types well enough to do so.
+        JoinType::RightSemi
+        | JoinType::RightAnti
+        | JoinType::RightSingle
+        | JoinType::LeftMark
+        | JoinType::RightMark => {
+            diagnostic!(y, Warning, NotYetImplemented, "{:?} joins", join_type);
+            handle_rel_common!(x, y);
+
+            // Handle the advanced extension field.
+            handle_advanced_extension!(x, y);
+
+            // Keep going; this node is not correct, but we can continue to validate.
+            return Ok(());
+        }
     };
 
     // Derive final schema.
@@ -96,12 +112,19 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         (JoinType::Left, false) => "Left",
         (JoinType::Right, true) => "Filtered right",
         (JoinType::Right, false) => "Right",
-        (JoinType::Semi, true) => "Filtered semi",
-        (JoinType::Semi, false) => "Semi",
-        (JoinType::Anti, true) => "Filtered anti",
-        (JoinType::Anti, false) => "Anti",
-        (JoinType::Single, true) => "Filtered single",
-        (JoinType::Single, false) => "Single",
+        (JoinType::LeftSemi, true) => "Filtered left semi",
+        (JoinType::LeftSemi, false) => "Left semi",
+        (JoinType::LeftAnti, true) => "Filtered left anti",
+        (JoinType::LeftAnti, false) => "Left anti",
+        (JoinType::LeftSingle, true) => "Filtered left single",
+        (JoinType::LeftSingle, false) => "Left single",
+        // TODO: Implement the following join types. I don't understand these
+        // types well enough to do so.
+        (JoinType::RightSemi, _) => todo!(),
+        (JoinType::RightAnti, _) => todo!(),
+        (JoinType::RightSingle, _) => todo!(),
+        (JoinType::LeftMark, _) => todo!(),
+        (JoinType::RightMark, _) => todo!(),
     };
     describe!(y, Relation, "{prefix} join by {join_expression}");
     summary!(y, "{prefix} join by {join_expression:#}.");
@@ -146,22 +169,60 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                 to the left input set to null.",
                 nullable
             ),
-            JoinType::Semi => "Filters rows from the left input, propagating a row only if \
+            JoinType::LeftSemi => "Filters rows from the left input, propagating a row only if \
                               the join expression yields true for that row combined with \
                               any row from the right input."
                 .to_string(),
-            JoinType::Anti => "Filters rows from the left input, propagating a row only if \
-                              the join expression does not yield true for that row combined \
-                              with any row from the right input."
+            JoinType::RightSemi => "Filters rows from the right input, propagating a row only if \
+                                  the join expression yields true for that row combined with \
+                                  any row from the left input."
                 .to_string(),
-            JoinType::Single => "Returns a row for each row from the left input, concatenating \
-                                it with the row from the right input for which the join \
-                                expression yields true. If the expression never yields true for \
-                                a left input, the fields corresponding to the right input are \
-                                set to null. If the expression yields true for a left row and \
-                                multiple right rows, this may return the first pair encountered \
-                                or throw an error."
+            JoinType::LeftAnti => "Filters rows from the left input, propagating a row only if \
+                                the join expression does not yield true for that row combined \
+                                with any row from the right input."
                 .to_string(),
+            JoinType::RightAnti => "Filters rows from the right input, propagating a row only if \
+                                the join expression does not yield true for that row combined \
+                                with any row from the left input."
+                .to_string(),
+                JoinType::LeftSingle => {
+                    "Returns a row for each row from the left input, concatenating \
+                                    it with the row from the right input for which the join \
+                                    expression yields true. If the expression never yields true for \
+                                    a left input, the fields corresponding to the right input are \
+                                    set to null. If the expression yields true for a left row and \
+                                    multiple right rows, this may return the first pair encountered \
+                                    or throw an error."
+                        .to_string()
+                }
+                JoinType::RightSingle => {
+                    "Returns a row for each row from the right input, concatenating \
+                                    it with the row from the left input for which the join \
+                                    expression yields true. If the expression never yields true for \
+                                    a right input, the fields corresponding to the left input are \
+                                    set to null. If the expression yields true for a right row and \
+                                    multiple left rows, this may return the first pair encountered \
+                                    or throw an error."
+                        .to_string()
+                }
+                JoinType::LeftMark => "Returns one record for each record from the left input. \
+                                    Appends one additional “mark” column to the output of the join. \
+                                    The new column will be listed after all columns from both sides \
+                                    and will be of type nullable boolean. If there is at least one \
+                                    join partner in the right input where the join condition evaluates \
+                                    to true then the mark column will be set to true. Otherwise, if \
+                                    there is at least one join partner in the right input where the \
+                                    join condition evaluates to NULL then the mark column will be set \
+                                    to NULL. Otherwise the mark column will be set to false.".to_string(),
+                JoinType::RightMark => "Returns records from the right input. Appends one additional \
+                                    “mark” column to the output of the join. The new column will be \
+                                    listed after all columns from both sides and will be of type \
+                                    nullable boolean. If there is at least one join partner in the \
+                                    left input where the join condition evaluates to true then the \
+                                    mark column will be set to true. Otherwise, if there is at least \
+                                    one join partner in the left input where the join condition \
+                                    evaluates to NULL then the mark column will be set to NULL. \
+                                    Otherwise the mark column will be set to false.".to_string(),
         }),
     );
 

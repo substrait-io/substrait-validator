@@ -47,7 +47,29 @@ fn parse_rel_type(x: &substrait::rel::RelType, y: &mut context::Context) -> diag
         substrait::rel::RelType::ExtensionMulti(x) => extension::parse_extension_multi_rel(x, y),
         substrait::rel::RelType::ExtensionLeaf(x) => extension::parse_extension_leaf_rel(x, y),
         substrait::rel::RelType::Cross(x) => cross::parse_cross_rel(x, y),
-        // _ => Ok(()),
+
+        // TODO: New relational nodes
+        substrait::rel::RelType::Reference(_)
+        | substrait::rel::RelType::Write(_)
+        | substrait::rel::RelType::Ddl(_)
+        | substrait::rel::RelType::HashJoin(_)
+        | substrait::rel::RelType::MergeJoin(_)
+        | substrait::rel::RelType::NestedLoopJoin(_)
+        | substrait::rel::RelType::Window(_)
+        | substrait::rel::RelType::Exchange(_)
+        | substrait::rel::RelType::Expand(_) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "Unimplemented relation type {}",
+                x.proto_oneof_variant()
+            );
+            Ok(())
+        } // Uncomment to allow the validator to throw a warning if it finds a new
+          // relation; see comment above
+          //
+          // _ => Ok(()),
     }
 }
 
