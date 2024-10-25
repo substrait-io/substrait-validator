@@ -157,9 +157,9 @@ fn parse_version(x: &substrait::Version, y: &mut context::Context) -> diagnostic
 }
 
 /// Report the "validator is experimental" diagnostic.
-fn mark_experimental(y: &mut context::Context) {
+pub fn mark_experimental(ctx: &mut context::Context) {
     diagnostic!(
-        y,
+        ctx,
         Info,
         Experimental,
         "this version of the validator is EXPERIMENTAL. Please report issues \
@@ -168,23 +168,23 @@ fn mark_experimental(y: &mut context::Context) {
 }
 
 /// Toplevel parse function for a plan.
-pub fn parse_plan(x: &substrait::Plan, y: &mut context::Context) -> diagnostic::Result<()> {
-    mark_experimental(y);
+pub fn parse_plan(plan: &substrait::Plan, ctx: &mut context::Context) {
+    mark_experimental(ctx);
 
     // Parse the version.
-    proto_required_field!(x, y, version, parse_version);
+    proto_required_field!(plan, ctx, version, parse_version);
 
     // Handle extensions first, because we'll need their declarations to
     // correctly interpret the relations.
-    extensions::parse_plan(x, y);
+    extensions::parse_plan(plan, ctx);
 
     // Handle the relations.
-    let num_relations = proto_repeated_field!(x, y, relations, parse_plan_rel)
+    let num_relations = proto_repeated_field!(plan, ctx, relations, parse_plan_rel)
         .0
         .len();
     if num_relations == 0 {
         diagnostic!(
-            y,
+            ctx,
             Error,
             RelationRootMissing,
             "a plan must have at least one relation"
@@ -193,25 +193,14 @@ pub fn parse_plan(x: &substrait::Plan, y: &mut context::Context) -> diagnostic::
 
     // Generate an Info diagnostic for every extension definition that wasn't
     // used at any point, and can thus be safely removed.
-    extensions::check_unused_definitions(y);
-
-    Ok(())
+    extensions::check_unused_definitions(ctx);
 }
 
-/// Toplevel parse function for a plan.
-pub fn parse_plan_version(
-    x: &substrait::PlanVersion,
-    y: &mut context::Context,
-    e: diagnostic::Cause,
-) -> diagnostic::Result<()> {
-    mark_experimental(y);
-
-    // Push the diagnostic that the caller got while parsing as a complete Plan
-    // before.
-    diagnostic!(y, Error, e);
+/// Toplevel validation function for a plan. Validates that the PlanVersion
+/// matches expected format, pushing errors to the `Context`.
+pub fn parse_plan_version(tree: &substrait::PlanVersion, ctx: &mut context::Context) {
+    mark_experimental(ctx);
 
     // Parse the version.
-    proto_required_field!(x, y, version, parse_version);
-
-    Ok(())
+    proto_required_field!(tree, ctx, version, parse_version);
 }

@@ -9,14 +9,13 @@
 //!  1) Build a [`Config`] structure to configure the validator. You can also
 //!     just use [`std::default::Default`] if you don't need to configure
 //!     anything, but you might want to at least call
-//!     `Config::add_curl_uri_resolver()` (if you're using the `curl`
-//!     feature).
-//!  2) Parse the incoming `substrait.Plan` message using [`parse()`]. This
-//!     creates a [ParseResult], containing a [tree](output::tree) structure
-//!     corresponding to the query plan that also contains diagnostics and
-//!     other annotations added by the validator.
-//!  3) You can traverse the tree yourself using [ParseResult::root], or you
-//!     can use one of the methods associated with [ParseResult] to obtain the
+//!     `Config::add_curl_uri_resolver()` (if you're using the `curl` feature).
+//!  2) Parse the incoming `substrait.Plan` message using [`parse()`] or
+//!     [`validate()`]. This creates a [ParseResult], containing a
+//!     [tree](output::tree) structure corresponding to the query plan that also
+//!     contains diagnostics and other annotations added by the validator.
+//!  3) You can traverse the tree yourself using [ParseResult::root], or you can
+//!     use one of the methods associated with [ParseResult] to obtain the
 //!     validation results you need.
 //!
 //! Note that only the binary protobuf serialization format is supported at the
@@ -171,6 +170,7 @@ mod util;
 
 use std::str::FromStr;
 
+use input::proto::substrait::Plan;
 use strum::IntoEnumIterator;
 
 // Aliases for common types used on the crate interface.
@@ -183,9 +183,16 @@ pub use output::diagnostic::Level;
 pub use output::parse_result::ParseResult;
 pub use output::parse_result::Validity;
 
-/// Validates the given substrait.Plan message and returns the parse tree.
+/// Parses and validates the given substrait [Plan] message and returns the
+/// parse tree and diagnostic results.
 pub fn parse<B: prost::bytes::Buf + Clone>(buffer: B, config: &Config) -> ParseResult {
     parse::parse(buffer, config)
+}
+
+/// Validates the given substrait [Plan] message and returns the parse tree  and
+/// diagnostic results.
+pub fn validate(plan: &Plan, config: &Config) -> ParseResult {
+    parse::validate(plan, config)
 }
 
 /// Returns an iterator that yields all known diagnostic classes.
