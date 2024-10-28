@@ -148,13 +148,10 @@ main/py/prepare_build.py).
 
 ### Protobuf
 
-In order to rely on as few external dependencies as possible, all protoc
-invocations by the various parts of the build invoke the `protoc` executable
-as found/compiled and exposed by [prost-build](prost-build). That is: this
-protoc is also abused to generate Python bindings. Unfortunately, prost-build
-is planning to [remove](https://github.com/tokio-rs/prost/pull/620) the build
-logic for protoc at the time of writing (and who can blame them), so this will
-need to be done differently in the future.
+Protobuf code generation is done via `prost`, which requires access to a
+`protoc` executable. This will need to be installed on your system while
+developing (e.g. via a package manager). In CI, it is installed as part of the
+Github actions.
     "
 )]
 
