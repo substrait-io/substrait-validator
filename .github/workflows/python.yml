@@ -32,6 +32,8 @@ jobs:
       - name: Install latest protoc
         uses: arduino/setup-protoc@v3
         with:
+          version: "28.3"
+          # avoid rate-limiting
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install sdist-only dependencies
         if: ${{ matrix.type == 'sdist' }}
@@ -62,6 +64,8 @@ jobs:
         uses: PyO3/maturin-action@v1.44.0
         with:
           manylinux: auto
+          # Don't use a docker container for building the wheels
+          container: off
           command: build
           args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
       - name: Build Windows wheels
