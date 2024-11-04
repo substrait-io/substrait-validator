@@ -64,10 +64,14 @@ jobs:
         uses: PyO3/maturin-action@v1.44.0
         with:
           manylinux: auto
-          # Don't use a docker container for building the wheels
-          container: off
           command: build
           args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
+          # Download protoc into the container, for use in the build
+          before-script-linux: |
+            PROTOC_VERSION=28.3
+            PB_REL="https://github.com/protocolbuffers/protobuf/releases"
+            curl -LO $PB_REL/download/v$PROTOC_VERSION/protoc-$PROTOC_VERSION-linux-x86_64.zip
+            unzip protoc-$PROTOC_VERSION-linux-x86_64.zip -d /usr/local
       - name: Build Windows wheels
         if: ${{ matrix.type == 'wheel' && matrix.os == 'windows-latest' }}
         uses: PyO3/maturin-action@v1.44.0
