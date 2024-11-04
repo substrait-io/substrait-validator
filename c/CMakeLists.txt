@@ -48,11 +48,22 @@ if(SUBSTRAIT_VALIDATOR_BUILD_TESTS)
         substrait-validator-c-test
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.cc
     )
+
+    # For OSX, link in CoreFoundation, needed for some system symbols like
+    # _CFRelease, _CFStringGetBytes, …
+    set(EXTRA_FRAMEWORK_OPTIONS "")
+    if(APPLE)
+        set(EXTRA_FRAMEWORK_OPTIONS "-framework CoreFoundation")
+    endif()
+
+
     target_link_libraries(
         substrait-validator-c-test
         gtest_main
         substrait_validator_c
+        "${EXTRA_FRAMEWORK_OPTIONS}"
     )
+
 
     include(GoogleTest)
     gtest_discover_tests(substrait-validator-c-test)

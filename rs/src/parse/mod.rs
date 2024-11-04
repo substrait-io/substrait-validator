@@ -197,37 +197,78 @@ use crate::output::diagnostic;
 use crate::output::parse_result;
 use crate::output::path;
 
-/// Validates the given substrait.Plan message and returns the parse tree.
+use prost::Message;
+
+/// Represents the state of attempting to decode a buffer as a plan, or failing
+/// that, as a plan version.
+enum ParsedProtoResult {
+    /// Successful parsing
+    Parsed(proto::substrait::Plan),
+
+    /// Failed to decode into `substrait::Plan`, possibly due to a version
+    /// conflict; see `Cause`. Succeeded in decoding the version.
+    VersionParsed(proto::substrait::PlanVersion, diagnostic::Cause),
+
+    /// Failed to decode into `substrait::Plan` (first cause) and
+    /// `substrait::PlanVersion` (second cause).
+    Failed(diagnostic::Cause, diagnostic::Cause),
+}
+
+/// Parse the given buffer as a Plan if possible, PlanVersion if not, returning
+/// errors as they are generated.
+fn parse_proto<B: prost::bytes::Buf + Clone>(buffer: B) -> ParsedProtoResult {
+    // Attempt to parse the buffer as a Plan.
+    let err1 = match proto::substrait::Plan::decode(buffer.clone()) {
+        Ok(plan) => return ParsedProtoResult::Parsed(plan),
+        Err(e) => ecause!(ProtoParseFailed, e),
+    };
+
+    // Attempt to parse the buffer as a PlanVersion, as fallback.
+    match proto::substrait::PlanVersion::decode(buffer) {
+        Ok(version) => ParsedProtoResult::VersionParsed(version, err1),
+        Err(e2) => ParsedProtoResult::Failed(err1, ecause!(ProtoParseFailed, e2)),
+    }
+}
+
+/// Parses the given [`proto::substrait::Plan`] message, validates it, and
+/// returns the parse tree with diagnostic results.
 pub fn parse<B: prost::bytes::Buf + Clone>(
     buffer: B,
     config: &config::Config,
 ) -> parse_result::ParseResult {
     let mut state = context::State::default();
 
-    // Parse the normal way.
-    let err1 = match traversal::parse_proto::<proto::substrait::Plan, _, _>(
-        buffer.clone(),
-        "plan",
-        plan::parse_plan,
-        &mut state,
-        config,
-    ) {
-        Ok(parse_result) => return parse_result,
-        Err(err) => err,
+    let (err1, err2) = match parse_proto(buffer) {
+        ParsedProtoResult::Parsed(ref plan) => {
+            return traversal::validate::<proto::substrait::Plan, _>(
+                plan,
+                "plan",
+                plan::parse_plan,
+                &mut state,
+                config,
+            );
+        }
+        ParsedProtoResult::VersionParsed(ref version, err1) => {
+            return traversal::validate::<proto::substrait::PlanVersion, _>(
+                version,
+                "plan",
+                |tree, ctx| {
+                    // We have a PlanVersion, but the Plan itself failed to
+                    // decode - so include that error.
+                    diagnostic!(ctx, Error, err1);
+
+                    plan::parse_plan_version(tree, ctx)
+                },
+                &mut state,
+                config,
+            );
+        }
+        ParsedProtoResult::Failed(err1, err2) => (err1, err2),
     };
 
-    // Parse the fallback PlanVersion message that only includes the version
-    // information.
-    let err2 = match traversal::parse_proto::<proto::substrait::PlanVersion, _, _>(
-        buffer,
-        "plan",
-        |x, y| plan::parse_plan_version(x, y, err1.clone()),
-        &mut state,
-        config,
-    ) {
-        Ok(parse_result) => return parse_result,
-        Err(err) => err,
-    };
+    // --------------------------------------------------------------------------------
+    // The parser failed to decode the buffer as either a plan or plan version, so now
+    // we create a minimal parse tree with the error diagnostics from the parser.
 
     // Create a minimal root node with just the decode error
     // diagnostic.
@@ -235,6 +276,7 @@ pub fn parse<B: prost::bytes::Buf + Clone>(
 
     // Create a root context for it.
     let mut context = context::Context::new("plan", &mut root, &mut state, config);
+    plan::mark_experimental(&mut context);
 
     // Push the earlier diagnostic.
     context.push_diagnostic(diagnostic::RawDiagnostic {
@@ -263,4 +305,20 @@ pub fn parse<B: prost::bytes::Buf + Clone>(
     });
 
     parse_result::ParseResult { root }
+}
+
+/// Validate the given [`proto::substrait::Plan`] message, returning the parse
+/// tree with diagnostic results.
+pub fn validate(
+    plan: &proto::substrait::Plan,
+    config: &config::Config,
+) -> parse_result::ParseResult {
+    let mut state = context::State::default();
+    traversal::validate::<proto::substrait::Plan, _>(
+        plan,
+        "plan",
+        plan::parse_plan,
+        &mut state,
+        config,
+    )
 }

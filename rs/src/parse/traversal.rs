@@ -587,12 +587,30 @@ pub fn parse_proto<T, F, B>(
 ) -> diagnostic::Result<parse_result::ParseResult>
 where
     T: prost::Message + InputNode + Default,
-    F: FnOnce(&T, &mut context::Context) -> diagnostic::Result<()>,
+    F: FnOnce(&T, &mut context::Context),
     B: prost::bytes::Buf,
 {
     // Run protobuf deserialization.
     let input = T::decode(buffer).map_err(|e| ecause!(ProtoParseFailed, e))?;
 
+    Ok(validate(&input, root_name, root_parser, state, config))
+}
+
+/// Validates a serialized protobuf message using the given `root_parser`
+/// function, initial state, and configuration, pushing any errors from the
+/// root_validator or unhandled children into the returned
+/// [`parse_result::ParseResult`].
+pub fn validate<T, F>(
+    input: &T,
+    root_name: &'static str,
+    root_validator: F,
+    state: &mut context::State,
+    config: &config::Config,
+) -> parse_result::ParseResult
+where
+    T: prost::Message + InputNode + Default,
+    F: FnOnce(&T, &mut context::Context),
+{
     // Create the root node.
     let mut root = input.data_to_node();
 
@@ -600,18 +618,14 @@ where
     let mut context = context::Context::new(root_name, &mut root, state, config);
 
     // Call the provided parser function.
-    let success = root_parser(&input, &mut context)
-        .map_err(|cause| {
-            diagnostic!(&mut context, Error, cause);
-        })
-        .is_ok();
+    root_validator(input, &mut context);
 
     // Handle any fields not handled by the provided parse function.
     // Only generate a warning diagnostic for unhandled children if the
     // parse function succeeded.
-    handle_unknown_children(&input, &mut context, success);
+    handle_unknown_children(input, &mut context, true);
 
-    Ok(parse_result::ParseResult { root })
+    parse_result::ParseResult { root }
 }
 
 //=============================================================================

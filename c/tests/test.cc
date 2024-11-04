@@ -33,12 +33,17 @@ TEST(BasicTest, BasicTest) {
   EXPECT_EQ(strlen(reinterpret_cast<const char *>(data_ptr)), data_size);
   EXPECT_EQ(
       reinterpret_cast<const char *>(data_ptr),
-      std::string("Error at plan: failed to parse as substrait.Plan: "
-                  "failed to decode Protobuf message: "
-                  "invalid wire type value: 7 (code 1001) (code 1001)\n"
-                  "Error at plan: failed to parse as substrait.PlanVersion: "
-                  "failed to decode Protobuf message: "
-                  "invalid wire type value: 7 (code 1001) (code 1001)\n"));
+      std::string(
+          "Info at plan: this version of the validator is EXPERIMENTAL. "
+          "Please report issues via "
+          "https://github.com/substrait-io/substrait-validator/issues/new "
+          "(code 0999)\n"
+          "Error at plan: failed to parse as substrait.Plan: "
+          "failed to decode Protobuf message: "
+          "invalid wire type value: 7 (code 1001) (code 1001)\n"
+          "Error at plan: failed to parse as substrait.PlanVersion: "
+          "failed to decode Protobuf message: "
+          "invalid wire type value: 7 (code 1001) (code 1001)\n"));
 
   // Free the buffer.
   substrait_validator_free_exported(data_ptr);
