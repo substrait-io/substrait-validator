@@ -94,6 +94,7 @@ impl Config {
     /// for the complete syntax). If resolve_as is None, the URI will not
     /// be resolved; otherwise it should be a string representing the URI it
     /// should be resolved as.
+    #[pyo3(signature = (pattern, resolve_as = "None"))]
     pub fn override_uri(&mut self, pattern: &str, resolve_as: Option<&str>) -> PyResult<()> {
         let pattern = match ::substrait_validator::Pattern::new(pattern) {
             Ok(p) => p,
@@ -128,6 +129,7 @@ impl Config {
     /// Sets the maximum recursion depth for URI resolution, in the presence of
     /// transitive dependencies. Setting this to None disables the limit,
     /// setting this to zero disables URI resolution entirely.
+    #[pyo3(signature = (depth=None))]
     pub fn set_max_uri_resolution_depth(&mut self, depth: Option<usize>) {
         self.config.set_max_uri_resolution_depth(depth);
     }
@@ -149,6 +151,7 @@ struct ResultHandle {
 #[pymethods]
 impl ResultHandle {
     #[new]
+    #[pyo3(signature = (data, config=None))]
     pub fn new(data: &[u8], config: Option<&Config>) -> Self {
         Self {
             root: if let Some(config) = config {
