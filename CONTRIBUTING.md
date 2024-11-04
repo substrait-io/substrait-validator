@@ -24,6 +24,7 @@ Here's a (probably non-exhaustive) list of things you may want to have installed
  - [pre-commit](https://pre-commit.com/), so you don't have to rely on CI to catch all your errors, and to help format your code
  - git (obviously)
  - for the C bindings: [CMake](https://cmake.org/) and a C compiler (gcc, clang, and MSVC should all work; the bindings are very lightweight)
+ - [Protobuf](https://protobuf.dev/overview/), namely the `protoc` executable, for working with Substrait
 
 Note: this list is probably non-exhaustive; if you find something missing from this list, please add it!
 
