@@ -95,11 +95,15 @@ jobs:
       - name: Test
         working-directory: py/tests
         run: python3 -m pytest
+      - name: Display structure of dist directory
+        run: ls -R dist
       - name: Upload wheels
         if: "startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          # Ensure we have a different name for every artifact, by using the
+          # matrix components in the artifact name
+          name: binary-${{ matrix.type }}-${{ matrix.os }}-${{ matrix.python-version }}
           path: dist
 
   release:
@@ -111,7 +115,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: wheels
+          pattern: binary-*
+          # Download them all into the current directory
+          merge-multiple: true
+      - name: Display available artifacts
+        run: ls -R .
       - name: Publish to GitHub release page
         uses: softprops/action-gh-release@v2
         with:
