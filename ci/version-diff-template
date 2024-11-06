@@ -25,7 +25,7 @@ index 1cf1f7e..482c127 100644
 +++ b/derive/Cargo.toml
 @@ -4,7 +4,7 @@ description = "Procedural macros for substrait-validator"
  homepage = "https://substrait.io/"
- repository = "https://github.com/substrait-io/substrait"
+ repository = "https://github.com/substrait-io/substrait-validator"
  readme = "README.md"
 -version = "{frm}"
 +version = "{to}"
@@ -72,7 +72,7 @@ index 4144f94..791db63 100644
 +++ b/rs/Cargo.toml
 @@ -4,7 +4,7 @@ description = "Substrait validator"
  homepage = "https://substrait.io/"
- repository = "https://github.com/substrait-io/substrait"
+ repository = "https://github.com/substrait-io/substrait-validator"
  readme = "README.md"
 -version = "{frm}"
 +version = "{to}"

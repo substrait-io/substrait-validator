@@ -2,7 +2,7 @@
 name = "substrait-validator-derive"
 description = "Procedural macros for substrait-validator"
 homepage = "https://substrait.io/"
-repository = "https://github.com/substrait-io/substrait"
+repository = "https://github.com/substrait-io/substrait-validator"
 readme = "README.md"
 version = "0.1.0"
 edition = "2021"
