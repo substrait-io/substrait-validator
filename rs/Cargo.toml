@@ -44,7 +44,7 @@ serde_json = "1"
 
 # Used for checking identifier syntax (could be removed if regexes don't end up
 # being useful elsewhere too).
-regex = "1.10"
+regex = "1.11"
 
 # Used for the type derivation DSL.
 antlr-rust = "0.3.0-beta"
