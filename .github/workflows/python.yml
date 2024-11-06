@@ -98,7 +98,7 @@ jobs:
       - name: Display structure of dist directory
         run: ls -R dist
       - name: Upload wheels
-        if: "startsWith(github.ref, 'refs/tags/')"
+        # if: "startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
           # Ensure we have a different name for every artifact, by using the
@@ -109,7 +109,6 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: "startsWith(github.ref, 'refs/tags/')"
     needs: [build]
     environment: VALIDATOR_RELEASE
     steps:
@@ -121,12 +120,14 @@ jobs:
       - name: Display available artifacts
         run: ls -R .
       - name: Publish to GitHub release page
+        if: "startsWith(github.ref, 'refs/tags/')"
         uses: softprops/action-gh-release@v2
         with:
           files: |
             *.whl
             *.tar.gz
       - name: Publish to PyPI
+        if: "startsWith(github.ref, 'refs/tags/')"
         uses: PyO3/maturin-action@v1.45.0
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
