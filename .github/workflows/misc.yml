@@ -10,9 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check License Header
-        uses: enarx/spdx@master
+        uses: enarx/spdx@8dd1a10623686920a56406bbacb795c61fa23343
         with:
-          licenses: Apache-2.0 MIT
+          licenses: |-
+            Apache-2.0
+            MIT
 
   editorconfig:
     name: Check editorconfig
