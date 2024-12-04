@@ -245,7 +245,7 @@ pub trait Describe {
 
 pub struct Describer<'a, T: Describe + ?Sized>(&'a T);
 
-impl<'a, T: Describe> std::fmt::Display for Describer<'a, T> {
+impl<T: Describe> std::fmt::Display for Describer<'_, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.describe(
             f,

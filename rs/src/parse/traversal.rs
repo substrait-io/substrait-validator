@@ -1263,7 +1263,7 @@ pub fn read_yaml(
 /// node type.
 struct AntlrContextWrapper<'a, T>(&'a T);
 
-impl<'a, T> InputNode for AntlrContextWrapper<'a, T> {
+impl<T> InputNode for AntlrContextWrapper<'_, T> {
     fn type_to_node() -> tree::Node {
         tree::NodeType::AstNode.into()
     }
