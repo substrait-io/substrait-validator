@@ -57,7 +57,7 @@ pub struct AnalysisContext<'a> {
     pattern_names: HashMap<String, PatternObject>,
 }
 
-impl<'a> Clone for AnalysisContext<'a> {
+impl Clone for AnalysisContext<'_> {
     fn clone(&self) -> Self {
         Self {
             scope: self.scope,
