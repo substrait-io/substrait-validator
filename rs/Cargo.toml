@@ -19,7 +19,7 @@ private_docs = []
 [dependencies]
 
 # Prost is used to deal with protobuf serialization and deserialization.
-prost = "0.13.3"
+prost = "0.13.4"
 prost-types = "0.13.3"
 
 # Prost doesn't generate any introspection stuff, so we hack that stuff in with
