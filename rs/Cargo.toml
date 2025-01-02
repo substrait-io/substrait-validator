@@ -63,7 +63,7 @@ num-traits = "0.2"
 num-derive = "0.4"
 
 # For intersperse().
-itertools = "0.13"
+itertools = "0.14"
 
 # Glob patterns are used in the configuration structure and are used to
 # syntax-check URI glob patterns in the Substrait plans.
