@@ -1485,6 +1485,7 @@ version = "0.1.1"
 dependencies = [
  "dunce",
  "prost-build",
+ "protobuf-src",
  "pyo3",
  "pyo3-build-config 0.23.3",
  "substrait-validator",
@@ -1538,6 +1539,7 @@ version = "0.1.1"
 dependencies = [
  "glob",
  "prost-build",
+ "protobuf-src",
  "rayon",
  "serde",
  "serde_json",
