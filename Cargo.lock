@@ -257,6 +257,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
 
 [[package]]
+name = "cmake"
+version = "0.1.52"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c682c223677e0e5b6b7f63a64b9351844c3f1b1678a68b7ee617e30fb082620e"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1097,6 +1106,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "protobuf-src"
+version = "2.1.0+27.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7edafa3bcc668fa93efafcbdf58d7821bbda0f4b458ac7fae3d57ec0fec8167"
+dependencies = [
+ "cmake",
+]
+
+[[package]]
 name = "pyo3"
 version = "0.22.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1427,6 +1445,7 @@ dependencies = [
  "prost",
  "prost-build",
  "prost-types",
+ "protobuf-src",
  "regex",
  "semver",
  "serde_json",

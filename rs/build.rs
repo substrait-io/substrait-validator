@@ -129,6 +129,10 @@ fn main() -> Result<()> {
         }
     }
 
+    #[cfg(feature = "protoc")]
+    // Use vendored protobuf compiler if requested.
+    std::env::set_var("PROTOC", protobuf_src::protoc());
+
     // Find all protobuf files in our resource directory. We just synchronized
     // these files if we're building from git.
     let proto_path = PathBuf::from(&resource_dir).join("proto");
