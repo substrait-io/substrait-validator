@@ -114,8 +114,8 @@ if __name__ == "__main__":
                 frm = line[1:]
                 if not lines[index + 1].startswith("+"):
                     print(
-                        f"Error: expecting -+ line pairs on lines {index+1} "
-                        f"and {index+2} of `git diff`"
+                        f"Error: expecting -+ line pairs on lines {index + 1} "
+                        f"and {index + 2} of `git diff`"
                     )
                     sys.exit(1)
                 to = lines[index + 1][1:]
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                     or to.replace(dummy_version, current_version) != frm
                 ):
                     print(
-                        f"Error: diff at lines {index+1} and {index+2} of git "
+                        f"Error: diff at lines {index + 1} and {index + 2} of git "
                         f"diff is not just a change from {current_version} to "
                         f"{dummy_version}"
                     )

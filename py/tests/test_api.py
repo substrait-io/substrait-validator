@@ -51,19 +51,19 @@ def test_proto_roundtrip():
 def test_parsing():
     """Test the parsing function."""
     result = sv.plan_to_parse_result(BASIC_PLAN)
-    assert type(result) == sv.ParseResult
+    assert isinstance(result, sv.ParseResult)
 
     root = sv.parse_plan(BASIC_PLAN)
-    assert type(root) == sv.ParseResult
+    assert isinstance(root, sv.ParseResult)
 
     root = sv.plan_to_parse_result(BASIC_PLAN)
-    assert type(root) == sv.ParseResult
+    assert isinstance(root, sv.ParseResult)
 
 
 def test_export_html():
     """Test the HTML export function."""
     html = sv.plan_to_html(BASIC_PLAN)
-    assert type(html) == str
+    assert isinstance(html, str)
     lines = list(filter(bool, html.split("\n")))
     assert lines[0] == "<!DOCTYPE html>"
     assert lines[-1] == "</html>"
@@ -72,11 +72,11 @@ def test_export_html():
 def test_export_diags():
     """Test the diagnostics export functions."""
     diags = sv.plan_to_diagnostics_str(BASIC_PLAN)
-    assert type(diags) == str
+    assert isinstance(diags, str)
 
     diags = list(sv.plan_to_diagnostics(BASIC_PLAN))
     for diag in diags:
-        assert type(diag) == sv.Diagnostic
+        assert isinstance(diag, sv.Diagnostic)
 
 
 def test_valid_invalid():
