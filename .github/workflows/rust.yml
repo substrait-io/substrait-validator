@@ -113,7 +113,7 @@ jobs:
           git describe --dirty --tags
       - name: Local build to populate resource files
         working-directory: rs
-        run: cargo build
+        run: cargo build --features protoc
       - name: Publish substrait-validator-derive
         working-directory: derive
         env:
