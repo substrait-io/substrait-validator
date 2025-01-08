@@ -8,6 +8,10 @@ license = "Apache-2.0"
 crate-type = ["cdylib", "staticlib"]
 doc = false
 
+[features]
+# Build and vendor protoc from source. See also rs/Cargo.toml.
+protoc = ["substrait-validator/protoc"]
+
 [build-dependencies]
 cbindgen = "0.27.0"
 

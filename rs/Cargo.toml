@@ -16,6 +16,11 @@ include = ["src", "build.rs", "README.md"]
 # functionally change anything.
 private_docs = []
 
+# Build and vendor protoc from source. This is useful to have a consistent
+# version of protoc across platforms/build systems. In particular, docs.rs uses
+# it.
+protoc = ["dep:protobuf-src"]
+
 [dependencies]
 
 # Prost is used to deal with protobuf serialization and deserialization.
@@ -93,5 +98,11 @@ semver = "1.0"
 # Used for generating Rust structs from the protobuf definitions.
 prost-build = "0.13.4"
 
+# Used in the 'protoc' feature.
+protobuf-src = { version = "2.1", optional = true }
+
 # Used to automatically find all protobuf files.
 walkdir = "2"
+
+[package.metadata.docs.rs]
+features = ["protoc"]

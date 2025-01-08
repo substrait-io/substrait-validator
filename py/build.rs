@@ -78,7 +78,19 @@ fn main() {
     fs::create_dir_all(&intermediate_path).expect("failed to create protoc output directory");
 
     // Run protoc.
-    let mut cmd = Command::new(prost_build::protoc_from_env());
+    let protoc_path: PathBuf;
+    #[cfg(feature = "protoc")]
+    {
+        // Use vendored protobuf compiler if requested.
+        protoc_path = protobuf_src::protoc();
+        println!("cargo:warning=Using vendored protoc: {:?}", protoc_path);
+    }
+    #[cfg(not(feature = "protoc"))]
+    {
+        protoc_path = prost_build::protoc_from_env();
+    }
+
+    let mut cmd = Command::new(protoc_path);
     for input_path in input_paths.iter() {
         let mut proto_path_arg = OsString::new();
         proto_path_arg.push("--proto_path=");
