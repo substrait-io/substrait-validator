@@ -27,7 +27,7 @@ older version. Refer to the table below for the version compatibility matrix.
 
 | Substrait...    | ... is supported by validator ...              |
 | --------------- | ---------------------------------------------- |
-| 0.57.x          | 0.1.0 - 0.1.2 (current version)                |
+| 0.57.x          | 0.1.0 - 0.1.3 (current version)                |
 | 0.21.x - 0.56.x | try 0.0.11 or 0.1.x, but your mileage may vary |
 | 0.20.x          | 0.0.11                                         |
 | 0.19.x          | 0.0.10                                         |

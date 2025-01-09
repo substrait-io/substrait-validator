@@ -4,7 +4,7 @@ description = "Substrait validator"
 homepage = "https://substrait.io/"
 repository = "https://github.com/substrait-io/substrait-validator"
 readme = "README.md"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 license = "Apache-2.0"
 include = ["src", "build.rs", "README.md"]
@@ -29,7 +29,7 @@ prost-types = "0.13.4"
 
 # Prost doesn't generate any introspection stuff, so we hack that stuff in with
 # our own procedural macros.
-substrait-validator-derive = { path = "../derive", version = "0.1.2" }
+substrait-validator-derive = { path = "../derive", version = "0.1.3" }
 
 # Google/protobuf has a funny idea about case conventions (it converts them all
 # over the place) and prost remaps to Rust's conventions to boot. So, to
