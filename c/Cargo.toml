@@ -13,7 +13,7 @@ doc = false
 protoc = ["substrait-validator/protoc"]
 
 [build-dependencies]
-cbindgen = "0.27.0"
+cbindgen = "0.28.0"
 
 [dependencies]
 substrait-validator = { path = "../rs", version = "0.1.3" }
