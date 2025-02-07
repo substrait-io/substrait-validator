@@ -18,7 +18,7 @@ index 114b0cc..fc9ce3e 100644
 +substrait-validator = {{ path = "../rs", version = "{to}" }}
  libc = "0.2"
  thiserror = "2.0"
- once_cell = "1.19"
+ once_cell = "1.20"
 diff --git a/derive/Cargo.toml b/derive/Cargo.toml
 index b4ba0fc..7c24520 100644
 --- a/derive/Cargo.toml
