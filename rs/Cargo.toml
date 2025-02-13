@@ -24,7 +24,7 @@ protoc = ["dep:protobuf-src"]
 [dependencies]
 
 # Prost is used to deal with protobuf serialization and deserialization.
-prost = "0.13.4"
+prost = "0.13.5"
 prost-types = "0.13.4"
 
 # Prost doesn't generate any introspection stuff, so we hack that stuff in with
