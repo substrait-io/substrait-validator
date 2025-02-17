@@ -96,7 +96,7 @@ semver = "1.0"
 [build-dependencies]
 
 # Used for generating Rust structs from the protobuf definitions.
-prost-build = "0.13.4"
+prost-build = "0.13.5"
 
 # Used in the 'protoc' feature.
 protobuf-src = { version = "2.1", optional = true }
