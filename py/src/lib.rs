@@ -5,6 +5,7 @@
 // the code causing the warning, in general).
 #![allow(clippy::needless_option_as_deref)]
 #![allow(clippy::borrow_deref_ref)]
+#![allow(clippy::useless_conversion)]
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
