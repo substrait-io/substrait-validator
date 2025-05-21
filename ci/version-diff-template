@@ -11,7 +11,7 @@ index 114b0cc..fc9ce3e 100644
  license = "Apache-2.0"
 
 @@ -16,7 +16,7 @@ protoc = ["substrait-validator/protoc"]
- cbindgen = "0.28.0"
+ cbindgen = "0.29.0"
 
  [dependencies]
 -substrait-validator = {{ path = "../rs", version = "{frm}" }}
