@@ -431,10 +431,7 @@ pub fn export<T: std::io::Write>(
     let root = validator::ParseResult::from(result);
     let buf = root.encode_to_vec();
     if out.write(&buf)? < buf.len() {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "failed to write all bytes",
-        ))
+        Err(std::io::Error::other("failed to write all bytes"))
     } else {
         Ok(())
     }

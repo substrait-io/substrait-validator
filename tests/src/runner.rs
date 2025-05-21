@@ -414,10 +414,7 @@ impl TestCase {
             } else if let Some(uri) = uri.strip_prefix('/') {
                 std::fs::read(std::path::PathBuf::from("../substrait/extensions").join(uri))
             } else {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "non-test URI",
-                ))
+                Err(std::io::Error::other("non-test URI"))
             }
         });
 

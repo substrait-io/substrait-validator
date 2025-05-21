@@ -4,7 +4,6 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Error;
-use std::io::ErrorKind;
 use std::io::Result;
 use std::path::Path;
 use std::path::PathBuf;
@@ -21,7 +20,7 @@ fn synchronize(src_tree: &Path, dest_tree: &Path, path: &Path) -> Result<()> {
 
     // Ensure that the source exists.
     if !src.exists() {
-        return Err(Error::new(ErrorKind::Other, "source file not found"));
+        return Err(Error::other("source file not found"));
     }
 
     // Check if destination already exists.
