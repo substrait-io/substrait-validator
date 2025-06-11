@@ -267,20 +267,9 @@ pub fn describe_identifier(
     limit: Limit,
 ) -> std::fmt::Result {
     if is_identifier(data) {
-        let (n_left, n_right, _) = limit.split_n(data.len(), 1);
-        if n_left > 0 || n_right.is_none() {
-            write!(f, "{}", &data[..n_left])?;
-        }
-        if let Some(n_right) = n_right {
-            write!(f, "..")?;
-            if n_right > 0 {
-                write!(f, "{}", &data[data.len() - n_right..])?;
-            }
-        }
-        Ok(())
-    } else {
-        describe_string(f, data, limit)
+        return write_truncated_str(f, data, limit, false);
     }
+    describe_string(f, data, limit)
 }
 
 /// Represent data as a quoted string. If the string is too long, abbreviate
@@ -291,14 +280,37 @@ pub fn describe_string(
     data: &str,
     limit: Limit,
 ) -> std::fmt::Result {
-    let (n_left, n_right, _) = limit.split_n(data.len(), 1);
+    write_truncated_str(f, data, limit, true)
+}
+
+/// Helper function to write truncated string parts with UTF-8 safety
+fn write_truncated_str(
+    f: &mut std::fmt::Formatter<'_>,
+    data: &str,
+    limit: Limit,
+    quote: bool,
+) -> std::fmt::Result {
+    let chars: Vec<char> = data.chars().collect();
+    let char_count = chars.len();
+    let (n_left, n_right, _) = limit.split_n(char_count, 1);
+
     if n_left > 0 || n_right.is_none() {
-        write!(f, "{}", as_quoted_string(&data[..n_left]))?;
+        let left_part: String = chars.iter().take(n_left).collect();
+        if quote {
+            write!(f, "{}", as_quoted_string(&left_part))?;
+        } else {
+            write!(f, "{}", left_part)?;
+        }
     }
     if let Some(n_right) = n_right {
         write!(f, "..")?;
         if n_right > 0 {
-            write!(f, "{}", as_quoted_string(&data[data.len() - n_right..]))?;
+            let right_part: String = chars.iter().skip(char_count - n_right).collect();
+            if quote {
+                write!(f, "{}", as_quoted_string(&right_part))?;
+            } else {
+                write!(f, "{}", right_part)?;
+            }
         }
     }
     Ok(())
@@ -398,4 +410,67 @@ where
         describe_sequence_all(f, &values[offset..], offset, el_limit, &repr)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper to test describe functions with a specific limit
+    fn test_describe_with_limit<F>(input: &str, limit: Limit, describe_fn: F) -> String
+    where
+        F: Fn(&mut std::fmt::Formatter<'_>, &str, Limit) -> std::fmt::Result,
+    {
+        struct TestWrapper<'a, F> {
+            input: &'a str,
+            limit: Limit,
+            describe_fn: F,
+        }
+
+        impl<F> std::fmt::Display for TestWrapper<'_, F>
+        where
+            F: Fn(&mut std::fmt::Formatter<'_>, &str, Limit) -> std::fmt::Result,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                (self.describe_fn)(f, self.input, self.limit)
+            }
+        }
+
+        format!(
+            "{}",
+            TestWrapper {
+                input,
+                limit,
+                describe_fn
+            }
+        )
+    }
+
+    #[test]
+    fn test_describe_identifier() {
+        let test_cases = [
+            ("Hello World!", r#"He..!"#),
+            ("ID测试数据测试数据", r#"ID..据"#),
+            ("Hello World! 😀", r#"He..😀"#),
+        ];
+
+        for (input, expected) in test_cases {
+            let output = test_describe_with_limit(input, Limit::new(3), describe_identifier);
+            assert_eq!(output, expected, "Failed for input: {}", input);
+        }
+    }
+
+    #[test]
+    fn test_describe_string() {
+        let test_cases = [
+            ("Hello World!", r#""He".."!""#),
+            ("测试数据测试数据", r#""测试".."据""#),
+            ("Hello World! 😀", r#""He".."😀""#),
+        ];
+
+        for (input, expected) in test_cases {
+            let output = test_describe_with_limit(input, Limit::new(3), describe_string);
+            assert_eq!(output, expected, "Failed for input: {}", input);
+        }
+    }
 }
