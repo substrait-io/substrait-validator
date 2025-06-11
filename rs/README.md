@@ -6,7 +6,7 @@ plans.
 
 ```
 [dependencies]
-substrait-validator = "0.1.3"
+substrait-validator = "0.1.4"
 ```
 
 YAML file resolution
@@ -20,7 +20,7 @@ dependency:
 
 ```
 [dependencies]
-substrait-validator = { version = "0.1.3", features = ["curl"] }
+substrait-validator = { version = "0.1.4", features = ["curl"] }
 ```
 
 This adds the `substrait_validator::Config::add_curl_yaml_uri_resolver()`
