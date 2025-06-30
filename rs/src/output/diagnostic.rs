@@ -378,7 +378,7 @@ impl Classification {
 
     /// Returns the name of the classiciation.
     pub fn name(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 
     /// Returns the group code for this classification.
@@ -388,8 +388,7 @@ impl Classification {
 
     /// Returns the group variant for this classification.
     pub fn group(&self) -> Classification {
-        Self::from_group(self.group_code())
-            .unwrap_or_else(|| panic!("missing group for {:?}", self))
+        Self::from_group(self.group_code()).unwrap_or_else(|| panic!("missing group for {self:?}"))
     }
 
     /// Returns the code for this classification within its group.
@@ -402,10 +401,7 @@ impl Classification {
         self.get_str("Description")
             .or_else(|| self.get_str("HiddenDescription"))
             .unwrap_or_else(|| {
-                panic!(
-                    "missing Description or HiddenDescription property for {:?}",
-                    self
-                )
+                panic!("missing Description or HiddenDescription property for {self:?}")
             })
     }
 
@@ -644,15 +640,12 @@ mod tests {
             if group != Classification::Unclassified {
                 assert!(
                     class.name().starts_with(&group.name()),
-                    "incorrect group prefix for {:?}, should start with {:?}",
-                    class,
-                    group
+                    "incorrect group prefix for {class:?}, should start with {group:?}"
                 );
             }
             assert!(
                 descriptions.insert(class.description().to_string()),
-                "duplicate description for {:?}",
-                class
+                "duplicate description for {class:?}"
             );
         }
     }

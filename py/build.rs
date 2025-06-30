@@ -83,7 +83,7 @@ fn main() {
     {
         // Use vendored protobuf compiler if requested.
         protoc_path = protobuf_src::protoc();
-        println!("cargo:warning=Using vendored protoc: {:?}", protoc_path);
+        println!("cargo:warning=Using vendored protoc: {protoc_path:?}");
     }
     #[cfg(not(feature = "protoc"))]
     {
@@ -106,7 +106,7 @@ fn main() {
     if !output.status.success() {
         eprintln!("cmd: {:?}", cmd.get_program());
         for arg in cmd.get_args() {
-            eprintln!("arg: {:?}", arg);
+            eprintln!("arg: {arg:?}");
         }
         panic!("{:?}", output);
     }
@@ -156,7 +156,7 @@ fn main() {
             } else {
                 line
             };
-            writeln!(output, "{}", line).unwrap();
+            writeln!(output, "{line}").unwrap();
         }
     }
 
