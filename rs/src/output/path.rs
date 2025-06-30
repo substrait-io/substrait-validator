@@ -58,7 +58,7 @@ impl PathElement {
     /// Same as to_string(), but doesn't include the dot prefix for the
     /// variants that would normally have one.
     pub fn to_string_without_dot(&self) -> String {
-        format!("{:#}", self)
+        format!("{self:#}")
     }
 }
 
