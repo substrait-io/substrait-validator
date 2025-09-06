@@ -46,7 +46,7 @@ impl Describe for Definition {
         if let data::Variation::UserDefined(variation) = &self.variation {
             write!(&mut name, "[{variation}]")?;
         }
-        write!(f, "{}", name)?;
+        write!(f, "{name}")?;
         let (_, limit) = limit.split(name.len());
         if self.class.has_parameters() {
             write!(f, "<")?;
