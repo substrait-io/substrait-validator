@@ -21,7 +21,7 @@ jobs:
             type: sdist
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - name: Fetch Substrait submodule tags
@@ -138,7 +138,7 @@ jobs:
     name: Style & lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: python3 -m pip install --upgrade pip black==22.3.0 flake8==7.1.1
       - name: Black
