@@ -101,33 +101,33 @@ impl Path<'_> {
     /// Returns a new Path that references an optional field with the
     /// given name within the protobuf message referred to by the current
     /// path, or likewise for the key within a YAML map.
-    pub fn with(&self, element: PathElement) -> Path {
+    pub fn with(&self, element: PathElement) -> Path<'_> {
         Path::Select(self, element)
     }
 
     /// Returns a new Path that references an optional field with the
     /// given name within the protobuf message referred to by the current
     /// path, or likewise for the key within a YAML map.
-    pub fn with_field<S: Into<String>>(&self, name: S) -> Path {
+    pub fn with_field<S: Into<String>>(&self, name: S) -> Path<'_> {
         self.with(PathElement::Field(name.into()))
     }
 
     /// Returns a new Path that references an element of a repeated field
     /// with the given name within the message referred to by the current
     /// path.
-    pub fn with_repeated<S: Into<String>>(&self, name: S, index: usize) -> Path {
+    pub fn with_repeated<S: Into<String>>(&self, name: S, index: usize) -> Path<'_> {
         self.with(PathElement::Repeated(name.into(), index))
     }
 
     /// Returns a new Path that references a particular variant of a
     /// OneOf field with the given name within the message referred to
     /// by the current path.
-    pub fn with_variant<S: Into<String>, V: Into<String>>(&self, name: S, variant: V) -> Path {
+    pub fn with_variant<S: Into<String>, V: Into<String>>(&self, name: S, variant: V) -> Path<'_> {
         self.with(PathElement::Variant(name.into(), variant.into()))
     }
 
     /// Returns a new Path that references a YAML array element.
-    pub fn with_index(&self, index: usize) -> Path {
+    pub fn with_index(&self, index: usize) -> Path<'_> {
         self.with(PathElement::Index(index))
     }
 }
