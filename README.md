@@ -3,7 +3,7 @@ Substrait validator
 
 [![Build status]][actions] [![Docs]][docs.rs] [![Latest crate]][crates.io] [![Latest wheels]][pypi.org]
 
-[Build status]: https://img.shields.io/github/workflow/status/substrait-io/substrait-validator/Rust
+[Build status]: https://img.shields.io/github/actions/workflow/status/substrait-io/substrait-validator/rust.yml?branch=main
 [actions]: https://github.com/substrait-io/substrait-validator/actions?query=branch%3Amain
 [Docs]: https://img.shields.io/docsrs/substrait-validator
 [docs.rs]: https://docs.rs/substrait-validator/latest/substrait_validator/
