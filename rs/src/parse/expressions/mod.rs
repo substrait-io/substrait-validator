@@ -204,7 +204,8 @@ fn parse_expression_type(
             diagnostic!(y, Warning, NotYetImplemented, "nested expressions");
             // Continue with the rest of the plan; this is not a fatal error.
             return Ok(Expression::Unresolved.into());
-        }
+        },
+        substrait::expression::RexType::DynamicParameter(_) => todo!()
     })
 }
 

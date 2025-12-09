@@ -2,9 +2,9 @@ name: aggregate-measure
 plan:
   __test: [ level: iw ]
   version: { producer: validator-test }
-  extensionUris:
-  - extensionUriAnchor: 1
-    uri__yaml:
+  extensionUrns:
+  - extensionUrnAnchor: 1
+    urn__yaml:
       aggregate_functions:
         - name: "count"
           description: Count number of rows
@@ -16,7 +16,7 @@ plan:
             return: i64
   extensions:
   - extensionFunction:
-      extensionUriReference: 1
+      extensionUrnReference: 1
       functionAnchor: 1
       name: "count:"
   relations:
