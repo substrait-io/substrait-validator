@@ -35,46 +35,46 @@ plan:
   __test:
   - level: i
   version: { producer: validator-test }
-  extensionUris:
-  - extensionUriAnchor: 1
-    uri: /functions_boolean.yaml
-  - extensionUriAnchor: 2
-    uri: /functions_comparison.yaml
-  - extensionUriAnchor: 3
-    uri: /functions_datetime.yaml
-  - extensionUriAnchor: 4
-    uri: /functions_arithmetic_decimal.yaml
+  extensionUrns:
+  - extensionUrnAnchor: 1
+    urn: /functions_boolean.yaml
+  - extensionUrnAnchor: 2
+    urn: /functions_comparison.yaml
+  - extensionUrnAnchor: 3
+    urn: /functions_datetime.yaml
+  - extensionUrnAnchor: 4
+    urn: /functions_arithmetic_decimal.yaml
   extensions:
   - extensionFunction:
-      extensionUriReference: 1
+      extensionUrnReference: 1
       functionAnchor: 1
       name: and:bool
   - extensionFunction:
-      extensionUriReference: 2
+      extensionUrnReference: 2
       functionAnchor: 2
       name: equal:any_any
   - extensionFunction:
-      extensionUriReference: 3
+      extensionUrnReference: 3
       functionAnchor: 3
       name: gte:date_date
   - extensionFunction:
-      extensionUriReference: 3
+      extensionUrnReference: 3
       functionAnchor: 4
       name: lt:date_date
   - extensionFunction:
-      extensionUriReference: 3
+      extensionUrnReference: 3
       functionAnchor: 5
       name: add:date_year
   - extensionFunction:
-      extensionUriReference: 4
+      extensionUrnReference: 4
       functionAnchor: 6
       name: multiply:opt_dec_dec
   - extensionFunction:
-      extensionUriReference: 4
+      extensionUrnReference: 4
       functionAnchor: 7
       name: subtract:opt_dec_dec
   - extensionFunction:
-      extensionUriReference: 4
+      extensionUrnReference: 4
       functionAnchor: 8
       name: sum:opt_dec
   relations:

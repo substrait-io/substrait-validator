@@ -55,30 +55,30 @@ plan:
   __test:
   - level: i
   version: { producer: validator-test }
-  extensionUris:
-  - extensionUriAnchor: 1
-    uri: /functions_boolean.yaml
-  - extensionUriAnchor: 2
-    uri: /functions_comparison.yaml
-  - extensionUriAnchor: 3
-    uri: /functions_string.yaml
-  - extensionUriAnchor: 4
-    uri: /functions_aggregate_generic.yaml
+  extensionUrns:
+  - extensionUrnAnchor: 1
+    urn: /functions_boolean.yaml
+  - extensionUrnAnchor: 2
+    urn: /functions_comparison.yaml
+  - extensionUrnAnchor: 3
+    urn: /functions_string.yaml
+  - extensionUrnAnchor: 4
+    urn: /functions_aggregate_generic.yaml
   extensions:
   - extensionFunction:
-      extensionUriReference: 1
+      extensionUrnReference: 1
       functionAnchor: 1
       name: and:bool
   - extensionFunction:
-      extensionUriReference: 2
+      extensionUrnReference: 2
       functionAnchor: 2
       name: equal:any_any
   - extensionFunction:
-      extensionUriReference: 3
+      extensionUrnReference: 3
       functionAnchor: 3
       name: like:vchar_vchar
   - extensionFunction:
-      extensionUriReference: 4
+      extensionUrnReference: 4
       functionAnchor: 4
       name: min:any_any
   relations:

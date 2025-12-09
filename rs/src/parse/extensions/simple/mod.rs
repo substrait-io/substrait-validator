@@ -44,14 +44,14 @@ fn parse_anchor(x: &u32, y: &mut context::Context) -> Result<u32> {
     Ok(*x)
 }
 
-/// Parse a mapping from a URI anchor to a YAML extension.
+/// Parse a mapping from a URN anchor to a YAML extension.
 fn parse_simple_extension_yaml_uri_mapping(
-    x: &substrait::extensions::SimpleExtensionUri,
+    x: &substrait::extensions::SimpleExtensionUrn,
     y: &mut context::Context,
 ) -> Result<()> {
     // Parse the fields.
-    let anchor = proto_primitive_field!(x, y, extension_uri_anchor, parse_anchor).1;
-    let yaml_data = proto_primitive_field!(x, y, uri, yaml::parse_uri)
+    let anchor = proto_primitive_field!(x, y, extension_urn_anchor, parse_anchor).1;
+    let yaml_data = proto_primitive_field!(x, y, urn, yaml::parse_uri)
         .1
         .unwrap();
 
@@ -226,7 +226,7 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionType(x) => {
 
             // Parse the fields.
-            let module_ref_opt = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_uri_reference).1;
             let anchor = proto_primitive_field!(x, y, type_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name, parse_name).1;
 
@@ -270,7 +270,7 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionTypeVariation(x) => {
 
             // Parse the fields.
-            let module_ref_opt = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_uri_reference).1;
             let anchor = proto_primitive_field!(x, y, type_variation_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name, parse_name).1;
 
@@ -317,7 +317,7 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionFunction(x) => {
 
             // Parse the fields.
-            let module_ref_opt = proto_primitive_field!(x, y, extension_uri_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_uri_reference).1;
             let anchor = proto_primitive_field!(x, y, function_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name).1;
 
@@ -399,7 +399,7 @@ pub fn parse_plan(x: &substrait::Plan, y: &mut context::Context) {
     proto_repeated_field!(
         x,
         y,
-        extension_uris,
+        extension_urns,
         parse_simple_extension_yaml_uri_mapping
     );
     proto_repeated_field!(x, y, extensions, parse_extension_mapping);

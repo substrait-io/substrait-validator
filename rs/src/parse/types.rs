@@ -605,6 +605,7 @@ pub fn parse_type_kind(
             );
             Ok(())
         }
+        &substrait::r#type::Kind::PrecisionTime(_) | &substrait::r#type::Kind::Alias(_) => todo!(),
     }
 }
 

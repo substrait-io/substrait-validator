@@ -51,6 +51,7 @@ fn parse_rel_type(x: &substrait::rel::RelType, y: &mut context::Context) -> diag
         // TODO: New relational nodes
         substrait::rel::RelType::Reference(_)
         | substrait::rel::RelType::Write(_)
+        | substrait::rel::RelType::Update(_)
         | substrait::rel::RelType::Ddl(_)
         | substrait::rel::RelType::HashJoin(_)
         | substrait::rel::RelType::MergeJoin(_)
