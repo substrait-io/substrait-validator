@@ -572,7 +572,7 @@ impl Breadcrumb<'_> {
     }
 
     /// Creates the next breadcrumb.
-    pub fn next(&self, element: path::PathElement) -> Breadcrumb {
+    pub fn next(&self, element: path::PathElement) -> Breadcrumb<'_> {
         Breadcrumb {
             parent: Some(self),
             path: self.path.with(element),

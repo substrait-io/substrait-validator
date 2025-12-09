@@ -8,8 +8,8 @@
 #![allow(clippy::useless_conversion)]
 
 use pyo3::exceptions::PyValueError;
-use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyDict, PyTuple};
+use pyo3::types::{PyBytes, PyDict};
+use pyo3::{prelude::*, IntoPyObjectExt};
 
 /// Represents a validator/parser configuration.
 #[pyclass]
@@ -113,14 +113,14 @@ impl Config {
     /// the given function fails, any previously registered function will be
     /// used as a fallback. The callback function must take a single string
     /// argument and return a bytes object, or throw an exception on failure.
-    pub fn add_uri_resolver(&mut self, callback: PyObject) {
+    pub fn add_uri_resolver(&mut self, callback: Py<PyAny>) {
         self.config
             .add_uri_resolver(move |uri| -> Result<Vec<u8>, PyErr> {
-                pyo3::Python::with_gil(|py| {
+                pyo3::Python::attach(|py| {
                     Ok(callback
                         .call1(py, (uri,))?
                         .bind(py)
-                        .downcast::<pyo3::types::PyBytes>()?
+                        .cast::<pyo3::types::PyBytes>()?
                         .as_bytes()
                         .to_owned())
                 })
@@ -222,11 +222,11 @@ impl ResultHandle {
 
     /// Exports the entire parse tree as a substrait.validator.Node protobuf
     /// message, using binary serialization.
-    pub fn export_proto(&self, py: Python) -> PyResult<PyObject> {
+    pub fn export_proto(&self, py: Python) -> PyResult<Py<PyAny>> {
         let mut result = vec![];
         self.root
             .export(&mut result, ::substrait_validator::export::Format::Proto)?;
-        let result = PyBytes::new_bound(py, &result).into();
+        let result = PyBytes::new(py, &result).into();
         Ok(result)
     }
 }
@@ -239,47 +239,49 @@ fn substrait_validator(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     ///  - the name of the diagnostic as a str;
     ///  - its description as a str; and
     ///  - the diagnostic code of its parent as an integer, or None for code 0.
-    #[pyfn(m)]
+    #[pyfunction]
     #[pyo3(name = "get_diagnostic_codes")]
-    fn get_diagnostic_codes_py(py: Python) -> PyResult<PyObject> {
-        let dict = PyDict::new_bound(py);
+    fn get_diagnostic_codes_py(py: Python) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
         for class in ::substrait_validator::iter_diagnostics() {
             dict.set_item(
                 class.code(),
-                PyTuple::new_bound(
-                    py,
-                    [
-                        class.name().to_object(py),
-                        class.description().to_object(py),
-                        if class.code() == 0 {
-                            py.None()
-                        } else {
-                            ::substrait_validator::Classification::parent(class.code())
-                                .to_object(py)
-                        },
-                    ],
-                ),
+                (
+                    class.name(),
+                    class.description(),
+                    if class.code() == 0 {
+                        py.None()
+                    } else {
+                        ::substrait_validator::Classification::parent(class.code())
+                            .to_string()
+                            .into_py_any(py)?
+                    },
+                )
+                    .into_pyobject(py)?,
             )?;
         }
         Ok(dict.into())
     }
 
     /// Returns the version of the validator.
-    #[pyfn(m)]
+    #[pyfunction]
     #[pyo3(name = "get_version")]
-    fn get_version_py(py: Python) -> PyResult<PyObject> {
-        Ok(::substrait_validator::version().to_string().to_object(py))
+    fn get_version_py(py: Python) -> PyResult<Py<PyAny>> {
+        ::substrait_validator::version().to_string().into_py_any(py)
     }
 
     /// Returns the version of Substrait that the validator was built against.
-    #[pyfn(m)]
+    #[pyfunction]
     #[pyo3(name = "get_substrait_version")]
-    fn get_substrait_version_py(py: Python) -> PyResult<PyObject> {
-        Ok(::substrait_validator::substrait_version()
+    fn get_substrait_version_py(py: Python) -> PyResult<Py<PyAny>> {
+        ::substrait_validator::substrait_version()
             .to_string()
-            .to_object(py))
+            .into_py_any(py)
     }
 
+    let _ = m.add_function(wrap_pyfunction!(get_diagnostic_codes_py, m)?);
+    let _ = m.add_function(wrap_pyfunction!(get_version_py, m)?);
+    let _ = m.add_function(wrap_pyfunction!(get_substrait_version_py, m)?);
     m.add_class::<Config>()?;
     m.add_class::<ResultHandle>()?;
     Ok(())

@@ -429,7 +429,7 @@ impl Classification {
     /// is the code of their group (code rounded down to thousands). For group
     /// codes, this is 0.
     pub fn parent(code: u32) -> u32 {
-        if code % 1000 != 0 {
+        if !code.is_multiple_of(1000) {
             (code / 1000) * 1000
         } else {
             0
