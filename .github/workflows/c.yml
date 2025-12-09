@@ -10,7 +10,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: arduino/setup-protoc@v3
@@ -30,7 +30,7 @@ jobs:
     name: Style
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: jidicula/clang-format-action@v4.16.0
         with:
           clang-format-version: "13"
