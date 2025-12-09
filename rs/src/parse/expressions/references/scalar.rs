@@ -170,7 +170,7 @@ fn parse_map_key(
     );
 
     // Create description.
-    let description = format!(".[{}]", key);
+    let description = format!(".[{key}]");
 
     // Determine result data type.
     let data_type = root.unwrap_map().unwrap_or_default();

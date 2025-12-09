@@ -142,7 +142,7 @@ impl ParameterInfo for Definition {
         if self.parameters_variadic && index + 1 >= self.parameter_slots.len() {
             if let Some(slot) = self.parameter_slots.last() {
                 return Some(if slot.name.is_empty() {
-                    format!("{}", index)
+                    format!("{index}")
                 } else {
                     format!("{}.{}", slot.name, index + 1 - self.parameter_slots.len())
                 });
@@ -150,7 +150,7 @@ impl ParameterInfo for Definition {
         }
         self.parameter_slots.get(index).map(|slot| {
             if slot.name.is_empty() {
-                format!("{}", index)
+                format!("{index}")
             } else {
                 slot.name.clone()
             }

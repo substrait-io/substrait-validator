@@ -11,7 +11,7 @@ fn main() {
     {
         // Use vendored protobuf compiler if requested.
         protoc_path = protobuf_src::protoc();
-        println!("cargo:warning=Using vendored protoc: {:?}", protoc_path);
+        println!("cargo:warning=Using vendored protoc: {protoc_path:?}");
     }
     #[cfg(not(feature = "protoc"))]
     {
