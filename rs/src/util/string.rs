@@ -19,7 +19,7 @@ pub fn is_identifier(s: &str) -> bool {
 }
 
 /// Checks an URI for validity.
-pub fn check_uri(s: &str) -> diagnostic::Result<uriparse::URIReference> {
+pub fn check_uri(s: &str) -> diagnostic::Result<uriparse::URIReference<'_>> {
     uriparse::URIReference::try_from(s).map_err(|e| ecause!(IllegalUri, e))
 }
 
@@ -238,7 +238,7 @@ impl Limit {
 /// Like Display, but with a heuristic character limit.
 pub trait Describe {
     fn describe(&self, f: &mut std::fmt::Formatter<'_>, limit: Limit) -> std::fmt::Result;
-    fn display(&self) -> Describer<Self> {
+    fn display(&self) -> Describer<'_, Self> {
         Describer(self)
     }
 }

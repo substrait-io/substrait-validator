@@ -18,7 +18,7 @@ pub enum Value {
     /// Used for boolean values. Syntax: `true` or `false`.
     Boolean(bool),
 
-    /// Used for integer values. Syntax: a decimal integer, -?[1-9][0-9]*.
+    /// Used for integer values. Syntax: a decimal integer, -?\[1-9\]\[0-9\]*.
     Integer(i64),
 
     /// Used for enumeration values. Syntax: any identifier that doesn't map

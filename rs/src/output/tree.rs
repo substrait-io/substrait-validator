@@ -121,7 +121,7 @@ impl From<NodeType> for Node {
 
 impl Node {
     /// Returns an iterator that iterates over all nodes depth-first.
-    pub fn iter_flattened_nodes(&self) -> FlattenedNodeIter {
+    pub fn iter_flattened_nodes(&self) -> FlattenedNodeIter<'_> {
         FlattenedNodeIter {
             remaining: VecDeque::from(vec![self]),
         }
@@ -129,7 +129,7 @@ impl Node {
 
     /// Returns an iterator that iterates over all NodeData objects in the
     /// order in which they were defined.
-    pub fn iter_flattened_node_data(&self) -> FlattenedNodeDataIter {
+    pub fn iter_flattened_node_data(&self) -> FlattenedNodeDataIter<'_> {
         FlattenedNodeDataIter {
             remaining: self.data.iter().rev().collect(),
         }

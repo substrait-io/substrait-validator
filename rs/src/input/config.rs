@@ -17,7 +17,8 @@ pub type BinaryData = Box<dyn AsRef<[u8]>>;
 pub type ErrorData = Box<dyn std::error::Error>;
 
 /// Callback function type for resolving/downloading URIs.
-pub type UriResolver = Box<dyn Fn(&str) -> std::result::Result<BinaryData, ErrorData> + Send>;
+pub type UriResolver =
+    Box<dyn Fn(&str) -> std::result::Result<BinaryData, ErrorData> + Send + Sync>;
 
 /// Attempts to resolve and fetch the data for the given URI using libcurl,
 /// allowing the validator to handle remote YAML extension URLs with most
@@ -151,7 +152,7 @@ impl Config {
     /// used as a fallback.
     pub fn add_uri_resolver<F, D, E>(&mut self, resolver: F)
     where
-        F: Fn(&str) -> Result<D, E> + Send + 'static,
+        F: Fn(&str) -> Result<D, E> + Send + Sync + 'static,
         D: AsRef<[u8]> + 'static,
         E: std::error::Error + 'static,
     {

@@ -231,7 +231,7 @@ message Path {
 
   // Path element used for protobuf fields and YAML maps.
   // Canonically represented as `.<field>` if field matches
-  // [a-zA-Z_][a-zA-Z0-9_]*, or as `."<field>"` using \\ and \" escape
+  // \[a-zA-Z_\]\[a-zA-Z0-9_\]*, or as `."<field>"` using \\ and \" escape
   // sequences if not (note that this can only happen for YAML map keys).
   message Field {
     string field = 1;
