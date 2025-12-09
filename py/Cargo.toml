@@ -37,7 +37,7 @@ substrait-validator = { path = "../rs", version = "0.1.4" }
 pyo3 = { version = "0.27.2", features = ["extension-module"] }
 
 [build-dependencies]
-prost-build = "0.13.5"
+prost-build = "0.14.1"
 pyo3-build-config = "0.27.2"
 walkdir = "2"
 dunce = "1"
