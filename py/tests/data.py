@@ -6,7 +6,7 @@ BASIC_PLAN = """
   "minorNumber": 1,
   "producer": "validator-test"
  },
- "extensionUris": [],
+ "extensionUrns": [],
  "extensions": [],
  "relations": [
   {
@@ -67,58 +67,58 @@ BASIC_PLAN = """
 
 COMPLEX_PLAN = """
 {
-  "extensionUris": [{
-    "extensionUriAnchor": 1,
-    "uri": "/functions_boolean.yaml"
+  "extensionUrns": [{
+    "extensionUrnAnchor": 1,
+    "urn": "/functions_boolean.yaml"
   }, {
-    "extensionUriAnchor": 4,
-    "uri": "/functions_arithmetic_decimal.yaml"
+    "extensionUrnAnchor": 4,
+    "urn": "/functions_arithmetic_decimal.yaml"
   }, {
-    "extensionUriAnchor": 3,
-    "uri": "/functions_datetime.yaml"
+    "extensionUrnAnchor": 3,
+    "urn": "/functions_datetime.yaml"
   }, {
-    "extensionUriAnchor": 2,
-    "uri": "/functions_comparison.yaml"
+    "extensionUrnAnchor": 2,
+    "urn": "/functions_comparison.yaml"
   }],
   "extensions": [{
     "extensionFunction": {
-      "extensionUriReference": 1,
+      "extensionUrnReference": 1,
       "functionAnchor": 1,
       "name": "and:bool"
     }
   }, {
     "extensionFunction": {
-      "extensionUriReference": 2,
+      "extensionUrnReference": 2,
       "functionAnchor": 2,
       "name": "equal:any1_any1"
     }
   }, {
     "extensionFunction": {
-      "extensionUriReference": 3,
+      "extensionUrnReference": 3,
       "functionAnchor": 3,
       "name": "lt:date_date"
     }
   }, {
     "extensionFunction": {
-      "extensionUriReference": 3,
+      "extensionUrnReference": 3,
       "functionAnchor": 4,
       "name": "gt:date_date"
     }
   }, {
     "extensionFunction": {
-      "extensionUriReference": 4,
+      "extensionUrnReference": 4,
       "functionAnchor": 5,
       "name": "multiply:opt_decimal_decimal"
     }
   }, {
     "extensionFunction": {
-      "extensionUriReference": 4,
+      "extensionUrnReference": 4,
       "functionAnchor": 6,
       "name": "subtract:opt_decimal_decimal"
     }
   }, {
     "extensionFunction": {
-      "extensionUriReference": 4,
+      "extensionUrnReference": 4,
       "functionAnchor": 7,
       "name": "sum:opt_decimal"
     }
@@ -879,6 +879,7 @@ COMPLEX_PLAN = """
 """
 
 BASIC_YAML = """---
+urn: extension:io.substrait:extension_types
 types:
   - name: point
     structure:
