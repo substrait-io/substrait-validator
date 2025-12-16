@@ -205,6 +205,7 @@ fn parse_expression_type(
             // Continue with the rest of the plan; this is not a fatal error.
             return Ok(Expression::Unresolved.into());
         }
+        substrait::expression::RexType::DynamicParameter(_) => todo!(),
     })
 }
 

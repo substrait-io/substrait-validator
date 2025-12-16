@@ -143,10 +143,10 @@ def test_resolver_callback():
                 "minorNumber": 1,
                 "producer": "validator-test",
             },
-            "extensionUris": [
+            "extensionUrns": [
                 {
-                    "extension_uri_anchor": 1,
-                    "uri": "test:hello",
+                    "extension_urn_anchor": 1,
+                    "urn": "test:hello",
                 }
             ],
         },
@@ -163,10 +163,10 @@ def test_resolver_callback():
                     "minorNumber": 1,
                     "producer": "validator-test",
                 },
-                "extensionUris": [
+                "extensionUrns": [
                     {
-                        "extension_uri_anchor": 1,
-                        "uri": "test:bye",
+                        "extension_urn_anchor": 1,
+                        "urn": "test:bye",
                     }
                 ],
             },
