@@ -322,7 +322,10 @@ fn parse_read_type(
         substrait::read_rel::ReadType::LocalFiles(x) => parse_local_files(x, y),
         substrait::read_rel::ReadType::NamedTable(x) => parse_named_table(x, y),
         substrait::read_rel::ReadType::ExtensionTable(x) => parse_extension_table(x, y),
-        substrait::read_rel::ReadType::IcebergTable(_) => todo!(),
+        substrait::read_rel::ReadType::IcebergTable(_) => Err(cause!(
+            NotYetImplemented,
+            "IcebergTable read type is not yet implemented"
+        )),
     }
 }
 

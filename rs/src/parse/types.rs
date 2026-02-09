@@ -595,7 +595,9 @@ pub fn parse_type_kind(
         substrait::r#type::Kind::UserDefined(x) => parse_user_defined(x, y),
         substrait::r#type::Kind::IntervalCompound(_)
         | substrait::r#type::Kind::PrecisionTimestamp(_)
-        | substrait::r#type::Kind::PrecisionTimestampTz(_) => {
+        | substrait::r#type::Kind::PrecisionTimestampTz(_)
+        | substrait::r#type::Kind::PrecisionTime(_)
+        | substrait::r#type::Kind::Alias(_) => {
             diagnostic!(
                 y,
                 Warning,
@@ -605,7 +607,6 @@ pub fn parse_type_kind(
             );
             Ok(())
         }
-        &substrait::r#type::Kind::PrecisionTime(_) | &substrait::r#type::Kind::Alias(_) => todo!(),
     }
 }
 

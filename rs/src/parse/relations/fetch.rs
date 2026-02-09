@@ -9,9 +9,7 @@
 
 use crate::input::proto::substrait;
 use crate::output::diagnostic;
-use crate::output::type_system::data;
 use crate::parse::context;
-use crate::parse::expressions;
 use crate::util;
 
 /// Parse fetch relation.
@@ -28,48 +26,47 @@ pub fn parse_fetch_rel(
     // Filters pass through their input schema unchanged.
     y.set_schema(in_type);
 
-    // Parse offset and count.
-    // proto_primitive_field!(x, y, offset, |x, y| {
-    //     if *x < 0 {
-    //         diagnostic!(y, Error, IllegalValue, "offsets cannot be negative");
-    //     }
-    //     Ok(())
-    // });
-    // proto_primitive_field!(x, y, count, |x, y| {
-    //     if *x < 0 {
-    //         diagnostic!(y, Error, IllegalValue, "count cannot be negative");
-    //     }
-    //     Ok(())
-    // });
-
+    // Parse offset and count from the new oneof fields.
+    // Extract offset value (default to 0 if not set)
     proto_field!(x, y, offset_mode); // TODO add the check for negative values
     let offset = match &x.offset_mode {
-        Some(OffsetMode::Offset(n)) => *n,
-        Some(OffsetMode::OffsetExpr(expr)) => {
-            let ex: expressions::Expression = expressions::parse_expression(expr, y)?;
-            match ex {
-                expressions::Expression::Literal(literal) => match literal.data_type().class() {
-                    data::Class::Simple(data::class::Simple::I64) => todo!(),
-                    _ => todo!(),
-                },
-                _ => todo!(),
+        Some(OffsetMode::Offset(val)) => {
+            if *val < 0 {
+                diagnostic!(y, Error, IllegalValue, "offsets cannot be negative");
             }
+            *val
+        }
+        Some(OffsetMode::OffsetExpr(_)) => {
+            // For now, we can't evaluate expressions, so we'll just note it
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "offset_expr evaluation not yet implemented"
+            );
+            0
         }
         None => 0,
     };
 
+    // Extract count value (default to 0 if not set)
     proto_field!(x, y, count_mode); // TODO add the check for negative values
     let count = match &x.count_mode {
-        Some(CountMode::Count(n)) => *n,
-        Some(CountMode::CountExpr(expr)) => {
-            let ex: expressions::Expression = expressions::parse_expression(expr, y)?;
-            match ex {
-                expressions::Expression::Literal(literal) => match literal.data_type().class() {
-                    data::Class::Simple(data::class::Simple::I64) => todo!(),
-                    _ => todo!(),
-                },
-                _ => todo!(),
+        Some(CountMode::Count(val)) => {
+            if *val < 0 {
+                diagnostic!(y, Error, IllegalValue, "count cannot be negative");
             }
+            *val
+        }
+        Some(CountMode::CountExpr(_)) => {
+            // For now, we can't evaluate expressions, so we'll just note it
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "count_expr evaluation not yet implemented"
+            );
+            0
         }
         None => 0,
     };
