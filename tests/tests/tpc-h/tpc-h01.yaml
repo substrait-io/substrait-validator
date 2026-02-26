@@ -29,44 +29,44 @@ plan:
   __test:
   - level: i
   version: { producer: validator-test }
-  extensionUris:
-  - extensionUriAnchor: 1
-    uri: /functions_datetime.yaml
-  - extensionUriAnchor: 2
-    uri: /functions_arithmetic_decimal.yaml
-  - extensionUriAnchor: 3
-    uri: /functions_aggregate_generic.yaml
+  extensionUrns:
+  - extensionUrnAnchor: 1
+    urn: /functions_datetime.yaml
+  - extensionUrnAnchor: 2
+    urn: /functions_arithmetic_decimal.yaml
+  - extensionUrnAnchor: 3
+    urn: /functions_aggregate_generic.yaml
   extensions:
   - extensionFunction:
-      extensionUriReference: 1
+      extensionUrnReference: 1
       functionAnchor: 1
       name: lte:date_date
   - extensionFunction:
-      extensionUriReference: 1
+      extensionUrnReference: 1
       functionAnchor: 2
       name: subtract:date_day
   - extensionFunction:
-      extensionUriReference: 2
+      extensionUrnReference: 2
       functionAnchor: 3
       name: multiply:opt_dec_dec
   - extensionFunction:
-      extensionUriReference: 2
+      extensionUrnReference: 2
       functionAnchor: 4
       name: subtract:opt_dec_dec
   - extensionFunction:
-      extensionUriReference: 2
+      extensionUrnReference: 2
       functionAnchor: 5
       name: add:opt_dec_dec
   - extensionFunction:
-      extensionUriReference: 2
+      extensionUrnReference: 2
       functionAnchor: 6
       name: sum:opt_dec
   - extensionFunction:
-      extensionUriReference: 2
+      extensionUrnReference: 2
       functionAnchor: 7
       name: avg:opt_dec
   - extensionFunction:
-      extensionUriReference: 3
+      extensionUrnReference: 3
       functionAnchor: 8
       name: count:opt
   relations:

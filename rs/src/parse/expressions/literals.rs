@@ -1119,13 +1119,24 @@ fn parse_user_defined(
     nullable: bool,
     variations: Option<extension::simple::type_variation::ResolutionResult>,
 ) -> diagnostic::Result<Literal> {
-    let extension_type = proto_primitive_field!(
-        x,
-        y,
-        type_reference,
-        extensions::simple::parse_type_reference
-    )
-    .1;
+    // Handle the new oneof structure for type_anchor_type
+    let extension_type = match &x.type_anchor_type {
+        Some(substrait::expression::literal::user_defined::TypeAnchorType::TypeReference(
+            type_ref,
+        )) => extensions::simple::parse_type_reference(type_ref, y).ok(),
+        Some(substrait::expression::literal::user_defined::TypeAnchorType::TypeAliasReference(
+            _,
+        )) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "type_alias_reference not yet implemented"
+            );
+            None
+        }
+        None => None,
+    };
     proto_required_field!(x, y, val, parse_value);
     let class = if let Some(extension_type) = extension_type {
         data::Class::UserDefined(extension_type)
@@ -1190,6 +1201,10 @@ fn parse_literal_type(
         LiteralType::PrecisionTimestampTz(_) => Err(cause!(
             NotYetImplemented,
             "PrecisionTimestampTz literals are not yet implemented"
+        )),
+        LiteralType::PrecisionTime(_) => Err(cause!(
+            NotYetImplemented,
+            "PrecisionTime literals are not yet implemented"
         )),
     }
 }

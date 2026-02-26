@@ -31,6 +31,7 @@ struct SourceInfo {
 }
 
 /// Parse virtual table.
+#[allow(deprecated)]
 fn parse_virtual_table(
     x: &substrait::read_rel::VirtualTable,
     y: &mut context::Context,
@@ -49,12 +50,36 @@ fn parse_virtual_table(
         result
     });
 
+    proto_repeated_field!(x, y, expressions, |x, y| {
+        let dt = parse_nested_struct(x, y);
+        data_type = dt.unwrap();
+        Ok(())
+    });
+
     // Describe the node.
     describe!(y, Misc, "Virtual table");
     Ok(SourceInfo {
         name: String::from("virtual table"),
         data_type: Some(data_type),
     })
+}
+
+fn parse_nested_struct(
+    x: &substrait::expression::nested::Struct,
+    y: &mut context::Context,
+) -> diagnostic::Result<data::Type> {
+    let mut data_type: data::Type = Arc::default();
+    proto_repeated_field!(x, y, fields, |x, y| {
+        let result = expressions::parse_expression(x, y);
+        data_type = types::assert_equal(
+            y,
+            &y.data_type(),
+            &data_type,
+            "virtual table rows must have the same type",
+        );
+        result
+    });
+    Ok(data_type)
 }
 
 /// Parse file entry. Returns whether this matches multiple files.
@@ -297,6 +322,10 @@ fn parse_read_type(
         substrait::read_rel::ReadType::LocalFiles(x) => parse_local_files(x, y),
         substrait::read_rel::ReadType::NamedTable(x) => parse_named_table(x, y),
         substrait::read_rel::ReadType::ExtensionTable(x) => parse_extension_table(x, y),
+        substrait::read_rel::ReadType::IcebergTable(_) => Err(cause!(
+            NotYetImplemented,
+            "IcebergTable read type is not yet implemented"
+        )),
     }
 }
 

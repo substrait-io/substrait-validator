@@ -224,10 +224,10 @@ def test_uri_resolution():
             f.write(
                 json.dumps(
                     {
-                        "extensionUris": [
+                        "extensionUrns": [
                             {
-                                "extension_uri_anchor": 1,
-                                "uri": "https://raw.githubusercontent.com/substrait-io/substrait/82078995c19faa9d4e53a90cd66800c26d88f970/extensions/extension_types.yaml",
+                                "extension_urn_anchor": 1,
+                                "urn": "https://raw.githubusercontent.com/substrait-io/substrait/82078995c19faa9d4e53a90cd66800c26d88f970/extensions/extension_types.yaml",
                             }
                         ]
                     }

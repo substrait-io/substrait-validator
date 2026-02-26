@@ -203,7 +203,7 @@ use prost::Message;
 /// that, as a plan version.
 enum ParsedProtoResult {
     /// Successful parsing
-    Parsed(proto::substrait::Plan),
+    Parsed(Box<proto::substrait::Plan>),
 
     /// Failed to decode into `substrait::Plan`, possibly due to a version
     /// conflict; see `Cause`. Succeeded in decoding the version.
@@ -219,7 +219,7 @@ enum ParsedProtoResult {
 fn parse_proto<B: prost::bytes::Buf + Clone>(buffer: B) -> ParsedProtoResult {
     // Attempt to parse the buffer as a Plan.
     let err1 = match proto::substrait::Plan::decode(buffer.clone()) {
-        Ok(plan) => return ParsedProtoResult::Parsed(plan),
+        Ok(plan) => return ParsedProtoResult::Parsed(Box::new(plan)),
         Err(e) => ecause!(ProtoParseFailed, e),
     };
 

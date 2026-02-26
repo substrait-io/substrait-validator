@@ -2,9 +2,9 @@ name: rel-sort-key-lt
 plan:
   __test: [ level: iw ]
   version: { producer: validator-test }
-  extensionUris:
-  - extensionUriAnchor: 1
-    uri__yaml:
+  extensionUrns:
+  - extensionUrnAnchor: 1
+    urn__yaml:
       scalar_functions:
         - name: "lt"
           impls:
@@ -14,7 +14,7 @@ plan:
               return: BOOLEAN
   extensions:
   - extensionFunction:
-      extensionUriReference: 1
+      extensionUrnReference: 1
       functionAnchor: 1
       name: lt:i32_i32
   relations:
