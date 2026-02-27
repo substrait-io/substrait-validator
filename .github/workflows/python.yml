@@ -99,7 +99,7 @@ jobs:
         run: ls -R dist
       - name: Upload wheels
         if: "startsWith(github.ref, 'refs/tags/')"
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           # Ensure we have a different name for every artifact, by using the
           # matrix components in the artifact name
