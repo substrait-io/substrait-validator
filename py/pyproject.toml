@@ -19,7 +19,7 @@ classifiers = [
 dependencies = ["protobuf > 3.19.3", "click >= 8", "pyyaml >= 6", "jdot >= 0.5"]
 
 [project.optional-dependencies]
-test = ["pytest < 9.0.0", "toml >= 0.10.2"]
+test = ["pytest < 10.0.0", "toml >= 0.10.2"]
 
 [project.urls]
 homepage = "https://substrait.io/"
