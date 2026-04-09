@@ -48,7 +48,7 @@ jobs:
         run: cargo test
         if: ${{ matrix.os != 'windows-latest' }}
       - name: Install test runner dependencies
-        run: python3 -m pip install --upgrade pip protobuf pyyaml click
+        run: python3 -m pip install --upgrade pip && python3 -m pip install py/
         if: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Run validation tests
         # No need to run validation tests for all operating systems, and Linux

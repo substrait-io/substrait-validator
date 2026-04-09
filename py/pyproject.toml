@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["protobuf > 3.19.3", "click >= 8", "pyyaml >= 6", "jdot >= 0.5"]
+dependencies = ["protobuf >3.19.3,<7", "click >= 8", "pyyaml >= 6", "jdot >= 0.5"]
 
 [project.optional-dependencies]
 test = ["pytest < 10.0.0", "toml >= 0.10.2"]
