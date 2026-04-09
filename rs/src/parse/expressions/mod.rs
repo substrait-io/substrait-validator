@@ -211,6 +211,31 @@ fn parse_expression_type(
                 "DynamicParameter expressions are not yet implemented"
             ));
         }
+        substrait::expression::RexType::Lambda(_) => {
+            diagnostic!(y, Warning, NotYetImplemented, "lambda expressions");
+            // Continue with the rest of the plan; this is not a fatal error.
+            return Ok(Expression::Unresolved.into());
+        }
+        substrait::expression::RexType::LambdaInvocation(_) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "lambda invocation expressions"
+            );
+            // Continue with the rest of the plan; this is not a fatal error.
+            return Ok(Expression::Unresolved.into());
+        }
+        substrait::expression::RexType::ExecutionContextVariable(_) => {
+            diagnostic!(
+                y,
+                Warning,
+                NotYetImplemented,
+                "execution context variable expressions"
+            );
+            // Continue with the rest of the plan; this is not a fatal error.
+            return Ok(Expression::Unresolved.into());
+        }
     })
 }
 

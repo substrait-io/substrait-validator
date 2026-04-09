@@ -597,7 +597,8 @@ pub fn parse_type_kind(
         | substrait::r#type::Kind::PrecisionTimestamp(_)
         | substrait::r#type::Kind::PrecisionTimestampTz(_)
         | substrait::r#type::Kind::PrecisionTime(_)
-        | substrait::r#type::Kind::Alias(_) => {
+        | substrait::r#type::Kind::Alias(_)
+        | substrait::r#type::Kind::Func(_) => {
             diagnostic!(
                 y,
                 Warning,

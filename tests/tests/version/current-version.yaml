@@ -6,6 +6,7 @@ plan:
   __test:
   - level: i
   version:
-    minorNumber: 78
-    patchNumber: 1
+    majorNumber: 0
+    minorNumber: 87
+    patchNumber: 0
     producer: validator-test
