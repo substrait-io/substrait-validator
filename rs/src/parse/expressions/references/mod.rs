@@ -190,6 +190,11 @@ fn parse_root_type(
             y.set_data_type(y.schema(steps_out)?);
             Ok(Root::Schema(steps_out))
         }
+        substrait::expression::field_reference::RootType::LambdaParameterReference(_) => {
+            diagnostic!(y, Warning, NotYetImplemented, "lambda parameter references");
+            // Continue with the rest of the plan; this is not a fatal error.
+            Ok(Root::Unresolved)
+        }
     }
 }
 
