@@ -13,6 +13,7 @@ use crate::parse::context;
 use crate::util;
 
 /// Parse fetch relation.
+#[allow(deprecated)]
 pub fn parse_fetch_rel(
     x: &substrait::FetchRel,
     y: &mut context::Context,

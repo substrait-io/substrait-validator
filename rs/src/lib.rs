@@ -161,6 +161,7 @@ pub mod output;
 mod parse;
 
 pub mod export;
+#[allow(deprecated)]
 pub mod input;
 
 mod util;

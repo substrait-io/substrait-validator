@@ -153,6 +153,7 @@ impl std::fmt::Display for ExpressionOrEnum {
 }
 
 /// Parse an expression type. Returns a description of said expression.
+#[allow(deprecated)]
 fn parse_expression_type(
     x: &substrait::expression::RexType,
     y: &mut context::Context,

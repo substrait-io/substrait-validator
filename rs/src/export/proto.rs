@@ -397,6 +397,7 @@ impl From<&data::Variation> for validator::data_type::Variation {
     }
 }
 
+#[allow(deprecated)]
 impl From<&data::Parameter> for validator::data_type::Parameter {
     fn from(node: &data::Parameter) -> Self {
         Self {
