@@ -9,6 +9,10 @@ updates:
         applies-to: version-updates
         patterns:
           - "strum*"
+      prost:
+        applies-to: version-updates
+        patterns:
+          - "prost*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
