@@ -24,8 +24,8 @@ protoc = ["dep:protobuf-src"]
 [dependencies]
 
 # Prost is used to deal with protobuf serialization and deserialization.
-prost = "0.13.5"
-prost-types = "0.13.5"
+prost = "0.14.3"
+prost-types = "0.14.3"
 
 # Prost doesn't generate any introspection stuff, so we hack that stuff in with
 # our own procedural macros.
@@ -96,7 +96,7 @@ semver = "1.0"
 [build-dependencies]
 
 # Used for generating Rust structs from the protobuf definitions.
-prost-build = "0.13.5"
+prost-build = "0.14.3"
 
 # Used in the 'protoc' feature.
 protobuf-src = { version = "2.1", optional = true }
