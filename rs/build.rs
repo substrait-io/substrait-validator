@@ -140,6 +140,7 @@ fn main() -> Result<()> {
     // Compile the protobuf files using prost.
     let mut config = prost_build::Config::new();
     config.type_attribute(".", "#[derive(::substrait_validator_derive::ProtoMeta)]");
+    config.type_attribute(".", "#[allow(deprecated)]");
     config.disable_comments([
         "substrait.AggregateRel.Measure.filter",
         "substrait.Type.Parameter.data_type",

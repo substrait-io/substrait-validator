@@ -675,6 +675,7 @@ fn parse_interval_year_to_month(
 }
 
 /// Parses a day to second interval literal.
+#[allow(deprecated)]
 fn parse_interval_day_to_second(
     x: &substrait::expression::literal::IntervalDayToSecond,
     ctx: &mut context::Context,
@@ -1151,6 +1152,7 @@ fn parse_user_defined(
 }
 
 /// Parse a literal value. Returns the parsed literal.
+#[allow(deprecated)]
 fn parse_literal_type(
     x: &substrait::expression::literal::LiteralType,
     y: &mut context::Context,
@@ -1210,6 +1212,7 @@ fn parse_literal_type(
 }
 
 /// Parse a literal value. Returns the parsed literal.
+#[allow(deprecated)]
 pub fn parse_literal(
     x: &substrait::expression::Literal,
     y: &mut context::Context,

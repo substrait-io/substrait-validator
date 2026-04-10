@@ -563,6 +563,7 @@ pub fn parse_user_defined(
 }
 
 /// Parses a type kind.
+#[allow(deprecated)]
 pub fn parse_type_kind(
     x: &substrait::r#type::Kind,
     y: &mut context::Context,
