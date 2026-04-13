@@ -53,10 +53,10 @@ def populate():
 
 
 def _prepare():
-    # If the local_dependencies directory exists, pip is building the package
+    # If the PKG-INFO file exists, pip is building the package
     # from a source distribution. In that case, the build environment is
     # already as it should be.
-    if os.path.isdir("local_dependencies"):
+    if os.path.isfile("PKG-INFO"):
         return
 
     # Outside of building from specially-prepared sdist packages, we don't

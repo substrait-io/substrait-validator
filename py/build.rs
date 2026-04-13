@@ -13,10 +13,10 @@ use std::process::Command;
 use walkdir::WalkDir;
 
 fn main() {
-    // Directory that the proto files are stored in. If the local_dependencies
-    // directory exists, we're building from an sdist package, in which case
+    // Directory that the proto files are stored in. If the PKG-INFO
+    // file exists, we're building from an sdist package, in which case
     // the proto files should have been copied to a local directory.
-    let input_paths = if std::path::Path::new("local_dependencies").exists() {
+    let input_paths = if std::path::Path::new("PKG-INFO").exists() {
         vec!["proto"]
     } else {
         assert!(
