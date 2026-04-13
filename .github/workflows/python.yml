@@ -83,7 +83,7 @@ jobs:
         uses: PyO3/maturin-action@v1.51.0
         with:
           command: build
-          args: --release -o dist --universal2 -m py/Cargo.toml
+          args: --release -o dist --target universal2-apple-darwin -m py/Cargo.toml
       - name: Fix permissions
         if: ${{ matrix.type == 'wheel' && matrix.os == 'ubuntu-latest' }}
         run: |
