@@ -4,9 +4,9 @@ description = "Procedural macros for substrait-validator"
 homepage = "https://substrait.io/"
 repository = "https://github.com/substrait-io/substrait-validator"
 readme = "README.md"
-version = "0.1.4"
-edition = "2021"
-license = "Apache-2.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [lib]
 proc-macro = true
