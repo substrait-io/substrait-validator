@@ -125,7 +125,7 @@ jobs:
       - name: Display available artifacts
         run: ls -R .
       - name: Publish to GitHub release page
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             *.whl
