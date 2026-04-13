@@ -49,7 +49,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python build dependencies
-        run: python3 -m pip install --upgrade pip "maturin>=0.14,<0.15"
+        run: python3 -m pip install --upgrade pip "maturin>=1.0.0,<1.14"
       - name: Prepare build environment
         working-directory: py
         run: python3 prepare_build.py populate
