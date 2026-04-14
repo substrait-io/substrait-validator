@@ -1213,7 +1213,7 @@ where
 pub fn read_yaml(
     binary_data: config::BinaryData,
     context: &mut context::Context,
-    schema: Option<&jsonschema::JSONSchema>,
+    schema: Option<&jsonschema::Validator>,
 ) -> Option<yaml::Value> {
     // Parse as UTF-8.
     let string_data = match std::str::from_utf8(binary_data.as_ref().as_ref()) {
@@ -1244,8 +1244,9 @@ pub fn read_yaml(
 
     // Validate with schema.
     if let Some(schema) = schema {
-        if let Err(es) = schema.validate(&json_data) {
-            for e in es {
+        let errors: Vec<_> = schema.iter_errors(&json_data).collect();
+        if !errors.is_empty() {
+            for e in errors {
                 ediagnostic!(context, Error, YamlSchemaValidationFailed, e);
             }
             return None;
