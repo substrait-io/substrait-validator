@@ -13,7 +13,7 @@ doc = false
 protoc = ["substrait-validator/protoc"]
 
 [build-dependencies]
-cbindgen = "0.29.0"
+cbindgen = "0.29.2"
 
 [dependencies]
 substrait-validator = { workspace = true }
