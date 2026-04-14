@@ -7,3 +7,12 @@ members = [
     "py",
     "tests"
 ]
+
+[workspace.package]
+version = "0.1.4"
+edition = "2021"
+license = "Apache-2.0"
+
+[workspace.dependencies]
+substrait-validator = { path = "rs", version = "0.1.4" }
+substrait-validator-derive = { path = "derive", version = "0.1.4" }
