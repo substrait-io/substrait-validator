@@ -46,16 +46,14 @@ use num_traits::cast::FromPrimitive;
 use std::sync::Arc;
 use strum::EnumProperty;
 
-/// Owned variant of jsonschema::error::ValidationError<'a>. Instead of a
+/// Owned variant of jsonschema::ValidationError<'a>. Instead of a
 /// reference to the YAML tree node that caused the error, this just contains
-/// the formatted error message. The validation error kind and paths are
-/// however retained.
+/// the formatted error message and paths.
 #[derive(Debug, thiserror::Error)]
 pub struct JsonSchemaValidationError {
     pub message: String,
-    pub kind: jsonschema::error::ValidationErrorKind,
-    pub instance_path: jsonschema::paths::JSONPointer,
-    pub schema_path: jsonschema::paths::JSONPointer,
+    pub instance_path: String,
+    pub schema_path: String,
 }
 
 impl std::fmt::Display for JsonSchemaValidationError {
@@ -64,13 +62,12 @@ impl std::fmt::Display for JsonSchemaValidationError {
     }
 }
 
-impl From<jsonschema::error::ValidationError<'_>> for JsonSchemaValidationError {
-    fn from(v: jsonschema::error::ValidationError) -> Self {
+impl From<jsonschema::ValidationError<'_>> for JsonSchemaValidationError {
+    fn from(v: jsonschema::ValidationError) -> Self {
         JsonSchemaValidationError {
             message: v.to_string(),
-            kind: v.kind,
-            instance_path: v.instance_path,
-            schema_path: v.schema_path,
+            instance_path: v.instance_path().to_string(),
+            schema_path: v.schema_path().to_string(),
         }
     }
 }

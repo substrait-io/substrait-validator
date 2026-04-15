@@ -87,9 +87,9 @@ pub fn parse_uri<S: AsRef<str>>(
     } else {
         // Load the schema for YAML extension files when this function is first
         // called.
-        static SCHEMA: once_cell::sync::Lazy<jsonschema::JSONSchema> =
+        static SCHEMA: once_cell::sync::Lazy<jsonschema::Validator> =
             once_cell::sync::Lazy::new(|| {
-                jsonschema::JSONSchema::compile(
+                jsonschema::Validator::new(
                     &yaml::yaml_to_json(
                         serde_yaml::from_str::<serde_yaml::Value>(include_str!(
                             "../../../resources/text/simple_extensions_schema.yaml"
