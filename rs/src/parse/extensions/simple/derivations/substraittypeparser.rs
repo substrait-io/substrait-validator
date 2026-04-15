@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::all)]
 #![cfg_attr(rustfmt, rustfmt_skip)]
-// Generated from SubstraitType.g4 by ANTLR 4.8
+// Generated from SubstraitType.g4 by ANTLR 4.13.2
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
@@ -9,27 +9,27 @@
 #![allow(unused_imports)]
 #![allow(unused_mut)]
 #![allow(unused_braces)]
-use antlr_rust::PredictionContextCache;
-use antlr_rust::parser::{Parser, BaseParser, ParserRecog, ParserNodeType};
-use antlr_rust::token_stream::TokenStream;
-use antlr_rust::TokenSource;
-use antlr_rust::parser_atn_simulator::ParserATNSimulator;
-use antlr_rust::errors::*;
-use antlr_rust::rule_context::{BaseRuleContext, CustomRuleContext, RuleContext};
-use antlr_rust::recognizer::{Recognizer,Actions};
-use antlr_rust::atn_deserializer::ATNDeserializer;
-use antlr_rust::dfa::DFA;
-use antlr_rust::atn::{ATN, INVALID_ALT};
-use antlr_rust::error_strategy::{ErrorStrategy, DefaultErrorStrategy};
-use antlr_rust::parser_rule_context::{BaseParserRuleContext, ParserRuleContext,cast,cast_mut};
-use antlr_rust::tree::*;
-use antlr_rust::token::{TOKEN_EOF,OwningToken,Token};
-use antlr_rust::int_stream::EOF;
-use antlr_rust::vocabulary::{Vocabulary,VocabularyImpl};
-use antlr_rust::token_factory::{CommonTokenFactory,TokenFactory, TokenAware};
+use antlr4rust::PredictionContextCache;
+use antlr4rust::parser::{Parser, BaseParser, ParserRecog, ParserNodeType};
+use antlr4rust::token_stream::TokenStream;
+use antlr4rust::TokenSource;
+use antlr4rust::parser_atn_simulator::ParserATNSimulator;
+use antlr4rust::errors::*;
+use antlr4rust::rule_context::{BaseRuleContext, CustomRuleContext, RuleContext};
+use antlr4rust::recognizer::{Recognizer,Actions};
+use antlr4rust::atn_deserializer::ATNDeserializer;
+use antlr4rust::dfa::DFA;
+use antlr4rust::atn::{ATN, INVALID_ALT};
+use antlr4rust::error_strategy::{ErrorStrategy, DefaultErrorStrategy};
+use antlr4rust::parser_rule_context::{BaseParserRuleContext, ParserRuleContext,cast,cast_mut};
+use antlr4rust::tree::*;
+use antlr4rust::token::{TOKEN_EOF,OwningToken,Token};
+use antlr4rust::int_stream::EOF;
+use antlr4rust::vocabulary::{Vocabulary,VocabularyImpl};
+use antlr4rust::token_factory::{CommonTokenFactory,TokenFactory, TokenAware};
 use super::substraittypelistener::*;
-use antlr_rust::lazy_static;
-use antlr_rust::{TidAble,TidExt};
+use antlr4rust::lazy_static;
+use antlr4rust::{TidAble,TidExt};
 
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -40,54 +40,55 @@ use std::ops::{DerefMut, Deref};
 use std::borrow::{Borrow,BorrowMut};
 use std::any::{Any,TypeId};
 
-		pub const LineComment:isize=1; 
-		pub const BlockComment:isize=2; 
-		pub const Whitespace:isize=3; 
-		pub const Newline:isize=4; 
-		pub const EscNewline:isize=5; 
-		pub const Assert:isize=6; 
-		pub const Matches:isize=7; 
-		pub const If:isize=8; 
-		pub const Then:isize=9; 
-		pub const Else:isize=10; 
-		pub const Null:isize=11; 
-		pub const True:isize=12; 
-		pub const False:isize=13; 
-		pub const Metabool:isize=14; 
-		pub const Metaint:isize=15; 
-		pub const Metaenum:isize=16; 
-		pub const Metastr:isize=17; 
-		pub const Typename:isize=18; 
-		pub const Period:isize=19; 
-		pub const Comma:isize=20; 
-		pub const Colon:isize=21; 
-		pub const Semicolon:isize=22; 
-		pub const Question:isize=23; 
-		pub const Bang:isize=24; 
-		pub const OpenParen:isize=25; 
-		pub const CloseParen:isize=26; 
-		pub const OpenCurly:isize=27; 
-		pub const CloseCurly:isize=28; 
-		pub const OpenSquare:isize=29; 
-		pub const CloseSquare:isize=30; 
-		pub const Assign:isize=31; 
-		pub const BooleanOr:isize=32; 
-		pub const BooleanAnd:isize=33; 
-		pub const Equal:isize=34; 
-		pub const NotEqual:isize=35; 
-		pub const LessThan:isize=36; 
-		pub const LessEqual:isize=37; 
-		pub const GreaterThan:isize=38; 
-		pub const GreaterEqual:isize=39; 
-		pub const Plus:isize=40; 
-		pub const Minus:isize=41; 
-		pub const Multiply:isize=42; 
-		pub const Divide:isize=43; 
-		pub const Range:isize=44; 
-		pub const Nonzero:isize=45; 
-		pub const Zero:isize=46; 
-		pub const String:isize=47; 
-		pub const Identifier:isize=48;
+		pub const SubstraitType_LineComment:i32=1; 
+		pub const SubstraitType_BlockComment:i32=2; 
+		pub const SubstraitType_Whitespace:i32=3; 
+		pub const SubstraitType_Newline:i32=4; 
+		pub const SubstraitType_EscNewline:i32=5; 
+		pub const SubstraitType_Assert:i32=6; 
+		pub const SubstraitType_Matches:i32=7; 
+		pub const SubstraitType_If:i32=8; 
+		pub const SubstraitType_Then:i32=9; 
+		pub const SubstraitType_Else:i32=10; 
+		pub const SubstraitType_Null:i32=11; 
+		pub const SubstraitType_True:i32=12; 
+		pub const SubstraitType_False:i32=13; 
+		pub const SubstraitType_Metabool:i32=14; 
+		pub const SubstraitType_Metaint:i32=15; 
+		pub const SubstraitType_Metaenum:i32=16; 
+		pub const SubstraitType_Metastr:i32=17; 
+		pub const SubstraitType_Typename:i32=18; 
+		pub const SubstraitType_Period:i32=19; 
+		pub const SubstraitType_Comma:i32=20; 
+		pub const SubstraitType_Colon:i32=21; 
+		pub const SubstraitType_Semicolon:i32=22; 
+		pub const SubstraitType_Question:i32=23; 
+		pub const SubstraitType_Bang:i32=24; 
+		pub const SubstraitType_OpenParen:i32=25; 
+		pub const SubstraitType_CloseParen:i32=26; 
+		pub const SubstraitType_OpenCurly:i32=27; 
+		pub const SubstraitType_CloseCurly:i32=28; 
+		pub const SubstraitType_OpenSquare:i32=29; 
+		pub const SubstraitType_CloseSquare:i32=30; 
+		pub const SubstraitType_Assign:i32=31; 
+		pub const SubstraitType_BooleanOr:i32=32; 
+		pub const SubstraitType_BooleanAnd:i32=33; 
+		pub const SubstraitType_Equal:i32=34; 
+		pub const SubstraitType_NotEqual:i32=35; 
+		pub const SubstraitType_LessThan:i32=36; 
+		pub const SubstraitType_LessEqual:i32=37; 
+		pub const SubstraitType_GreaterThan:i32=38; 
+		pub const SubstraitType_GreaterEqual:i32=39; 
+		pub const SubstraitType_Plus:i32=40; 
+		pub const SubstraitType_Minus:i32=41; 
+		pub const SubstraitType_Multiply:i32=42; 
+		pub const SubstraitType_Divide:i32=43; 
+		pub const SubstraitType_Range:i32=44; 
+		pub const SubstraitType_Nonzero:i32=45; 
+		pub const SubstraitType_Zero:i32=46; 
+		pub const SubstraitType_String:i32=47; 
+		pub const SubstraitType_Identifier:i32=48;
+	pub const SubstraitType_EOF:i32=EOF;
 	pub const RULE_startPattern:usize = 0; 
 	pub const RULE_startProgram:usize = 1; 
 	pub const RULE_program:usize = 2; 
@@ -165,30 +166,26 @@ pub type SubstraitTypeTreeWalker<'input,'a> =
 	ParseTreeWalker<'input, 'a, SubstraitTypeParserContextType , dyn SubstraitTypeListener<'input> + 'a>;
 
 /// Parser for SubstraitType grammar
-pub struct SubstraitTypeParser<'input,I,H>
+pub struct SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	base:BaseParserType<'input,I>,
 	interpreter:Arc<ParserATNSimulator>,
 	_shared_context_cache: Box<PredictionContextCache>,
-    pub err_handler: H,
+    pub err_handler: Box<dyn ErrorStrategy<'input,BaseParserType<'input,I> > >,
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
-	pub fn get_serialized_atn() -> &'static str { _serializedATN }
-
-    pub fn set_error_strategy(&mut self, strategy: H) {
+    pub fn set_error_strategy(&mut self, strategy: Box<dyn ErrorStrategy<'input,BaseParserType<'input,I> > >) {
         self.err_handler = strategy
     }
 
-    pub fn with_strategy(input: I, strategy: H) -> Self {
-		antlr_rust::recognizer::check_version("0","3");
+    pub fn with_strategy(input: I, strategy: Box<dyn ErrorStrategy<'input,BaseParserType<'input,I> > >) -> Self {
+		antlr4rust::recognizer::check_version("0","5");
 		let interpreter = Arc::new(ParserATNSimulator::new(
 			_ATN.clone(),
 			_decision_to_DFA.clone(),
@@ -212,7 +209,7 @@ where
 
 type DynStrategy<'input,I> = Box<dyn ErrorStrategy<'input,BaseParserType<'input,I>> + 'input>;
 
-impl<'input, I> SubstraitTypeParser<'input, I, DynStrategy<'input,I>>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
 {
@@ -221,12 +218,12 @@ where
     }
 }
 
-impl<'input, I> SubstraitTypeParser<'input, I, DefaultErrorStrategy<'input,SubstraitTypeParserContextType>>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
 {
     pub fn new(input: I) -> Self{
-    	Self::with_strategy(input,DefaultErrorStrategy::new())
+    	Self::with_strategy(input,Box::new(DefaultErrorStrategy::new()))
     }
 }
 
@@ -236,27 +233,26 @@ pub trait SubstraitTypeParserContext<'input>:
 	ParserRuleContext<'input, TF=LocalTokenFactory<'input>, Ctx=SubstraitTypeParserContextType>
 {}
 
-antlr_rust::coerce_from!{ 'input : SubstraitTypeParserContext<'input> }
+antlr4rust::coerce_from!{ 'input : SubstraitTypeParserContext<'input> }
 
 impl<'input> SubstraitTypeParserContext<'input> for TerminalNode<'input,SubstraitTypeParserContextType> {}
 impl<'input> SubstraitTypeParserContext<'input> for ErrorNode<'input,SubstraitTypeParserContextType> {}
 
-antlr_rust::tid! { impl<'input> TidAble<'input> for dyn SubstraitTypeParserContext<'input> + 'input }
+antlr4rust::tid! { impl<'input> TidAble<'input> for dyn SubstraitTypeParserContext<'input> + 'input }
 
-antlr_rust::tid! { impl<'input> TidAble<'input> for dyn SubstraitTypeListener<'input> + 'input }
+antlr4rust::tid! { impl<'input> TidAble<'input> for dyn SubstraitTypeListener<'input> + 'input }
 
 pub struct SubstraitTypeParserContextType;
-antlr_rust::tid!{SubstraitTypeParserContextType}
+antlr4rust::tid!{SubstraitTypeParserContextType}
 
 impl<'input> ParserNodeType<'input> for SubstraitTypeParserContextType{
 	type TF = LocalTokenFactory<'input>;
 	type Type = dyn SubstraitTypeParserContext<'input> + 'input;
 }
 
-impl<'input, I, H> Deref for SubstraitTypeParser<'input, I, H>
+impl<'input, I> Deref for SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
     type Target = BaseParserType<'input,I>;
 
@@ -265,10 +261,9 @@ where
     }
 }
 
-impl<'input, I, H> DerefMut for SubstraitTypeParser<'input, I, H>
+impl<'input, I> DerefMut for SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.base
@@ -281,7 +276,7 @@ pub struct SubstraitTypeParserExt<'input>{
 
 impl<'input> SubstraitTypeParserExt<'input>{
 }
-antlr_rust::tid! { SubstraitTypeParserExt<'a> }
+antlr4rust::tid! { SubstraitTypeParserExt<'a> }
 
 impl<'input> TokenAware<'input> for SubstraitTypeParserExt<'input>{
 	type TF = LocalTokenFactory<'input>;
@@ -310,12 +305,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for StartPatternContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for StartPatternContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_startPattern(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_startPattern(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -325,12 +322,13 @@ impl<'input> CustomRuleContext<'input> for StartPatternContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_startPattern }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_startPattern }
 }
-antlr_rust::tid!{StartPatternContextExt<'a>}
+antlr4rust::tid!{StartPatternContextExt<'a>}
 
 impl<'input> StartPatternContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<StartPatternContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<StartPatternContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,StartPatternContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -345,7 +343,7 @@ fn pattern(&self) -> Option<Rc<PatternContextAll<'input>>> where Self:Sized{
 /// Retrieves first TerminalNode corresponding to token EOF
 /// Returns `None` if there is no child corresponding to token EOF
 fn EOF(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(EOF, 0)
+	self.get_token(SubstraitType_EOF, 0)
 }
 /// Retrieves all `TerminalNode`s corresponding to token Whitespace in current rule
 fn Whitespace_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>>  where Self:Sized{
@@ -354,7 +352,7 @@ fn Whitespace_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContex
 /// Retrieves 'i's TerminalNode corresponding to token Whitespace, starting from 0.
 /// Returns `None` if number of children corresponding to token Whitespace is less or equal than `i`.
 fn Whitespace(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Whitespace, i)
+	self.get_token(SubstraitType_Whitespace, i)
 }
 /// Retrieves all `TerminalNode`s corresponding to token Newline in current rule
 fn Newline_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>>  where Self:Sized{
@@ -363,17 +361,16 @@ fn Newline_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextTy
 /// Retrieves 'i's TerminalNode corresponding to token Newline, starting from 0.
 /// Returns `None` if number of children corresponding to token Newline is less or equal than `i`.
 fn Newline(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Newline, i)
+	self.get_token(SubstraitType_Newline, i)
 }
 
 }
 
 impl<'input> StartPatternContextAttrs<'input> for StartPatternContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn startPattern(&mut self,)
 	-> Result<Rc<StartPatternContextAll<'input>>,ANTLRError> {
@@ -382,20 +379,20 @@ where
 		let mut _localctx = StartPatternContextExt::new(_parentctx.clone(), recog.base.get_state());
         recog.base.enter_rule(_localctx.clone(), 0, RULE_startPattern);
         let mut _localctx: Rc<StartPatternContextAll> = _localctx;
-		let mut _la: isize = -1;
+		let mut _la: i32 = -1;
 		let result: Result<(), ANTLRError> = (|| {
 
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(61);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			while _la==Whitespace {
+			while _la==SubstraitType_Whitespace {
 				{
 				{
 				recog.base.set_state(58);
-				recog.base.match_token(Whitespace,&mut recog.err_handler)?;
+				recog.base.match_token(SubstraitType_Whitespace,&mut recog.err_handler)?;
 
 				}
 				}
@@ -406,11 +403,11 @@ where
 			recog.base.set_state(67);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			while _la==Newline {
+			while _la==SubstraitType_Newline {
 				{
 				{
 				recog.base.set_state(64);
-				recog.base.match_token(Newline,&mut recog.err_handler)?;
+				recog.base.match_token(SubstraitType_Newline,&mut recog.err_handler)?;
 
 				}
 				}
@@ -425,11 +422,11 @@ where
 			recog.base.set_state(74);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			while _la==Newline {
+			while _la==SubstraitType_Newline {
 				{
 				{
 				recog.base.set_state(71);
-				recog.base.match_token(Newline,&mut recog.err_handler)?;
+				recog.base.match_token(SubstraitType_Newline,&mut recog.err_handler)?;
 
 				}
 				}
@@ -438,7 +435,7 @@ where
 				_la = recog.base.input.la(1);
 			}
 			recog.base.set_state(77);
-			recog.base.match_token(EOF,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_EOF,&mut recog.err_handler)?;
 
 			}
 			Ok(())
@@ -452,7 +449,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -471,12 +468,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for StartProgramContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for StartProgramContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_startProgram(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_startProgram(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -486,12 +485,13 @@ impl<'input> CustomRuleContext<'input> for StartProgramContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_startProgram }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_startProgram }
 }
-antlr_rust::tid!{StartProgramContextExt<'a>}
+antlr4rust::tid!{StartProgramContextExt<'a>}
 
 impl<'input> StartProgramContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<StartProgramContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<StartProgramContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,StartProgramContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -506,7 +506,7 @@ fn program(&self) -> Option<Rc<ProgramContextAll<'input>>> where Self:Sized{
 /// Retrieves first TerminalNode corresponding to token EOF
 /// Returns `None` if there is no child corresponding to token EOF
 fn EOF(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(EOF, 0)
+	self.get_token(SubstraitType_EOF, 0)
 }
 /// Retrieves all `TerminalNode`s corresponding to token Whitespace in current rule
 fn Whitespace_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>>  where Self:Sized{
@@ -515,7 +515,7 @@ fn Whitespace_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContex
 /// Retrieves 'i's TerminalNode corresponding to token Whitespace, starting from 0.
 /// Returns `None` if number of children corresponding to token Whitespace is less or equal than `i`.
 fn Whitespace(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Whitespace, i)
+	self.get_token(SubstraitType_Whitespace, i)
 }
 /// Retrieves all `TerminalNode`s corresponding to token Newline in current rule
 fn Newline_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>>  where Self:Sized{
@@ -524,17 +524,16 @@ fn Newline_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextTy
 /// Retrieves 'i's TerminalNode corresponding to token Newline, starting from 0.
 /// Returns `None` if number of children corresponding to token Newline is less or equal than `i`.
 fn Newline(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Newline, i)
+	self.get_token(SubstraitType_Newline, i)
 }
 
 }
 
 impl<'input> StartProgramContextAttrs<'input> for StartProgramContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn startProgram(&mut self,)
 	-> Result<Rc<StartProgramContextAll<'input>>,ANTLRError> {
@@ -543,20 +542,20 @@ where
 		let mut _localctx = StartProgramContextExt::new(_parentctx.clone(), recog.base.get_state());
         recog.base.enter_rule(_localctx.clone(), 2, RULE_startProgram);
         let mut _localctx: Rc<StartProgramContextAll> = _localctx;
-		let mut _la: isize = -1;
+		let mut _la: i32 = -1;
 		let result: Result<(), ANTLRError> = (|| {
 
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(82);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			while _la==Whitespace {
+			while _la==SubstraitType_Whitespace {
 				{
 				{
 				recog.base.set_state(79);
-				recog.base.match_token(Whitespace,&mut recog.err_handler)?;
+				recog.base.match_token(SubstraitType_Whitespace,&mut recog.err_handler)?;
 
 				}
 				}
@@ -567,11 +566,11 @@ where
 			recog.base.set_state(88);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			while _la==Newline {
+			while _la==SubstraitType_Newline {
 				{
 				{
 				recog.base.set_state(85);
-				recog.base.match_token(Newline,&mut recog.err_handler)?;
+				recog.base.match_token(SubstraitType_Newline,&mut recog.err_handler)?;
 
 				}
 				}
@@ -586,11 +585,11 @@ where
 			recog.base.set_state(95);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			while _la==Newline {
+			while _la==SubstraitType_Newline {
 				{
 				{
 				recog.base.set_state(92);
-				recog.base.match_token(Newline,&mut recog.err_handler)?;
+				recog.base.match_token(SubstraitType_Newline,&mut recog.err_handler)?;
 
 				}
 				}
@@ -599,7 +598,7 @@ where
 				_la = recog.base.input.la(1);
 			}
 			recog.base.set_state(98);
-			recog.base.match_token(EOF,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_EOF,&mut recog.err_handler)?;
 
 			}
 			Ok(())
@@ -613,7 +612,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -632,12 +631,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for ProgramContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for ProgramContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_program(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_program(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -647,12 +648,13 @@ impl<'input> CustomRuleContext<'input> for ProgramContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_program }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_program }
 }
-antlr_rust::tid!{ProgramContextExt<'a>}
+antlr4rust::tid!{ProgramContextExt<'a>}
 
 impl<'input> ProgramContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<ProgramContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<ProgramContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,ProgramContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -681,10 +683,9 @@ fn statementSeparator(&self, i: usize) -> Option<Rc<StatementSeparatorContextAll
 
 impl<'input> ProgramContextAttrs<'input> for ProgramContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn program(&mut self,)
 	-> Result<Rc<ProgramContextAll<'input>>,ANTLRError> {
@@ -695,9 +696,9 @@ where
         let mut _localctx: Rc<ProgramContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(105);
 			recog.err_handler.sync(&mut recog.base)?;
@@ -737,7 +738,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -756,12 +757,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for StatementSeparatorContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for StatementSeparatorContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_statementSeparator(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_statementSeparator(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -771,12 +774,13 @@ impl<'input> CustomRuleContext<'input> for StatementSeparatorContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_statementSeparator }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_statementSeparator }
 }
-antlr_rust::tid!{StatementSeparatorContextExt<'a>}
+antlr4rust::tid!{StatementSeparatorContextExt<'a>}
 
 impl<'input> StatementSeparatorContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<StatementSeparatorContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<StatementSeparatorContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,StatementSeparatorContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -792,22 +796,21 @@ fn Newline_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextTy
 /// Retrieves 'i's TerminalNode corresponding to token Newline, starting from 0.
 /// Returns `None` if number of children corresponding to token Newline is less or equal than `i`.
 fn Newline(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Newline, i)
+	self.get_token(SubstraitType_Newline, i)
 }
 /// Retrieves first TerminalNode corresponding to token Semicolon
 /// Returns `None` if there is no child corresponding to token Semicolon
 fn Semicolon(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Semicolon, 0)
+	self.get_token(SubstraitType_Semicolon, 0)
 }
 
 }
 
 impl<'input> StatementSeparatorContextAttrs<'input> for StatementSeparatorContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn statementSeparator(&mut self,)
 	-> Result<Rc<StatementSeparatorContextAll<'input>>,ANTLRError> {
@@ -816,12 +819,12 @@ where
 		let mut _localctx = StatementSeparatorContextExt::new(_parentctx.clone(), recog.base.get_state());
         recog.base.enter_rule(_localctx.clone(), 6, RULE_statementSeparator);
         let mut _localctx: Rc<StatementSeparatorContextAll> = _localctx;
-		let mut _la: isize = -1;
+		let mut _la: i32 = -1;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(113);
 			recog.err_handler.sync(&mut recog.base)?;
@@ -831,7 +834,7 @@ where
 					{
 					{
 					recog.base.set_state(110);
-					recog.base.match_token(Newline,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Newline,&mut recog.err_handler)?;
 
 					}
 					} 
@@ -843,29 +846,29 @@ where
 			recog.base.set_state(124);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 Newline 
+			SubstraitType_Newline 
 				=> {
 					{
 					recog.base.set_state(116);
-					recog.base.match_token(Newline,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Newline,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 Semicolon 
+			SubstraitType_Semicolon 
 				=> {
 					{
 					recog.base.set_state(117);
-					recog.base.match_token(Semicolon,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Semicolon,&mut recog.err_handler)?;
 
 					recog.base.set_state(121);
 					recog.err_handler.sync(&mut recog.base)?;
 					_la = recog.base.input.la(1);
-					while _la==Newline {
+					while _la==SubstraitType_Newline {
 						{
 						{
 						recog.base.set_state(118);
-						recog.base.match_token(Newline,&mut recog.err_handler)?;
+						recog.base.match_token(SubstraitType_Newline,&mut recog.err_handler)?;
 
 						}
 						}
@@ -890,7 +893,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -903,9 +906,9 @@ pub enum StatementContextAll<'input>{
 	MatchContext(MatchContext<'input>),
 Error(StatementContext<'input>)
 }
-antlr_rust::tid!{StatementContextAll<'a>}
+antlr4rust::tid!{StatementContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for StatementContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for StatementContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for StatementContextAll<'input>{}
 
@@ -922,8 +925,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for StatementContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -946,13 +949,14 @@ impl<'input> CustomRuleContext<'input> for StatementContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_statement }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_statement }
 }
-antlr_rust::tid!{StatementContextExt<'a>}
+antlr4rust::tid!{StatementContextExt<'a>}
 
 impl<'input> StatementContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<StatementContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<StatementContextAll<'input>> {
 		Rc::new(
 		StatementContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,StatementContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -973,7 +977,7 @@ pub trait AssertContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Assert
 	/// Returns `None` if there is no child corresponding to token Assert
 	fn Assert(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Assert, 0)
+		self.get_token(SubstraitType_Assert, 0)
 	}
 	fn pattern(&self) -> Option<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -987,14 +991,15 @@ pub struct AssertContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{AssertContextExt<'a>}
+antlr4rust::tid!{AssertContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for AssertContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for AssertContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Assert(self);
+		Ok(())
 	}
 }
 
@@ -1039,7 +1044,7 @@ pub trait NormalContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Assign
 	/// Returns `None` if there is no child corresponding to token Assign
 	fn Assign(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Assign, 0)
+		self.get_token(SubstraitType_Assign, 0)
 	}
 }
 
@@ -1050,14 +1055,15 @@ pub struct NormalContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{NormalContextExt<'a>}
+antlr4rust::tid!{NormalContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for NormalContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for NormalContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Normal(self);
+		Ok(())
 	}
 }
 
@@ -1096,7 +1102,7 @@ pub trait MatchContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Assert
 	/// Returns `None` if there is no child corresponding to token Assert
 	fn Assert(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Assert, 0)
+		self.get_token(SubstraitType_Assert, 0)
 	}
 	fn pattern_all(&self) ->  Vec<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.children_of_type()
@@ -1107,7 +1113,7 @@ pub trait MatchContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Matches
 	/// Returns `None` if there is no child corresponding to token Matches
 	fn Matches(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Matches, 0)
+		self.get_token(SubstraitType_Matches, 0)
 	}
 }
 
@@ -1118,14 +1124,15 @@ pub struct MatchContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{MatchContextExt<'a>}
+antlr4rust::tid!{MatchContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for MatchContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for MatchContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Match(self);
+		Ok(())
 	}
 }
 
@@ -1158,10 +1165,9 @@ impl<'input> MatchContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn statement(&mut self,)
 	-> Result<Rc<StatementContextAll<'input>>,ANTLRError> {
@@ -1177,7 +1183,7 @@ where
 			match  recog.interpreter.adaptive_predict(10,&mut recog.base)? {
 				1 =>{
 					let tmp = NormalContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule pattern*/
@@ -1185,7 +1191,7 @@ where
 					recog.pattern()?;
 
 					recog.base.set_state(127);
-					recog.base.match_token(Assign,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Assign,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(128);
@@ -1196,18 +1202,18 @@ where
 			,
 				2 =>{
 					let tmp = MatchContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(130);
-					recog.base.match_token(Assert,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Assert,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(131);
 					recog.pattern()?;
 
 					recog.base.set_state(132);
-					recog.base.match_token(Matches,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Matches,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(133);
@@ -1218,11 +1224,11 @@ where
 			,
 				3 =>{
 					let tmp = AssertContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 3);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 3)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(135);
-					recog.base.match_token(Assert,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Assert,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(136);
@@ -1244,7 +1250,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -1263,12 +1269,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for PatternContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_pattern(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_pattern(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -1278,12 +1286,13 @@ impl<'input> CustomRuleContext<'input> for PatternContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_pattern }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_pattern }
 }
-antlr_rust::tid!{PatternContextExt<'a>}
+antlr4rust::tid!{PatternContextExt<'a>}
 
 impl<'input> PatternContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -1300,10 +1309,9 @@ fn patternInvalidIfThenElse(&self) -> Option<Rc<PatternInvalidIfThenElseContextA
 
 impl<'input> PatternContextAttrs<'input> for PatternContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn pattern(&mut self,)
 	-> Result<Rc<PatternContextAll<'input>>,ANTLRError> {
@@ -1314,8 +1322,8 @@ where
         let mut _localctx: Rc<PatternContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			/*InvokeRule patternInvalidIfThenElse*/
 			recog.base.set_state(139);
@@ -1333,7 +1341,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -1345,9 +1353,9 @@ pub enum PatternInvalidIfThenElseContextAll<'input>{
 	ValidPatternContext(ValidPatternContext<'input>),
 Error(PatternInvalidIfThenElseContext<'input>)
 }
-antlr_rust::tid!{PatternInvalidIfThenElseContextAll<'a>}
+antlr4rust::tid!{PatternInvalidIfThenElseContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for PatternInvalidIfThenElseContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for PatternInvalidIfThenElseContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for PatternInvalidIfThenElseContextAll<'input>{}
 
@@ -1363,8 +1371,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternInvalidIfThenElseContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -1387,13 +1395,14 @@ impl<'input> CustomRuleContext<'input> for PatternInvalidIfThenElseContextExt<'i
 	fn get_rule_index(&self) -> usize { RULE_patternInvalidIfThenElse }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternInvalidIfThenElse }
 }
-antlr_rust::tid!{PatternInvalidIfThenElseContextExt<'a>}
+antlr4rust::tid!{PatternInvalidIfThenElseContextExt<'a>}
 
 impl<'input> PatternInvalidIfThenElseContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternInvalidIfThenElseContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternInvalidIfThenElseContextAll<'input>> {
 		Rc::new(
 		PatternInvalidIfThenElseContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternInvalidIfThenElseContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -1420,12 +1429,12 @@ pub trait InvalidIfThenElseContextAttrs<'input>: SubstraitTypeParserContext<'inp
 	/// Retrieves first TerminalNode corresponding to token Question
 	/// Returns `None` if there is no child corresponding to token Question
 	fn Question(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Question, 0)
+		self.get_token(SubstraitType_Question, 0)
 	}
 	/// Retrieves first TerminalNode corresponding to token Colon
 	/// Returns `None` if there is no child corresponding to token Colon
 	fn Colon(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Colon, 0)
+		self.get_token(SubstraitType_Colon, 0)
 	}
 	fn pattern(&self) -> Option<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -1439,14 +1448,15 @@ pub struct InvalidIfThenElseContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{InvalidIfThenElseContextExt<'a>}
+antlr4rust::tid!{InvalidIfThenElseContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for InvalidIfThenElseContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for InvalidIfThenElseContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_InvalidIfThenElse(self);
+		Ok(())
 	}
 }
 
@@ -1494,14 +1504,15 @@ pub struct ValidPatternContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{ValidPatternContextExt<'a>}
+antlr4rust::tid!{ValidPatternContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for ValidPatternContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for ValidPatternContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_ValidPattern(self);
+		Ok(())
 	}
 }
 
@@ -1534,10 +1545,9 @@ impl<'input> ValidPatternContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternInvalidIfThenElse(&mut self,)
 	-> Result<Rc<PatternInvalidIfThenElseContextAll<'input>>,ANTLRError> {
@@ -1553,7 +1563,7 @@ where
 			match  recog.interpreter.adaptive_predict(11,&mut recog.base)? {
 				1 =>{
 					let tmp = ValidPatternContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule patternOr*/
@@ -1565,7 +1575,7 @@ where
 			,
 				2 =>{
 					let tmp = InvalidIfThenElseContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule patternOr*/
@@ -1573,14 +1583,14 @@ where
 					recog.patternOr()?;
 
 					recog.base.set_state(143);
-					recog.base.match_token(Question,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Question,&mut recog.err_handler)?;
 
 					/*InvokeRule patternOr*/
 					recog.base.set_state(144);
 					recog.patternOr()?;
 
 					recog.base.set_state(145);
-					recog.base.match_token(Colon,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Colon,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(146);
@@ -1602,7 +1612,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -1621,12 +1631,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for PatternOrContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternOrContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_patternOr(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_patternOr(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -1636,12 +1648,13 @@ impl<'input> CustomRuleContext<'input> for PatternOrContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_patternOr }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternOr }
 }
-antlr_rust::tid!{PatternOrContextExt<'a>}
+antlr4rust::tid!{PatternOrContextExt<'a>}
 
 impl<'input> PatternOrContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternOrContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternOrContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternOrContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -1667,10 +1680,9 @@ fn operatorOr(&self, i: usize) -> Option<Rc<OperatorOrContextAll<'input>>> where
 
 impl<'input> PatternOrContextAttrs<'input> for PatternOrContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternOr(&mut self,)
 	-> Result<Rc<PatternOrContextAll<'input>>,ANTLRError> {
@@ -1681,9 +1693,9 @@ where
         let mut _localctx: Rc<PatternOrContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			/*InvokeRule patternAnd*/
 			recog.base.set_state(150);
@@ -1723,7 +1735,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -1734,9 +1746,9 @@ pub enum OperatorOrContextAll<'input>{
 	OrContext(OrContext<'input>),
 Error(OperatorOrContext<'input>)
 }
-antlr_rust::tid!{OperatorOrContextAll<'a>}
+antlr4rust::tid!{OperatorOrContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for OperatorOrContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for OperatorOrContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for OperatorOrContextAll<'input>{}
 
@@ -1751,8 +1763,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for OperatorOrContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -1775,13 +1787,14 @@ impl<'input> CustomRuleContext<'input> for OperatorOrContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_operatorOr }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_operatorOr }
 }
-antlr_rust::tid!{OperatorOrContextExt<'a>}
+antlr4rust::tid!{OperatorOrContextExt<'a>}
 
 impl<'input> OperatorOrContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<OperatorOrContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<OperatorOrContextAll<'input>> {
 		Rc::new(
 		OperatorOrContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,OperatorOrContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -1802,7 +1815,7 @@ pub trait OrContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token BooleanOr
 	/// Returns `None` if there is no child corresponding to token BooleanOr
 	fn BooleanOr(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(BooleanOr, 0)
+		self.get_token(SubstraitType_BooleanOr, 0)
 	}
 }
 
@@ -1813,14 +1826,15 @@ pub struct OrContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{OrContextExt<'a>}
+antlr4rust::tid!{OrContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for OrContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for OrContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Or(self);
+		Ok(())
 	}
 }
 
@@ -1853,10 +1867,9 @@ impl<'input> OrContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn operatorOr(&mut self,)
 	-> Result<Rc<OperatorOrContextAll<'input>>,ANTLRError> {
@@ -1868,11 +1881,11 @@ where
 		let result: Result<(), ANTLRError> = (|| {
 
 			let tmp = OrContextExt::new(&**_localctx);
-			recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+			recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 			_localctx = tmp;
 			{
 			recog.base.set_state(159);
-			recog.base.match_token(BooleanOr,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_BooleanOr,&mut recog.err_handler)?;
 
 			}
 			Ok(())
@@ -1886,7 +1899,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -1905,12 +1918,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for PatternAndContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternAndContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_patternAnd(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_patternAnd(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -1920,12 +1935,13 @@ impl<'input> CustomRuleContext<'input> for PatternAndContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_patternAnd }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternAnd }
 }
-antlr_rust::tid!{PatternAndContextExt<'a>}
+antlr4rust::tid!{PatternAndContextExt<'a>}
 
 impl<'input> PatternAndContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternAndContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternAndContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternAndContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -1951,10 +1967,9 @@ fn operatorAnd(&self, i: usize) -> Option<Rc<OperatorAndContextAll<'input>>> whe
 
 impl<'input> PatternAndContextAttrs<'input> for PatternAndContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternAnd(&mut self,)
 	-> Result<Rc<PatternAndContextAll<'input>>,ANTLRError> {
@@ -1965,9 +1980,9 @@ where
         let mut _localctx: Rc<PatternAndContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			/*InvokeRule patternEqNeq*/
 			recog.base.set_state(161);
@@ -2007,7 +2022,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -2018,9 +2033,9 @@ pub enum OperatorAndContextAll<'input>{
 	AndContext(AndContext<'input>),
 Error(OperatorAndContext<'input>)
 }
-antlr_rust::tid!{OperatorAndContextAll<'a>}
+antlr4rust::tid!{OperatorAndContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for OperatorAndContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for OperatorAndContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for OperatorAndContextAll<'input>{}
 
@@ -2035,8 +2050,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for OperatorAndContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -2059,13 +2074,14 @@ impl<'input> CustomRuleContext<'input> for OperatorAndContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_operatorAnd }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_operatorAnd }
 }
-antlr_rust::tid!{OperatorAndContextExt<'a>}
+antlr4rust::tid!{OperatorAndContextExt<'a>}
 
 impl<'input> OperatorAndContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<OperatorAndContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<OperatorAndContextAll<'input>> {
 		Rc::new(
 		OperatorAndContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,OperatorAndContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -2086,7 +2102,7 @@ pub trait AndContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token BooleanAnd
 	/// Returns `None` if there is no child corresponding to token BooleanAnd
 	fn BooleanAnd(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(BooleanAnd, 0)
+		self.get_token(SubstraitType_BooleanAnd, 0)
 	}
 }
 
@@ -2097,14 +2113,15 @@ pub struct AndContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{AndContextExt<'a>}
+antlr4rust::tid!{AndContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for AndContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for AndContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_And(self);
+		Ok(())
 	}
 }
 
@@ -2137,10 +2154,9 @@ impl<'input> AndContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn operatorAnd(&mut self,)
 	-> Result<Rc<OperatorAndContextAll<'input>>,ANTLRError> {
@@ -2152,11 +2168,11 @@ where
 		let result: Result<(), ANTLRError> = (|| {
 
 			let tmp = AndContextExt::new(&**_localctx);
-			recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+			recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 			_localctx = tmp;
 			{
 			recog.base.set_state(170);
-			recog.base.match_token(BooleanAnd,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_BooleanAnd,&mut recog.err_handler)?;
 
 			}
 			Ok(())
@@ -2170,7 +2186,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -2189,12 +2205,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for PatternEqNeqContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternEqNeqContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_patternEqNeq(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_patternEqNeq(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -2204,12 +2222,13 @@ impl<'input> CustomRuleContext<'input> for PatternEqNeqContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_patternEqNeq }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternEqNeq }
 }
-antlr_rust::tid!{PatternEqNeqContextExt<'a>}
+antlr4rust::tid!{PatternEqNeqContextExt<'a>}
 
 impl<'input> PatternEqNeqContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternEqNeqContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternEqNeqContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternEqNeqContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -2235,10 +2254,9 @@ fn operatorEqNeq(&self, i: usize) -> Option<Rc<OperatorEqNeqContextAll<'input>>>
 
 impl<'input> PatternEqNeqContextAttrs<'input> for PatternEqNeqContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternEqNeq(&mut self,)
 	-> Result<Rc<PatternEqNeqContextAll<'input>>,ANTLRError> {
@@ -2249,9 +2267,9 @@ where
         let mut _localctx: Rc<PatternEqNeqContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			/*InvokeRule patternIneq*/
 			recog.base.set_state(172);
@@ -2291,7 +2309,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -2303,9 +2321,9 @@ pub enum OperatorEqNeqContextAll<'input>{
 	EqContext(EqContext<'input>),
 Error(OperatorEqNeqContext<'input>)
 }
-antlr_rust::tid!{OperatorEqNeqContextAll<'a>}
+antlr4rust::tid!{OperatorEqNeqContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for OperatorEqNeqContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for OperatorEqNeqContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for OperatorEqNeqContextAll<'input>{}
 
@@ -2321,8 +2339,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for OperatorEqNeqContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -2345,13 +2363,14 @@ impl<'input> CustomRuleContext<'input> for OperatorEqNeqContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_operatorEqNeq }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_operatorEqNeq }
 }
-antlr_rust::tid!{OperatorEqNeqContextExt<'a>}
+antlr4rust::tid!{OperatorEqNeqContextExt<'a>}
 
 impl<'input> OperatorEqNeqContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<OperatorEqNeqContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<OperatorEqNeqContextAll<'input>> {
 		Rc::new(
 		OperatorEqNeqContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,OperatorEqNeqContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -2372,7 +2391,7 @@ pub trait NeqContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token NotEqual
 	/// Returns `None` if there is no child corresponding to token NotEqual
 	fn NotEqual(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(NotEqual, 0)
+		self.get_token(SubstraitType_NotEqual, 0)
 	}
 }
 
@@ -2383,14 +2402,15 @@ pub struct NeqContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{NeqContextExt<'a>}
+antlr4rust::tid!{NeqContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for NeqContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for NeqContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Neq(self);
+		Ok(())
 	}
 }
 
@@ -2429,7 +2449,7 @@ pub trait EqContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Equal
 	/// Returns `None` if there is no child corresponding to token Equal
 	fn Equal(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Equal, 0)
+		self.get_token(SubstraitType_Equal, 0)
 	}
 }
 
@@ -2440,14 +2460,15 @@ pub struct EqContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{EqContextExt<'a>}
+antlr4rust::tid!{EqContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for EqContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for EqContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Eq(self);
+		Ok(())
 	}
 }
 
@@ -2480,10 +2501,9 @@ impl<'input> EqContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn operatorEqNeq(&mut self,)
 	-> Result<Rc<OperatorEqNeqContextAll<'input>>,ANTLRError> {
@@ -2497,26 +2517,26 @@ where
 			recog.base.set_state(183);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 Equal 
+			SubstraitType_Equal 
 				=> {
 					let tmp = EqContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(181);
-					recog.base.match_token(Equal,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Equal,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 NotEqual 
+			SubstraitType_NotEqual 
 				=> {
 					let tmp = NeqContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(182);
-					recog.base.match_token(NotEqual,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_NotEqual,&mut recog.err_handler)?;
 
 					}
 				}
@@ -2534,7 +2554,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -2553,12 +2573,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for PatternIneqContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternIneqContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_patternIneq(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_patternIneq(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -2568,12 +2590,13 @@ impl<'input> CustomRuleContext<'input> for PatternIneqContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_patternIneq }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternIneq }
 }
-antlr_rust::tid!{PatternIneqContextExt<'a>}
+antlr4rust::tid!{PatternIneqContextExt<'a>}
 
 impl<'input> PatternIneqContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternIneqContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternIneqContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternIneqContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -2599,10 +2622,9 @@ fn operatorIneq(&self, i: usize) -> Option<Rc<OperatorIneqContextAll<'input>>> w
 
 impl<'input> PatternIneqContextAttrs<'input> for PatternIneqContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternIneq(&mut self,)
 	-> Result<Rc<PatternIneqContextAll<'input>>,ANTLRError> {
@@ -2613,9 +2635,9 @@ where
         let mut _localctx: Rc<PatternIneqContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			/*InvokeRule patternAddSub*/
 			recog.base.set_state(185);
@@ -2655,7 +2677,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -2669,9 +2691,9 @@ pub enum OperatorIneqContextAll<'input>{
 	GeContext(GeContext<'input>),
 Error(OperatorIneqContext<'input>)
 }
-antlr_rust::tid!{OperatorIneqContextAll<'a>}
+antlr4rust::tid!{OperatorIneqContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for OperatorIneqContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for OperatorIneqContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for OperatorIneqContextAll<'input>{}
 
@@ -2689,8 +2711,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for OperatorIneqContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -2713,13 +2735,14 @@ impl<'input> CustomRuleContext<'input> for OperatorIneqContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_operatorIneq }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_operatorIneq }
 }
-antlr_rust::tid!{OperatorIneqContextExt<'a>}
+antlr4rust::tid!{OperatorIneqContextExt<'a>}
 
 impl<'input> OperatorIneqContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<OperatorIneqContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<OperatorIneqContextAll<'input>> {
 		Rc::new(
 		OperatorIneqContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,OperatorIneqContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -2740,7 +2763,7 @@ pub trait LtContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token LessThan
 	/// Returns `None` if there is no child corresponding to token LessThan
 	fn LessThan(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(LessThan, 0)
+		self.get_token(SubstraitType_LessThan, 0)
 	}
 }
 
@@ -2751,14 +2774,15 @@ pub struct LtContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{LtContextExt<'a>}
+antlr4rust::tid!{LtContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for LtContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for LtContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Lt(self);
+		Ok(())
 	}
 }
 
@@ -2797,7 +2821,7 @@ pub trait LeContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token LessEqual
 	/// Returns `None` if there is no child corresponding to token LessEqual
 	fn LessEqual(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(LessEqual, 0)
+		self.get_token(SubstraitType_LessEqual, 0)
 	}
 }
 
@@ -2808,14 +2832,15 @@ pub struct LeContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{LeContextExt<'a>}
+antlr4rust::tid!{LeContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for LeContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for LeContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Le(self);
+		Ok(())
 	}
 }
 
@@ -2854,7 +2879,7 @@ pub trait GtContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token GreaterThan
 	/// Returns `None` if there is no child corresponding to token GreaterThan
 	fn GreaterThan(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(GreaterThan, 0)
+		self.get_token(SubstraitType_GreaterThan, 0)
 	}
 }
 
@@ -2865,14 +2890,15 @@ pub struct GtContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{GtContextExt<'a>}
+antlr4rust::tid!{GtContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for GtContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for GtContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Gt(self);
+		Ok(())
 	}
 }
 
@@ -2911,7 +2937,7 @@ pub trait GeContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token GreaterEqual
 	/// Returns `None` if there is no child corresponding to token GreaterEqual
 	fn GreaterEqual(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(GreaterEqual, 0)
+		self.get_token(SubstraitType_GreaterEqual, 0)
 	}
 }
 
@@ -2922,14 +2948,15 @@ pub struct GeContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{GeContextExt<'a>}
+antlr4rust::tid!{GeContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for GeContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for GeContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Ge(self);
+		Ok(())
 	}
 }
 
@@ -2962,10 +2989,9 @@ impl<'input> GeContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn operatorIneq(&mut self,)
 	-> Result<Rc<OperatorIneqContextAll<'input>>,ANTLRError> {
@@ -2979,50 +3005,50 @@ where
 			recog.base.set_state(198);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 LessThan 
+			SubstraitType_LessThan 
 				=> {
 					let tmp = LtContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(194);
-					recog.base.match_token(LessThan,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_LessThan,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 LessEqual 
+			SubstraitType_LessEqual 
 				=> {
 					let tmp = LeContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(195);
-					recog.base.match_token(LessEqual,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_LessEqual,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 GreaterThan 
+			SubstraitType_GreaterThan 
 				=> {
 					let tmp = GtContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 3);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 3)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(196);
-					recog.base.match_token(GreaterThan,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_GreaterThan,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 GreaterEqual 
+			SubstraitType_GreaterEqual 
 				=> {
 					let tmp = GeContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 4);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 4)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(197);
-					recog.base.match_token(GreaterEqual,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_GreaterEqual,&mut recog.err_handler)?;
 
 					}
 				}
@@ -3040,7 +3066,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -3059,12 +3085,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for PatternAddSubContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternAddSubContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_patternAddSub(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_patternAddSub(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -3074,12 +3102,13 @@ impl<'input> CustomRuleContext<'input> for PatternAddSubContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_patternAddSub }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternAddSub }
 }
-antlr_rust::tid!{PatternAddSubContextExt<'a>}
+antlr4rust::tid!{PatternAddSubContextExt<'a>}
 
 impl<'input> PatternAddSubContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternAddSubContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternAddSubContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternAddSubContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -3105,10 +3134,9 @@ fn operatorAddSub(&self, i: usize) -> Option<Rc<OperatorAddSubContextAll<'input>
 
 impl<'input> PatternAddSubContextAttrs<'input> for PatternAddSubContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternAddSub(&mut self,)
 	-> Result<Rc<PatternAddSubContextAll<'input>>,ANTLRError> {
@@ -3119,9 +3147,9 @@ where
         let mut _localctx: Rc<PatternAddSubContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			/*InvokeRule patternMulDiv*/
 			recog.base.set_state(200);
@@ -3161,7 +3189,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -3173,9 +3201,9 @@ pub enum OperatorAddSubContextAll<'input>{
 	SubContext(SubContext<'input>),
 Error(OperatorAddSubContext<'input>)
 }
-antlr_rust::tid!{OperatorAddSubContextAll<'a>}
+antlr4rust::tid!{OperatorAddSubContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for OperatorAddSubContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for OperatorAddSubContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for OperatorAddSubContextAll<'input>{}
 
@@ -3191,8 +3219,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for OperatorAddSubContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -3215,13 +3243,14 @@ impl<'input> CustomRuleContext<'input> for OperatorAddSubContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_operatorAddSub }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_operatorAddSub }
 }
-antlr_rust::tid!{OperatorAddSubContextExt<'a>}
+antlr4rust::tid!{OperatorAddSubContextExt<'a>}
 
 impl<'input> OperatorAddSubContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<OperatorAddSubContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<OperatorAddSubContextAll<'input>> {
 		Rc::new(
 		OperatorAddSubContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,OperatorAddSubContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -3242,7 +3271,7 @@ pub trait AddContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Plus
 	/// Returns `None` if there is no child corresponding to token Plus
 	fn Plus(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Plus, 0)
+		self.get_token(SubstraitType_Plus, 0)
 	}
 }
 
@@ -3253,14 +3282,15 @@ pub struct AddContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{AddContextExt<'a>}
+antlr4rust::tid!{AddContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for AddContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for AddContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Add(self);
+		Ok(())
 	}
 }
 
@@ -3299,7 +3329,7 @@ pub trait SubContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Minus
 	/// Returns `None` if there is no child corresponding to token Minus
 	fn Minus(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Minus, 0)
+		self.get_token(SubstraitType_Minus, 0)
 	}
 }
 
@@ -3310,14 +3340,15 @@ pub struct SubContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{SubContextExt<'a>}
+antlr4rust::tid!{SubContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for SubContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for SubContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Sub(self);
+		Ok(())
 	}
 }
 
@@ -3350,10 +3381,9 @@ impl<'input> SubContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn operatorAddSub(&mut self,)
 	-> Result<Rc<OperatorAddSubContextAll<'input>>,ANTLRError> {
@@ -3367,26 +3397,26 @@ where
 			recog.base.set_state(211);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 Plus 
+			SubstraitType_Plus 
 				=> {
 					let tmp = AddContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(209);
-					recog.base.match_token(Plus,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Plus,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 Minus 
+			SubstraitType_Minus 
 				=> {
 					let tmp = SubContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(210);
-					recog.base.match_token(Minus,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Minus,&mut recog.err_handler)?;
 
 					}
 				}
@@ -3404,7 +3434,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -3423,12 +3453,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for PatternMulDivContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternMulDivContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_patternMulDiv(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_patternMulDiv(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -3438,12 +3470,13 @@ impl<'input> CustomRuleContext<'input> for PatternMulDivContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_patternMulDiv }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternMulDiv }
 }
-antlr_rust::tid!{PatternMulDivContextExt<'a>}
+antlr4rust::tid!{PatternMulDivContextExt<'a>}
 
 impl<'input> PatternMulDivContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternMulDivContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternMulDivContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternMulDivContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -3469,10 +3502,9 @@ fn operatorMulDiv(&self, i: usize) -> Option<Rc<OperatorMulDivContextAll<'input>
 
 impl<'input> PatternMulDivContextAttrs<'input> for PatternMulDivContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternMulDiv(&mut self,)
 	-> Result<Rc<PatternMulDivContextAll<'input>>,ANTLRError> {
@@ -3483,9 +3515,9 @@ where
         let mut _localctx: Rc<PatternMulDivContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			/*InvokeRule patternMisc*/
 			recog.base.set_state(213);
@@ -3525,7 +3557,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -3537,9 +3569,9 @@ pub enum OperatorMulDivContextAll<'input>{
 	MulContext(MulContext<'input>),
 Error(OperatorMulDivContext<'input>)
 }
-antlr_rust::tid!{OperatorMulDivContextAll<'a>}
+antlr4rust::tid!{OperatorMulDivContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for OperatorMulDivContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for OperatorMulDivContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for OperatorMulDivContextAll<'input>{}
 
@@ -3555,8 +3587,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for OperatorMulDivContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -3579,13 +3611,14 @@ impl<'input> CustomRuleContext<'input> for OperatorMulDivContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_operatorMulDiv }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_operatorMulDiv }
 }
-antlr_rust::tid!{OperatorMulDivContextExt<'a>}
+antlr4rust::tid!{OperatorMulDivContextExt<'a>}
 
 impl<'input> OperatorMulDivContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<OperatorMulDivContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<OperatorMulDivContextAll<'input>> {
 		Rc::new(
 		OperatorMulDivContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,OperatorMulDivContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -3606,7 +3639,7 @@ pub trait DivContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Divide
 	/// Returns `None` if there is no child corresponding to token Divide
 	fn Divide(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Divide, 0)
+		self.get_token(SubstraitType_Divide, 0)
 	}
 }
 
@@ -3617,14 +3650,15 @@ pub struct DivContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{DivContextExt<'a>}
+antlr4rust::tid!{DivContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for DivContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for DivContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Div(self);
+		Ok(())
 	}
 }
 
@@ -3663,7 +3697,7 @@ pub trait MulContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Multiply
 	/// Returns `None` if there is no child corresponding to token Multiply
 	fn Multiply(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Multiply, 0)
+		self.get_token(SubstraitType_Multiply, 0)
 	}
 }
 
@@ -3674,14 +3708,15 @@ pub struct MulContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{MulContextExt<'a>}
+antlr4rust::tid!{MulContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for MulContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for MulContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Mul(self);
+		Ok(())
 	}
 }
 
@@ -3714,10 +3749,9 @@ impl<'input> MulContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn operatorMulDiv(&mut self,)
 	-> Result<Rc<OperatorMulDivContextAll<'input>>,ANTLRError> {
@@ -3731,26 +3765,26 @@ where
 			recog.base.set_state(224);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 Multiply 
+			SubstraitType_Multiply 
 				=> {
 					let tmp = MulContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(222);
-					recog.base.match_token(Multiply,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Multiply,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 Divide 
+			SubstraitType_Divide 
 				=> {
 					let tmp = DivContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(223);
-					recog.base.match_token(Divide,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Divide,&mut recog.err_handler)?;
 
 					}
 				}
@@ -3768,7 +3802,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -3799,9 +3833,9 @@ pub enum PatternMiscContextAll<'input>{
 	UnaryNotContext(UnaryNotContext<'input>),
 Error(PatternMiscContext<'input>)
 }
-antlr_rust::tid!{PatternMiscContextAll<'a>}
+antlr4rust::tid!{PatternMiscContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for PatternMiscContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for PatternMiscContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for PatternMiscContextAll<'input>{}
 
@@ -3836,8 +3870,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for PatternMiscContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -3860,13 +3894,14 @@ impl<'input> CustomRuleContext<'input> for PatternMiscContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_patternMisc }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_patternMisc }
 }
-antlr_rust::tid!{PatternMiscContextExt<'a>}
+antlr4rust::tid!{PatternMiscContextExt<'a>}
 
 impl<'input> PatternMiscContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<PatternMiscContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<PatternMiscContextAll<'input>> {
 		Rc::new(
 		PatternMiscContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,PatternMiscContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -3887,7 +3922,7 @@ pub trait ParenthesesContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token OpenParen
 	/// Returns `None` if there is no child corresponding to token OpenParen
 	fn OpenParen(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(OpenParen, 0)
+		self.get_token(SubstraitType_OpenParen, 0)
 	}
 	fn pattern(&self) -> Option<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -3895,7 +3930,7 @@ pub trait ParenthesesContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token CloseParen
 	/// Returns `None` if there is no child corresponding to token CloseParen
 	fn CloseParen(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(CloseParen, 0)
+		self.get_token(SubstraitType_CloseParen, 0)
 	}
 }
 
@@ -3906,14 +3941,15 @@ pub struct ParenthesesContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{ParenthesesContextExt<'a>}
+antlr4rust::tid!{ParenthesesContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for ParenthesesContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for ParenthesesContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_parentheses(self);
+		Ok(())
 	}
 }
 
@@ -3958,7 +3994,7 @@ pub trait IntRangeContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Range
 	/// Returns `None` if there is no child corresponding to token Range
 	fn Range(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Range, 0)
+		self.get_token(SubstraitType_Range, 0)
 	}
 }
 
@@ -3969,14 +4005,15 @@ pub struct IntRangeContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{IntRangeContextExt<'a>}
+antlr4rust::tid!{IntRangeContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for IntRangeContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IntRangeContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_intRange(self);
+		Ok(())
 	}
 }
 
@@ -4015,7 +4052,7 @@ pub trait UnaryNegateContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Minus
 	/// Returns `None` if there is no child corresponding to token Minus
 	fn Minus(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Minus, 0)
+		self.get_token(SubstraitType_Minus, 0)
 	}
 	fn pattern(&self) -> Option<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -4029,14 +4066,15 @@ pub struct UnaryNegateContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{UnaryNegateContextExt<'a>}
+antlr4rust::tid!{UnaryNegateContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for UnaryNegateContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for UnaryNegateContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_unaryNegate(self);
+		Ok(())
 	}
 }
 
@@ -4075,7 +4113,7 @@ pub trait StrExactlyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token String
 	/// Returns `None` if there is no child corresponding to token String
 	fn String(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(String, 0)
+		self.get_token(SubstraitType_String, 0)
 	}
 }
 
@@ -4086,14 +4124,15 @@ pub struct StrExactlyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{StrExactlyContextExt<'a>}
+antlr4rust::tid!{StrExactlyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for StrExactlyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for StrExactlyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_strExactly(self);
+		Ok(())
 	}
 }
 
@@ -4132,7 +4171,7 @@ pub trait IfThenElseContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token If
 	/// Returns `None` if there is no child corresponding to token If
 	fn If(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(If, 0)
+		self.get_token(SubstraitType_If, 0)
 	}
 	fn pattern_all(&self) ->  Vec<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.children_of_type()
@@ -4143,12 +4182,12 @@ pub trait IfThenElseContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Then
 	/// Returns `None` if there is no child corresponding to token Then
 	fn Then(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Then, 0)
+		self.get_token(SubstraitType_Then, 0)
 	}
 	/// Retrieves first TerminalNode corresponding to token Else
 	/// Returns `None` if there is no child corresponding to token Else
 	fn Else(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Else, 0)
+		self.get_token(SubstraitType_Else, 0)
 	}
 }
 
@@ -4159,14 +4198,15 @@ pub struct IfThenElseContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{IfThenElseContextExt<'a>}
+antlr4rust::tid!{IfThenElseContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for IfThenElseContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IfThenElseContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_ifThenElse(self);
+		Ok(())
 	}
 }
 
@@ -4205,7 +4245,7 @@ pub trait BoolFalseContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token False
 	/// Returns `None` if there is no child corresponding to token False
 	fn False(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(False, 0)
+		self.get_token(SubstraitType_False, 0)
 	}
 }
 
@@ -4216,14 +4256,15 @@ pub struct BoolFalseContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{BoolFalseContextExt<'a>}
+antlr4rust::tid!{BoolFalseContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for BoolFalseContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for BoolFalseContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_boolFalse(self);
+		Ok(())
 	}
 }
 
@@ -4262,7 +4303,7 @@ pub trait EnumAnyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Metaenum
 	/// Returns `None` if there is no child corresponding to token Metaenum
 	fn Metaenum(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Metaenum, 0)
+		self.get_token(SubstraitType_Metaenum, 0)
 	}
 }
 
@@ -4273,14 +4314,15 @@ pub struct EnumAnyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{EnumAnyContextExt<'a>}
+antlr4rust::tid!{EnumAnyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for EnumAnyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for EnumAnyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_enumAny(self);
+		Ok(())
 	}
 }
 
@@ -4319,7 +4361,7 @@ pub trait DtAnyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Typename
 	/// Returns `None` if there is no child corresponding to token Typename
 	fn Typename(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Typename, 0)
+		self.get_token(SubstraitType_Typename, 0)
 	}
 	fn nullability(&self) -> Option<Rc<NullabilityContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -4333,14 +4375,15 @@ pub struct DtAnyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{DtAnyContextExt<'a>}
+antlr4rust::tid!{DtAnyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for DtAnyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for DtAnyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_dtAny(self);
+		Ok(())
 	}
 }
 
@@ -4379,7 +4422,7 @@ pub trait AnyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Question
 	/// Returns `None` if there is no child corresponding to token Question
 	fn Question(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Question, 0)
+		self.get_token(SubstraitType_Question, 0)
 	}
 }
 
@@ -4390,14 +4433,15 @@ pub struct AnyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{AnyContextExt<'a>}
+antlr4rust::tid!{AnyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for AnyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for AnyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_any(self);
+		Ok(())
 	}
 }
 
@@ -4436,7 +4480,7 @@ pub trait IntAnyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Metaint
 	/// Returns `None` if there is no child corresponding to token Metaint
 	fn Metaint(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Metaint, 0)
+		self.get_token(SubstraitType_Metaint, 0)
 	}
 }
 
@@ -4447,14 +4491,15 @@ pub struct IntAnyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{IntAnyContextExt<'a>}
+antlr4rust::tid!{IntAnyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for IntAnyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IntAnyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_intAny(self);
+		Ok(())
 	}
 }
 
@@ -4493,12 +4538,12 @@ pub trait InconsistentContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Question
 	/// Returns `None` if there is no child corresponding to token Question
 	fn Question(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Question, 0)
+		self.get_token(SubstraitType_Question, 0)
 	}
 	/// Retrieves first TerminalNode corresponding to token Identifier
 	/// Returns `None` if there is no child corresponding to token Identifier
 	fn Identifier(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Identifier, 0)
+		self.get_token(SubstraitType_Identifier, 0)
 	}
 	fn nullability(&self) -> Option<Rc<NullabilityContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -4512,14 +4557,15 @@ pub struct InconsistentContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{InconsistentContextExt<'a>}
+antlr4rust::tid!{InconsistentContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for InconsistentContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for InconsistentContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_inconsistent(self);
+		Ok(())
 	}
 }
 
@@ -4576,14 +4622,15 @@ pub struct DatatypeBindingOrConstantContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{DatatypeBindingOrConstantContextExt<'a>}
+antlr4rust::tid!{DatatypeBindingOrConstantContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for DatatypeBindingOrConstantContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for DatatypeBindingOrConstantContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_datatypeBindingOrConstant(self);
+		Ok(())
 	}
 }
 
@@ -4622,7 +4669,7 @@ pub trait EnumSetContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token OpenCurly
 	/// Returns `None` if there is no child corresponding to token OpenCurly
 	fn OpenCurly(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(OpenCurly, 0)
+		self.get_token(SubstraitType_OpenCurly, 0)
 	}
 	/// Retrieves all `TerminalNode`s corresponding to token Identifier in current rule
 	fn Identifier_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>>  where Self:Sized{
@@ -4631,12 +4678,12 @@ pub trait EnumSetContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves 'i's TerminalNode corresponding to token Identifier, starting from 0.
 	/// Returns `None` if number of children corresponding to token Identifier is less or equal than `i`.
 	fn Identifier(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Identifier, i)
+		self.get_token(SubstraitType_Identifier, i)
 	}
 	/// Retrieves first TerminalNode corresponding to token CloseCurly
 	/// Returns `None` if there is no child corresponding to token CloseCurly
 	fn CloseCurly(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(CloseCurly, 0)
+		self.get_token(SubstraitType_CloseCurly, 0)
 	}
 	/// Retrieves all `TerminalNode`s corresponding to token Comma in current rule
 	fn Comma_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>>  where Self:Sized{
@@ -4645,7 +4692,7 @@ pub trait EnumSetContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves 'i's TerminalNode corresponding to token Comma, starting from 0.
 	/// Returns `None` if number of children corresponding to token Comma is less or equal than `i`.
 	fn Comma(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Comma, i)
+		self.get_token(SubstraitType_Comma, i)
 	}
 }
 
@@ -4656,14 +4703,15 @@ pub struct EnumSetContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{EnumSetContextExt<'a>}
+antlr4rust::tid!{EnumSetContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for EnumSetContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for EnumSetContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_enumSet(self);
+		Ok(())
 	}
 }
 
@@ -4702,7 +4750,7 @@ pub trait StrAnyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Metastr
 	/// Returns `None` if there is no child corresponding to token Metastr
 	fn Metastr(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Metastr, 0)
+		self.get_token(SubstraitType_Metastr, 0)
 	}
 }
 
@@ -4713,14 +4761,15 @@ pub struct StrAnyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{StrAnyContextExt<'a>}
+antlr4rust::tid!{StrAnyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for StrAnyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for StrAnyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_strAny(self);
+		Ok(())
 	}
 }
 
@@ -4759,7 +4808,7 @@ pub trait BoolTrueContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token True
 	/// Returns `None` if there is no child corresponding to token True
 	fn True(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(True, 0)
+		self.get_token(SubstraitType_True, 0)
 	}
 }
 
@@ -4770,14 +4819,15 @@ pub struct BoolTrueContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{BoolTrueContextExt<'a>}
+antlr4rust::tid!{BoolTrueContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for BoolTrueContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for BoolTrueContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_boolTrue(self);
+		Ok(())
 	}
 }
 
@@ -4816,7 +4866,7 @@ pub trait IntAtMostContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Range
 	/// Returns `None` if there is no child corresponding to token Range
 	fn Range(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Range, 0)
+		self.get_token(SubstraitType_Range, 0)
 	}
 	fn integer(&self) -> Option<Rc<IntegerContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -4830,14 +4880,15 @@ pub struct IntAtMostContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{IntAtMostContextExt<'a>}
+antlr4rust::tid!{IntAtMostContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for IntAtMostContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IntAtMostContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_intAtMost(self);
+		Ok(())
 	}
 }
 
@@ -4879,7 +4930,7 @@ pub trait IntAtLeastContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Range
 	/// Returns `None` if there is no child corresponding to token Range
 	fn Range(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Range, 0)
+		self.get_token(SubstraitType_Range, 0)
 	}
 }
 
@@ -4890,14 +4941,15 @@ pub struct IntAtLeastContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{IntAtLeastContextExt<'a>}
+antlr4rust::tid!{IntAtLeastContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for IntAtLeastContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IntAtLeastContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_intAtLeast(self);
+		Ok(())
 	}
 }
 
@@ -4945,14 +4997,15 @@ pub struct IntExactlyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{IntExactlyContextExt<'a>}
+antlr4rust::tid!{IntExactlyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for IntExactlyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IntExactlyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_intExactly(self);
+		Ok(())
 	}
 }
 
@@ -4991,17 +5044,17 @@ pub trait FunctionContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Identifier
 	/// Returns `None` if there is no child corresponding to token Identifier
 	fn Identifier(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Identifier, 0)
+		self.get_token(SubstraitType_Identifier, 0)
 	}
 	/// Retrieves first TerminalNode corresponding to token OpenParen
 	/// Returns `None` if there is no child corresponding to token OpenParen
 	fn OpenParen(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(OpenParen, 0)
+		self.get_token(SubstraitType_OpenParen, 0)
 	}
 	/// Retrieves first TerminalNode corresponding to token CloseParen
 	/// Returns `None` if there is no child corresponding to token CloseParen
 	fn CloseParen(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(CloseParen, 0)
+		self.get_token(SubstraitType_CloseParen, 0)
 	}
 	fn pattern_all(&self) ->  Vec<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.children_of_type()
@@ -5016,7 +5069,7 @@ pub trait FunctionContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves 'i's TerminalNode corresponding to token Comma, starting from 0.
 	/// Returns `None` if number of children corresponding to token Comma is less or equal than `i`.
 	fn Comma(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Comma, i)
+		self.get_token(SubstraitType_Comma, i)
 	}
 }
 
@@ -5027,14 +5080,15 @@ pub struct FunctionContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{FunctionContextExt<'a>}
+antlr4rust::tid!{FunctionContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for FunctionContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for FunctionContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_function(self);
+		Ok(())
 	}
 }
 
@@ -5073,7 +5127,7 @@ pub trait BoolAnyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Metabool
 	/// Returns `None` if there is no child corresponding to token Metabool
 	fn Metabool(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Metabool, 0)
+		self.get_token(SubstraitType_Metabool, 0)
 	}
 }
 
@@ -5084,14 +5138,15 @@ pub struct BoolAnyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{BoolAnyContextExt<'a>}
+antlr4rust::tid!{BoolAnyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for BoolAnyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for BoolAnyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_boolAny(self);
+		Ok(())
 	}
 }
 
@@ -5130,7 +5185,7 @@ pub trait UnaryNotContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Bang
 	/// Returns `None` if there is no child corresponding to token Bang
 	fn Bang(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Bang, 0)
+		self.get_token(SubstraitType_Bang, 0)
 	}
 	fn pattern(&self) -> Option<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -5144,14 +5199,15 @@ pub struct UnaryNotContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{UnaryNotContextExt<'a>}
+antlr4rust::tid!{UnaryNotContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for UnaryNotContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for UnaryNotContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_unaryNot(self);
+		Ok(())
 	}
 }
 
@@ -5184,10 +5240,9 @@ impl<'input> UnaryNotContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn patternMisc(&mut self,)
 	-> Result<Rc<PatternMiscContextAll<'input>>,ANTLRError> {
@@ -5196,7 +5251,7 @@ where
 		let mut _localctx = PatternMiscContextExt::new(_parentctx.clone(), recog.base.get_state());
         recog.base.enter_rule(_localctx.clone(), 38, RULE_patternMisc);
         let mut _localctx: Rc<PatternMiscContextAll> = _localctx;
-		let mut _la: isize = -1;
+		let mut _la: i32 = -1;
 		let result: Result<(), ANTLRError> = (|| {
 
 			recog.base.set_state(301);
@@ -5204,43 +5259,43 @@ where
 			match  recog.interpreter.adaptive_predict(30,&mut recog.base)? {
 				1 =>{
 					let tmp = ParenthesesContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(226);
-					recog.base.match_token(OpenParen,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_OpenParen,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(227);
 					recog.pattern()?;
 
 					recog.base.set_state(228);
-					recog.base.match_token(CloseParen,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_CloseParen,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				2 =>{
 					let tmp = IfThenElseContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(230);
-					recog.base.match_token(If,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_If,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(231);
 					recog.pattern()?;
 
 					recog.base.set_state(232);
-					recog.base.match_token(Then,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Then,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(233);
 					recog.pattern()?;
 
 					recog.base.set_state(234);
-					recog.base.match_token(Else,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Else,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(235);
@@ -5251,11 +5306,11 @@ where
 			,
 				3 =>{
 					let tmp = UnaryNotContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 3);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 3)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(237);
-					recog.base.match_token(Bang,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Bang,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(238);
@@ -5266,62 +5321,62 @@ where
 			,
 				4 =>{
 					let tmp = AnyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 4);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 4)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(239);
-					recog.base.match_token(Question,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Question,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				5 =>{
 					let tmp = BoolAnyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 5);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 5)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(240);
-					recog.base.match_token(Metabool,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Metabool,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				6 =>{
 					let tmp = BoolTrueContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 6);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 6)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(241);
-					recog.base.match_token(True,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_True,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				7 =>{
 					let tmp = BoolFalseContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 7);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 7)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(242);
-					recog.base.match_token(False,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_False,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				8 =>{
 					let tmp = IntAnyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 8);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 8)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(243);
-					recog.base.match_token(Metaint,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Metaint,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				9 =>{
 					let tmp = IntRangeContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 9);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 9)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule integer*/
@@ -5329,7 +5384,7 @@ where
 					recog.integer()?;
 
 					recog.base.set_state(245);
-					recog.base.match_token(Range,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Range,&mut recog.err_handler)?;
 
 					/*InvokeRule integer*/
 					recog.base.set_state(246);
@@ -5340,7 +5395,7 @@ where
 			,
 				10 =>{
 					let tmp = IntAtLeastContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 10);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 10)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule integer*/
@@ -5348,18 +5403,18 @@ where
 					recog.integer()?;
 
 					recog.base.set_state(249);
-					recog.base.match_token(Range,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Range,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				11 =>{
 					let tmp = IntAtMostContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 11);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 11)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(251);
-					recog.base.match_token(Range,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Range,&mut recog.err_handler)?;
 
 					/*InvokeRule integer*/
 					recog.base.set_state(252);
@@ -5370,7 +5425,7 @@ where
 			,
 				12 =>{
 					let tmp = IntExactlyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 12);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 12)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule integer*/
@@ -5382,37 +5437,37 @@ where
 			,
 				13 =>{
 					let tmp = EnumAnyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 13);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 13)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(254);
-					recog.base.match_token(Metaenum,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Metaenum,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				14 =>{
 					let tmp = EnumSetContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 14);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 14)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(255);
-					recog.base.match_token(OpenCurly,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_OpenCurly,&mut recog.err_handler)?;
 
 					recog.base.set_state(256);
-					recog.base.match_token(Identifier,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Identifier,&mut recog.err_handler)?;
 
 					recog.base.set_state(261);
 					recog.err_handler.sync(&mut recog.base)?;
 					_la = recog.base.input.la(1);
-					while _la==Comma {
+					while _la==SubstraitType_Comma {
 						{
 						{
 						recog.base.set_state(257);
-						recog.base.match_token(Comma,&mut recog.err_handler)?;
+						recog.base.match_token(SubstraitType_Comma,&mut recog.err_handler)?;
 
 						recog.base.set_state(258);
-						recog.base.match_token(Identifier,&mut recog.err_handler)?;
+						recog.base.match_token(SubstraitType_Identifier,&mut recog.err_handler)?;
 
 						}
 						}
@@ -5421,40 +5476,40 @@ where
 						_la = recog.base.input.la(1);
 					}
 					recog.base.set_state(264);
-					recog.base.match_token(CloseCurly,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_CloseCurly,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				15 =>{
 					let tmp = StrAnyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 15);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 15)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(265);
-					recog.base.match_token(Metastr,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Metastr,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				16 =>{
 					let tmp = StrExactlyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 16);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 16)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(266);
-					recog.base.match_token(String,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_String,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				17 =>{
 					let tmp = DtAnyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 17);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 17)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(267);
-					recog.base.match_token(Typename,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Typename,&mut recog.err_handler)?;
 
 					recog.base.set_state(269);
 					recog.err_handler.sync(&mut recog.base)?;
@@ -5475,19 +5530,19 @@ where
 			,
 				18 =>{
 					let tmp = FunctionContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 18);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 18)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(271);
-					recog.base.match_token(Identifier,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Identifier,&mut recog.err_handler)?;
 
 					recog.base.set_state(272);
-					recog.base.match_token(OpenParen,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_OpenParen,&mut recog.err_handler)?;
 
 					recog.base.set_state(281);
 					recog.err_handler.sync(&mut recog.base)?;
 					_la = recog.base.input.la(1);
-					if (((_la) & !0x3f) == 0 && ((1usize << _la) & ((1usize << If) | (1usize << True) | (1usize << False) | (1usize << Metabool) | (1usize << Metaint) | (1usize << Metaenum) | (1usize << Metastr) | (1usize << Typename) | (1usize << Question) | (1usize << Bang) | (1usize << OpenParen) | (1usize << OpenCurly))) != 0) || ((((_la - 40)) & !0x3f) == 0 && ((1usize << (_la - 40)) & ((1usize << (Plus - 40)) | (1usize << (Minus - 40)) | (1usize << (Range - 40)) | (1usize << (Nonzero - 40)) | (1usize << (Zero - 40)) | (1usize << (String - 40)) | (1usize << (Identifier - 40)))) != 0) {
+					if (((_la) & !0x3f) == 0 && ((1usize << _la) & 193458432) != 0) || ((((_la - 40)) & !0x3f) == 0 && ((1usize << (_la - 40)) & 499) != 0) {
 						{
 						/*InvokeRule pattern*/
 						recog.base.set_state(273);
@@ -5496,11 +5551,11 @@ where
 						recog.base.set_state(278);
 						recog.err_handler.sync(&mut recog.base)?;
 						_la = recog.base.input.la(1);
-						while _la==Comma {
+						while _la==SubstraitType_Comma {
 							{
 							{
 							recog.base.set_state(274);
-							recog.base.match_token(Comma,&mut recog.err_handler)?;
+							recog.base.match_token(SubstraitType_Comma,&mut recog.err_handler)?;
 
 							/*InvokeRule pattern*/
 							recog.base.set_state(275);
@@ -5516,14 +5571,14 @@ where
 					}
 
 					recog.base.set_state(283);
-					recog.base.match_token(CloseParen,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_CloseParen,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				19 =>{
 					let tmp = DatatypeBindingOrConstantContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 19);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 19)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule identifierPath*/
@@ -5577,14 +5632,14 @@ where
 			,
 				20 =>{
 					let tmp = InconsistentContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 20);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 20)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(294);
-					recog.base.match_token(Question,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Question,&mut recog.err_handler)?;
 
 					recog.base.set_state(295);
-					recog.base.match_token(Identifier,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Identifier,&mut recog.err_handler)?;
 
 					recog.base.set_state(297);
 					recog.err_handler.sync(&mut recog.base)?;
@@ -5605,11 +5660,11 @@ where
 			,
 				21 =>{
 					let tmp = UnaryNegateContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 21);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 21)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(299);
-					recog.base.match_token(Minus,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Minus,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(300);
@@ -5631,7 +5686,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -5644,9 +5699,9 @@ pub enum NullabilityContextAll<'input>{
 	NullableIfContext(NullableIfContext<'input>),
 Error(NullabilityContext<'input>)
 }
-antlr_rust::tid!{NullabilityContextAll<'a>}
+antlr4rust::tid!{NullabilityContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for NullabilityContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for NullabilityContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for NullabilityContextAll<'input>{}
 
@@ -5663,8 +5718,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for NullabilityContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -5687,13 +5742,14 @@ impl<'input> CustomRuleContext<'input> for NullabilityContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_nullability }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_nullability }
 }
-antlr_rust::tid!{NullabilityContextExt<'a>}
+antlr4rust::tid!{NullabilityContextExt<'a>}
 
 impl<'input> NullabilityContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<NullabilityContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<NullabilityContextAll<'input>> {
 		Rc::new(
 		NullabilityContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,NullabilityContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -5714,7 +5770,7 @@ pub trait NullableContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Question
 	/// Returns `None` if there is no child corresponding to token Question
 	fn Question(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Question, 0)
+		self.get_token(SubstraitType_Question, 0)
 	}
 }
 
@@ -5725,14 +5781,15 @@ pub struct NullableContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{NullableContextExt<'a>}
+antlr4rust::tid!{NullableContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for NullableContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for NullableContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_nullable(self);
+		Ok(())
 	}
 }
 
@@ -5771,7 +5828,7 @@ pub trait NonNullableContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Bang
 	/// Returns `None` if there is no child corresponding to token Bang
 	fn Bang(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Bang, 0)
+		self.get_token(SubstraitType_Bang, 0)
 	}
 }
 
@@ -5782,14 +5839,15 @@ pub struct NonNullableContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{NonNullableContextExt<'a>}
+antlr4rust::tid!{NonNullableContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for NonNullableContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for NonNullableContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_nonNullable(self);
+		Ok(())
 	}
 }
 
@@ -5828,7 +5886,7 @@ pub trait NullableIfContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Question
 	/// Returns `None` if there is no child corresponding to token Question
 	fn Question(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Question, 0)
+		self.get_token(SubstraitType_Question, 0)
 	}
 	fn pattern(&self) -> Option<Rc<PatternContextAll<'input>>> where Self:Sized{
 		self.child_of_type(0)
@@ -5842,14 +5900,15 @@ pub struct NullableIfContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{NullableIfContextExt<'a>}
+antlr4rust::tid!{NullableIfContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for NullableIfContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for NullableIfContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_nullableIf(self);
+		Ok(())
 	}
 }
 
@@ -5882,10 +5941,9 @@ impl<'input> NullableIfContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn nullability(&mut self,)
 	-> Result<Rc<NullabilityContextAll<'input>>,ANTLRError> {
@@ -5901,33 +5959,33 @@ where
 			match  recog.interpreter.adaptive_predict(31,&mut recog.base)? {
 				1 =>{
 					let tmp = NonNullableContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(303);
-					recog.base.match_token(Bang,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Bang,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				2 =>{
 					let tmp = NullableContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(304);
-					recog.base.match_token(Question,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Question,&mut recog.err_handler)?;
 
 					}
 				}
 			,
 				3 =>{
 					let tmp = NullableIfContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 3);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 3)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(305);
-					recog.base.match_token(Question,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Question,&mut recog.err_handler)?;
 
 					/*InvokeRule pattern*/
 					recog.base.set_state(306);
@@ -5949,7 +6007,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -5968,12 +6026,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for VariationContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for VariationContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_variation(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_variation(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -5983,12 +6043,13 @@ impl<'input> CustomRuleContext<'input> for VariationContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_variation }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_variation }
 }
-antlr_rust::tid!{VariationContextExt<'a>}
+antlr4rust::tid!{VariationContextExt<'a>}
 
 impl<'input> VariationContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<VariationContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<VariationContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,VariationContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -6000,7 +6061,7 @@ pub trait VariationContextAttrs<'input>: SubstraitTypeParserContext<'input> + Bo
 /// Retrieves first TerminalNode corresponding to token OpenSquare
 /// Returns `None` if there is no child corresponding to token OpenSquare
 fn OpenSquare(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(OpenSquare, 0)
+	self.get_token(SubstraitType_OpenSquare, 0)
 }
 fn variationBody(&self) -> Option<Rc<VariationBodyContextAll<'input>>> where Self:Sized{
 	self.child_of_type(0)
@@ -6008,17 +6069,16 @@ fn variationBody(&self) -> Option<Rc<VariationBodyContextAll<'input>>> where Sel
 /// Retrieves first TerminalNode corresponding to token CloseSquare
 /// Returns `None` if there is no child corresponding to token CloseSquare
 fn CloseSquare(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(CloseSquare, 0)
+	self.get_token(SubstraitType_CloseSquare, 0)
 }
 
 }
 
 impl<'input> VariationContextAttrs<'input> for VariationContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn variation(&mut self,)
 	-> Result<Rc<VariationContextAll<'input>>,ANTLRError> {
@@ -6029,18 +6089,18 @@ where
         let mut _localctx: Rc<VariationContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(309);
-			recog.base.match_token(OpenSquare,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_OpenSquare,&mut recog.err_handler)?;
 
 			/*InvokeRule variationBody*/
 			recog.base.set_state(310);
 			recog.variationBody()?;
 
 			recog.base.set_state(311);
-			recog.base.match_token(CloseSquare,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_CloseSquare,&mut recog.err_handler)?;
 
 			}
 			Ok(())
@@ -6054,7 +6114,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -6067,9 +6127,9 @@ pub enum VariationBodyContextAll<'input>{
 	VarUserDefinedContext(VarUserDefinedContext<'input>),
 Error(VariationBodyContext<'input>)
 }
-antlr_rust::tid!{VariationBodyContextAll<'a>}
+antlr4rust::tid!{VariationBodyContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for VariationBodyContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for VariationBodyContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for VariationBodyContextAll<'input>{}
 
@@ -6086,8 +6146,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for VariationBodyContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -6110,13 +6170,14 @@ impl<'input> CustomRuleContext<'input> for VariationBodyContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_variationBody }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_variationBody }
 }
-antlr_rust::tid!{VariationBodyContextExt<'a>}
+antlr4rust::tid!{VariationBodyContextExt<'a>}
 
 impl<'input> VariationBodyContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<VariationBodyContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<VariationBodyContextAll<'input>> {
 		Rc::new(
 		VariationBodyContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,VariationBodyContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -6137,7 +6198,7 @@ pub trait VarAnyContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Question
 	/// Returns `None` if there is no child corresponding to token Question
 	fn Question(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Question, 0)
+		self.get_token(SubstraitType_Question, 0)
 	}
 }
 
@@ -6148,14 +6209,15 @@ pub struct VarAnyContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{VarAnyContextExt<'a>}
+antlr4rust::tid!{VarAnyContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for VarAnyContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for VarAnyContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_varAny(self);
+		Ok(())
 	}
 }
 
@@ -6194,7 +6256,7 @@ pub trait VarSystemPreferredContextAttrs<'input>: SubstraitTypeParserContext<'in
 	/// Retrieves first TerminalNode corresponding to token Zero
 	/// Returns `None` if there is no child corresponding to token Zero
 	fn Zero(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Zero, 0)
+		self.get_token(SubstraitType_Zero, 0)
 	}
 }
 
@@ -6205,14 +6267,15 @@ pub struct VarSystemPreferredContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{VarSystemPreferredContextExt<'a>}
+antlr4rust::tid!{VarSystemPreferredContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for VarSystemPreferredContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for VarSystemPreferredContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_varSystemPreferred(self);
+		Ok(())
 	}
 }
 
@@ -6260,14 +6323,15 @@ pub struct VarUserDefinedContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{VarUserDefinedContextExt<'a>}
+antlr4rust::tid!{VarUserDefinedContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for VarUserDefinedContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for VarUserDefinedContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_varUserDefined(self);
+		Ok(())
 	}
 }
 
@@ -6300,10 +6364,9 @@ impl<'input> VarUserDefinedContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn variationBody(&mut self,)
 	-> Result<Rc<VariationBodyContextAll<'input>>,ANTLRError> {
@@ -6317,34 +6380,34 @@ where
 			recog.base.set_state(316);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 Question 
+			SubstraitType_Question 
 				=> {
 					let tmp = VarAnyContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(313);
-					recog.base.match_token(Question,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Question,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 Zero 
+			SubstraitType_Zero 
 				=> {
 					let tmp = VarSystemPreferredContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(314);
-					recog.base.match_token(Zero,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Zero,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 Identifier 
+			SubstraitType_Identifier 
 				=> {
 					let tmp = VarUserDefinedContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 3);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 3)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule identifierPath*/
@@ -6367,7 +6430,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -6386,12 +6449,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for ParametersContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for ParametersContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_parameters(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_parameters(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -6401,12 +6466,13 @@ impl<'input> CustomRuleContext<'input> for ParametersContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_parameters }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_parameters }
 }
-antlr_rust::tid!{ParametersContextExt<'a>}
+antlr4rust::tid!{ParametersContextExt<'a>}
 
 impl<'input> ParametersContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<ParametersContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<ParametersContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,ParametersContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -6418,12 +6484,12 @@ pub trait ParametersContextAttrs<'input>: SubstraitTypeParserContext<'input> + B
 /// Retrieves first TerminalNode corresponding to token LessThan
 /// Returns `None` if there is no child corresponding to token LessThan
 fn LessThan(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(LessThan, 0)
+	self.get_token(SubstraitType_LessThan, 0)
 }
 /// Retrieves first TerminalNode corresponding to token GreaterThan
 /// Returns `None` if there is no child corresponding to token GreaterThan
 fn GreaterThan(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(GreaterThan, 0)
+	self.get_token(SubstraitType_GreaterThan, 0)
 }
 fn parameter_all(&self) ->  Vec<Rc<ParameterContextAll<'input>>> where Self:Sized{
 	self.children_of_type()
@@ -6438,17 +6504,16 @@ fn Comma_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType
 /// Retrieves 'i's TerminalNode corresponding to token Comma, starting from 0.
 /// Returns `None` if number of children corresponding to token Comma is less or equal than `i`.
 fn Comma(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Comma, i)
+	self.get_token(SubstraitType_Comma, i)
 }
 
 }
 
 impl<'input> ParametersContextAttrs<'input> for ParametersContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn parameters(&mut self,)
 	-> Result<Rc<ParametersContextAll<'input>>,ANTLRError> {
@@ -6457,19 +6522,19 @@ where
 		let mut _localctx = ParametersContextExt::new(_parentctx.clone(), recog.base.get_state());
         recog.base.enter_rule(_localctx.clone(), 46, RULE_parameters);
         let mut _localctx: Rc<ParametersContextAll> = _localctx;
-		let mut _la: isize = -1;
+		let mut _la: i32 = -1;
 		let result: Result<(), ANTLRError> = (|| {
 
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(318);
-			recog.base.match_token(LessThan,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_LessThan,&mut recog.err_handler)?;
 
 			recog.base.set_state(327);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			if (((_la) & !0x3f) == 0 && ((1usize << _la) & ((1usize << If) | (1usize << Null) | (1usize << True) | (1usize << False) | (1usize << Metabool) | (1usize << Metaint) | (1usize << Metaenum) | (1usize << Metastr) | (1usize << Typename) | (1usize << Question) | (1usize << Bang) | (1usize << OpenParen) | (1usize << OpenCurly))) != 0) || ((((_la - 40)) & !0x3f) == 0 && ((1usize << (_la - 40)) & ((1usize << (Plus - 40)) | (1usize << (Minus - 40)) | (1usize << (Range - 40)) | (1usize << (Nonzero - 40)) | (1usize << (Zero - 40)) | (1usize << (String - 40)) | (1usize << (Identifier - 40)))) != 0) {
+			if (((_la) & !0x3f) == 0 && ((1usize << _la) & 193460480) != 0) || ((((_la - 40)) & !0x3f) == 0 && ((1usize << (_la - 40)) & 499) != 0) {
 				{
 				/*InvokeRule parameter*/
 				recog.base.set_state(319);
@@ -6478,11 +6543,11 @@ where
 				recog.base.set_state(324);
 				recog.err_handler.sync(&mut recog.base)?;
 				_la = recog.base.input.la(1);
-				while _la==Comma {
+				while _la==SubstraitType_Comma {
 					{
 					{
 					recog.base.set_state(320);
-					recog.base.match_token(Comma,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Comma,&mut recog.err_handler)?;
 
 					/*InvokeRule parameter*/
 					recog.base.set_state(321);
@@ -6498,7 +6563,7 @@ where
 			}
 
 			recog.base.set_state(329);
-			recog.base.match_token(GreaterThan,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_GreaterThan,&mut recog.err_handler)?;
 
 			}
 			Ok(())
@@ -6512,7 +6577,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -6531,12 +6596,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for ParameterContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for ParameterContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_parameter(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_parameter(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -6546,12 +6613,13 @@ impl<'input> CustomRuleContext<'input> for ParameterContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_parameter }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_parameter }
 }
-antlr_rust::tid!{ParameterContextExt<'a>}
+antlr4rust::tid!{ParameterContextExt<'a>}
 
 impl<'input> ParameterContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<ParameterContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<ParameterContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,ParameterContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -6569,17 +6637,16 @@ fn identifierOrString(&self) -> Option<Rc<IdentifierOrStringContextAll<'input>>>
 /// Retrieves first TerminalNode corresponding to token Colon
 /// Returns `None` if there is no child corresponding to token Colon
 fn Colon(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Colon, 0)
+	self.get_token(SubstraitType_Colon, 0)
 }
 
 }
 
 impl<'input> ParameterContextAttrs<'input> for ParameterContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn parameter(&mut self,)
 	-> Result<Rc<ParameterContextAll<'input>>,ANTLRError> {
@@ -6590,8 +6657,8 @@ where
         let mut _localctx: Rc<ParameterContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(334);
 			recog.err_handler.sync(&mut recog.base)?;
@@ -6603,7 +6670,7 @@ where
 					recog.identifierOrString()?;
 
 					recog.base.set_state(332);
-					recog.base.match_token(Colon,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Colon,&mut recog.err_handler)?;
 
 					}
 				}
@@ -6626,7 +6693,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -6638,9 +6705,9 @@ pub enum ParameterValueContextAll<'input>{
 	NullContext(NullContext<'input>),
 Error(ParameterValueContext<'input>)
 }
-antlr_rust::tid!{ParameterValueContextAll<'a>}
+antlr4rust::tid!{ParameterValueContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for ParameterValueContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for ParameterValueContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for ParameterValueContextAll<'input>{}
 
@@ -6656,8 +6723,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for ParameterValueContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -6680,13 +6747,14 @@ impl<'input> CustomRuleContext<'input> for ParameterValueContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_parameterValue }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_parameterValue }
 }
-antlr_rust::tid!{ParameterValueContextExt<'a>}
+antlr4rust::tid!{ParameterValueContextExt<'a>}
 
 impl<'input> ParameterValueContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<ParameterValueContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<ParameterValueContextAll<'input>> {
 		Rc::new(
 		ParameterValueContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,ParameterValueContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -6716,14 +6784,15 @@ pub struct SpecifiedContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{SpecifiedContextExt<'a>}
+antlr4rust::tid!{SpecifiedContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for SpecifiedContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for SpecifiedContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Specified(self);
+		Ok(())
 	}
 }
 
@@ -6762,7 +6831,7 @@ pub trait NullContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Null
 	/// Returns `None` if there is no child corresponding to token Null
 	fn Null(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Null, 0)
+		self.get_token(SubstraitType_Null, 0)
 	}
 }
 
@@ -6773,14 +6842,15 @@ pub struct NullContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{NullContextExt<'a>}
+antlr4rust::tid!{NullContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for NullContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for NullContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Null(self);
+		Ok(())
 	}
 }
 
@@ -6813,10 +6883,9 @@ impl<'input> NullContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn parameterValue(&mut self,)
 	-> Result<Rc<ParameterValueContextAll<'input>>,ANTLRError> {
@@ -6830,24 +6899,26 @@ where
 			recog.base.set_state(340);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 Null 
+			SubstraitType_Null 
 				=> {
 					let tmp = NullContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(338);
-					recog.base.match_token(Null,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Null,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 If | True | False | Metabool | Metaint | Metaenum | Metastr | Typename |
-			 Question | Bang | OpenParen | OpenCurly | Plus | Minus | Range | Nonzero |
-			 Zero | String | Identifier 
+			SubstraitType_If |SubstraitType_True |SubstraitType_False |SubstraitType_Metabool |
+			SubstraitType_Metaint |SubstraitType_Metaenum |SubstraitType_Metastr |
+			SubstraitType_Typename |SubstraitType_Question |SubstraitType_Bang |SubstraitType_OpenParen |
+			SubstraitType_OpenCurly |SubstraitType_Plus |SubstraitType_Minus |SubstraitType_Range |
+			SubstraitType_Nonzero |SubstraitType_Zero |SubstraitType_String |SubstraitType_Identifier 
 				=> {
 					let tmp = SpecifiedContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					/*InvokeRule pattern*/
@@ -6870,7 +6941,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -6889,12 +6960,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for IntegerContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IntegerContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_integer(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_integer(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -6904,12 +6977,13 @@ impl<'input> CustomRuleContext<'input> for IntegerContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_integer }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_integer }
 }
-antlr_rust::tid!{IntegerContextExt<'a>}
+antlr4rust::tid!{IntegerContextExt<'a>}
 
 impl<'input> IntegerContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<IntegerContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<IntegerContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,IntegerContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -6921,32 +6995,31 @@ pub trait IntegerContextAttrs<'input>: SubstraitTypeParserContext<'input> + Borr
 /// Retrieves first TerminalNode corresponding to token Zero
 /// Returns `None` if there is no child corresponding to token Zero
 fn Zero(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Zero, 0)
+	self.get_token(SubstraitType_Zero, 0)
 }
 /// Retrieves first TerminalNode corresponding to token Nonzero
 /// Returns `None` if there is no child corresponding to token Nonzero
 fn Nonzero(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Nonzero, 0)
+	self.get_token(SubstraitType_Nonzero, 0)
 }
 /// Retrieves first TerminalNode corresponding to token Plus
 /// Returns `None` if there is no child corresponding to token Plus
 fn Plus(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Plus, 0)
+	self.get_token(SubstraitType_Plus, 0)
 }
 /// Retrieves first TerminalNode corresponding to token Minus
 /// Returns `None` if there is no child corresponding to token Minus
 fn Minus(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Minus, 0)
+	self.get_token(SubstraitType_Minus, 0)
 }
 
 }
 
 impl<'input> IntegerContextAttrs<'input> for IntegerContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn integer(&mut self,)
 	-> Result<Rc<IntegerContextAll<'input>>,ANTLRError> {
@@ -6955,20 +7028,20 @@ where
 		let mut _localctx = IntegerContextExt::new(_parentctx.clone(), recog.base.get_state());
         recog.base.enter_rule(_localctx.clone(), 52, RULE_integer);
         let mut _localctx: Rc<IntegerContextAll> = _localctx;
-		let mut _la: isize = -1;
+		let mut _la: i32 = -1;
 		let result: Result<(), ANTLRError> = (|| {
 
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(343);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-			if _la==Plus || _la==Minus {
+			if _la==SubstraitType_Plus || _la==SubstraitType_Minus {
 				{
 				recog.base.set_state(342);
 				_la = recog.base.input.la(1);
-				if { !(_la==Plus || _la==Minus) } {
+				if { !(_la==SubstraitType_Plus || _la==SubstraitType_Minus) } {
 					recog.err_handler.recover_inline(&mut recog.base)?;
 
 				}
@@ -6982,7 +7055,7 @@ where
 
 			recog.base.set_state(345);
 			_la = recog.base.input.la(1);
-			if { !(_la==Nonzero || _la==Zero) } {
+			if { !(_la==SubstraitType_Nonzero || _la==SubstraitType_Zero) } {
 				recog.err_handler.recover_inline(&mut recog.base)?;
 
 			}
@@ -7003,7 +7076,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -7022,12 +7095,14 @@ ph:PhantomData<&'input str>
 impl<'input> SubstraitTypeParserContext<'input> for IdentifierPathContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IdentifierPathContext<'input>{
-		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-			listener.enter_every_rule(self);
+		fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+			listener.enter_every_rule(self)?;
 			listener.enter_identifierPath(self);
-		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
+			Ok(())
+		}fn exit(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
 			listener.exit_identifierPath(self);
-			listener.exit_every_rule(self);
+			listener.exit_every_rule(self)?;
+			Ok(())
 		}
 }
 
@@ -7037,12 +7112,13 @@ impl<'input> CustomRuleContext<'input> for IdentifierPathContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_identifierPath }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_identifierPath }
 }
-antlr_rust::tid!{IdentifierPathContextExt<'a>}
+antlr4rust::tid!{IdentifierPathContextExt<'a>}
 
 impl<'input> IdentifierPathContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<IdentifierPathContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<IdentifierPathContextAll<'input>> {
 		Rc::new(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,IdentifierPathContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -7058,7 +7134,7 @@ fn Identifier_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContex
 /// Retrieves 'i's TerminalNode corresponding to token Identifier, starting from 0.
 /// Returns `None` if number of children corresponding to token Identifier is less or equal than `i`.
 fn Identifier(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Identifier, i)
+	self.get_token(SubstraitType_Identifier, i)
 }
 /// Retrieves all `TerminalNode`s corresponding to token Period in current rule
 fn Period_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>>  where Self:Sized{
@@ -7067,17 +7143,16 @@ fn Period_all(&self) -> Vec<Rc<TerminalNode<'input,SubstraitTypeParserContextTyp
 /// Retrieves 'i's TerminalNode corresponding to token Period, starting from 0.
 /// Returns `None` if number of children corresponding to token Period is less or equal than `i`.
 fn Period(&self, i: usize) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-	self.get_token(Period, i)
+	self.get_token(SubstraitType_Period, i)
 }
 
 }
 
 impl<'input> IdentifierPathContextAttrs<'input> for IdentifierPathContext<'input>{}
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn identifierPath(&mut self,)
 	-> Result<Rc<IdentifierPathContextAll<'input>>,ANTLRError> {
@@ -7088,9 +7163,9 @@ where
         let mut _localctx: Rc<IdentifierPathContextAll> = _localctx;
 		let result: Result<(), ANTLRError> = (|| {
 
-			let mut _alt: isize;
-			//recog.base.enter_outer_alt(_localctx.clone(), 1);
-			recog.base.enter_outer_alt(None, 1);
+			let mut _alt: i32;
+			//recog.base.enter_outer_alt(_localctx.clone(), 1)?;
+			recog.base.enter_outer_alt(None, 1)?;
 			{
 			recog.base.set_state(351);
 			recog.err_handler.sync(&mut recog.base)?;
@@ -7100,10 +7175,10 @@ where
 					{
 					{
 					recog.base.set_state(347);
-					recog.base.match_token(Identifier,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Identifier,&mut recog.err_handler)?;
 
 					recog.base.set_state(348);
-					recog.base.match_token(Period,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Period,&mut recog.err_handler)?;
 
 					}
 					} 
@@ -7113,7 +7188,7 @@ where
 				_alt = recog.interpreter.adaptive_predict(38,&mut recog.base)?;
 			}
 			recog.base.set_state(354);
-			recog.base.match_token(Identifier,&mut recog.err_handler)?;
+			recog.base.match_token(SubstraitType_Identifier,&mut recog.err_handler)?;
 
 			}
 			Ok(())
@@ -7127,7 +7202,7 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
@@ -7139,9 +7214,9 @@ pub enum IdentifierOrStringContextAll<'input>{
 	IdentContext(IdentContext<'input>),
 Error(IdentifierOrStringContext<'input>)
 }
-antlr_rust::tid!{IdentifierOrStringContextAll<'a>}
+antlr4rust::tid!{IdentifierOrStringContextAll<'a>}
 
-impl<'input> antlr_rust::parser_rule_context::DerefSeal for IdentifierOrStringContextAll<'input>{}
+impl<'input> antlr4rust::parser_rule_context::DerefSeal for IdentifierOrStringContextAll<'input>{}
 
 impl<'input> SubstraitTypeParserContext<'input> for IdentifierOrStringContextAll<'input>{}
 
@@ -7157,8 +7232,8 @@ Error(inner) => inner
 	}
 }
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IdentifierOrStringContextAll<'input>{
-    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().enter(listener) }
-    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) { self.deref().exit(listener) }
+    fn enter(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().enter(listener) }
+    fn exit(&self, listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> { self.deref().exit(listener) }
 }
 
 
@@ -7181,13 +7256,14 @@ impl<'input> CustomRuleContext<'input> for IdentifierOrStringContextExt<'input>{
 	fn get_rule_index(&self) -> usize { RULE_identifierOrString }
 	//fn type_rule_index() -> usize where Self: Sized { RULE_identifierOrString }
 }
-antlr_rust::tid!{IdentifierOrStringContextExt<'a>}
+antlr4rust::tid!{IdentifierOrStringContextExt<'a>}
 
 impl<'input> IdentifierOrStringContextExt<'input>{
-	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: isize) -> Rc<IdentifierOrStringContextAll<'input>> {
+	fn new(parent: Option<Rc<dyn SubstraitTypeParserContext<'input> + 'input > >, invoking_state: i32) -> Rc<IdentifierOrStringContextAll<'input>> {
 		Rc::new(
 		IdentifierOrStringContextAll::Error(
 			BaseParserRuleContext::new_parser_ctx(parent, invoking_state,IdentifierOrStringContextExt{
+
 				ph:PhantomData
 			}),
 		)
@@ -7208,7 +7284,7 @@ pub trait StrContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token String
 	/// Returns `None` if there is no child corresponding to token String
 	fn String(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(String, 0)
+		self.get_token(SubstraitType_String, 0)
 	}
 }
 
@@ -7219,14 +7295,15 @@ pub struct StrContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{StrContextExt<'a>}
+antlr4rust::tid!{StrContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for StrContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for StrContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Str(self);
+		Ok(())
 	}
 }
 
@@ -7265,7 +7342,7 @@ pub trait IdentContextAttrs<'input>: SubstraitTypeParserContext<'input>{
 	/// Retrieves first TerminalNode corresponding to token Identifier
 	/// Returns `None` if there is no child corresponding to token Identifier
 	fn Identifier(&self) -> Option<Rc<TerminalNode<'input,SubstraitTypeParserContextType>>> where Self:Sized{
-		self.get_token(Identifier, 0)
+		self.get_token(SubstraitType_Identifier, 0)
 	}
 }
 
@@ -7276,14 +7353,15 @@ pub struct IdentContextExt<'input>{
 	ph:PhantomData<&'input str>
 }
 
-antlr_rust::tid!{IdentContextExt<'a>}
+antlr4rust::tid!{IdentContextExt<'a>}
 
 impl<'input> SubstraitTypeParserContext<'input> for IdentContext<'input>{}
 
 impl<'input,'a> Listenable<dyn SubstraitTypeListener<'input> + 'a> for IdentContext<'input>{
-	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) {
-		listener.enter_every_rule(self);
+	fn enter(&self,listener: &mut (dyn SubstraitTypeListener<'input> + 'a)) -> Result<(), ANTLRError> {
+		listener.enter_every_rule(self)?;
 		listener.enter_Ident(self);
+		Ok(())
 	}
 }
 
@@ -7316,10 +7394,9 @@ impl<'input> IdentContextExt<'input>{
 	}
 }
 
-impl<'input, I, H> SubstraitTypeParser<'input, I, H>
+impl<'input, I> SubstraitTypeParser<'input, I>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
-    H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
 	pub fn identifierOrString(&mut self,)
 	-> Result<Rc<IdentifierOrStringContextAll<'input>>,ANTLRError> {
@@ -7333,26 +7410,26 @@ where
 			recog.base.set_state(358);
 			recog.err_handler.sync(&mut recog.base)?;
 			match recog.base.input.la(1) {
-			 String 
+			SubstraitType_String 
 				=> {
 					let tmp = StrContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 1);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 1)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(356);
-					recog.base.match_token(String,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_String,&mut recog.err_handler)?;
 
 					}
 				}
 
-			 Identifier 
+			SubstraitType_Identifier 
 				=> {
 					let tmp = IdentContextExt::new(&**_localctx);
-					recog.base.enter_outer_alt(Some(tmp.clone()), 2);
+					recog.base.enter_outer_alt(Some(tmp.clone()), 2)?;
 					_localctx = tmp;
 					{
 					recog.base.set_state(357);
-					recog.base.match_token(Identifier,&mut recog.err_handler)?;
+					recog.base.match_token(SubstraitType_Identifier,&mut recog.err_handler)?;
 
 					}
 				}
@@ -7370,232 +7447,191 @@ where
 				recog.err_handler.recover(&mut recog.base, re)?;
 			}
 		}
-		recog.base.exit_rule();
+		recog.base.exit_rule()?;
 
 		Ok(_localctx)
 	}
 }
-
-lazy_static! {
+	lazy_static!{
     static ref _ATN: Arc<ATN> =
-        Arc::new(ATNDeserializer::new(None).deserialize(_serializedATN.chars()));
-    static ref _decision_to_DFA: Arc<Vec<antlr_rust::RwLock<DFA>>> = {
+        Arc::new(ATNDeserializer::new(None).deserialize(&mut _serializedATN.iter()));
+    static ref _decision_to_DFA: Arc<Vec<antlr4rust::RwLock<DFA>>> = {
         let mut dfa = Vec::new();
-        let size = _ATN.decision_to_state.len();
+        let size = _ATN.decision_to_state.len() as i32;
         for i in 0..size {
             dfa.push(DFA::new(
                 _ATN.clone(),
                 _ATN.get_decision_state(i),
-                i as isize,
+                i,
             ).into())
         }
         Arc::new(dfa)
     };
+	static ref _serializedATN: Vec<i32> = vec![
+		4, 1, 48, 361, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7, 
+		4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10, 
+		7, 10, 2, 11, 7, 11, 2, 12, 7, 12, 2, 13, 7, 13, 2, 14, 7, 14, 2, 15, 
+		7, 15, 2, 16, 7, 16, 2, 17, 7, 17, 2, 18, 7, 18, 2, 19, 7, 19, 2, 20, 
+		7, 20, 2, 21, 7, 21, 2, 22, 7, 22, 2, 23, 7, 23, 2, 24, 7, 24, 2, 25, 
+		7, 25, 2, 26, 7, 26, 2, 27, 7, 27, 2, 28, 7, 28, 1, 0, 5, 0, 60, 8, 0, 
+		10, 0, 12, 0, 63, 9, 0, 1, 0, 5, 0, 66, 8, 0, 10, 0, 12, 0, 69, 9, 0, 
+		1, 0, 1, 0, 5, 0, 73, 8, 0, 10, 0, 12, 0, 76, 9, 0, 1, 0, 1, 0, 1, 1, 
+		5, 1, 81, 8, 1, 10, 1, 12, 1, 84, 9, 1, 1, 1, 5, 1, 87, 8, 1, 10, 1, 12, 
+		1, 90, 9, 1, 1, 1, 1, 1, 5, 1, 94, 8, 1, 10, 1, 12, 1, 97, 9, 1, 1, 1, 
+		1, 1, 1, 2, 1, 2, 1, 2, 5, 2, 104, 8, 2, 10, 2, 12, 2, 107, 9, 2, 1, 2, 
+		1, 2, 1, 3, 5, 3, 112, 8, 3, 10, 3, 12, 3, 115, 9, 3, 1, 3, 1, 3, 1, 3, 
+		5, 3, 120, 8, 3, 10, 3, 12, 3, 123, 9, 3, 3, 3, 125, 8, 3, 1, 4, 1, 4, 
+		1, 4, 1, 4, 1, 4, 1, 4, 1, 4, 1, 4, 1, 4, 1, 4, 1, 4, 3, 4, 138, 8, 4, 
+		1, 5, 1, 5, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 3, 6, 149, 8, 6, 
+		1, 7, 1, 7, 1, 7, 1, 7, 5, 7, 155, 8, 7, 10, 7, 12, 7, 158, 9, 7, 1, 8, 
+		1, 8, 1, 9, 1, 9, 1, 9, 1, 9, 5, 9, 166, 8, 9, 10, 9, 12, 9, 169, 9, 9, 
+		1, 10, 1, 10, 1, 11, 1, 11, 1, 11, 1, 11, 5, 11, 177, 8, 11, 10, 11, 12, 
+		11, 180, 9, 11, 1, 12, 1, 12, 3, 12, 184, 8, 12, 1, 13, 1, 13, 1, 13, 
+		1, 13, 5, 13, 190, 8, 13, 10, 13, 12, 13, 193, 9, 13, 1, 14, 1, 14, 1, 
+		14, 1, 14, 3, 14, 199, 8, 14, 1, 15, 1, 15, 1, 15, 1, 15, 5, 15, 205, 
+		8, 15, 10, 15, 12, 15, 208, 9, 15, 1, 16, 1, 16, 3, 16, 212, 8, 16, 1, 
+		17, 1, 17, 1, 17, 1, 17, 5, 17, 218, 8, 17, 10, 17, 12, 17, 221, 9, 17, 
+		1, 18, 1, 18, 3, 18, 225, 8, 18, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 
+		19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 
+		19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 
+		19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 5, 19, 260, 8, 19, 
+		10, 19, 12, 19, 263, 9, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 3, 19, 
+		270, 8, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 5, 19, 277, 8, 19, 10, 
+		19, 12, 19, 280, 9, 19, 3, 19, 282, 8, 19, 1, 19, 1, 19, 1, 19, 3, 19, 
+		287, 8, 19, 1, 19, 3, 19, 290, 8, 19, 1, 19, 3, 19, 293, 8, 19, 1, 19, 
+		1, 19, 1, 19, 3, 19, 298, 8, 19, 1, 19, 1, 19, 3, 19, 302, 8, 19, 1, 20, 
+		1, 20, 1, 20, 1, 20, 3, 20, 308, 8, 20, 1, 21, 1, 21, 1, 21, 1, 21, 1, 
+		22, 1, 22, 1, 22, 3, 22, 317, 8, 22, 1, 23, 1, 23, 1, 23, 1, 23, 5, 23, 
+		323, 8, 23, 10, 23, 12, 23, 326, 9, 23, 3, 23, 328, 8, 23, 1, 23, 1, 23, 
+		1, 24, 1, 24, 1, 24, 3, 24, 335, 8, 24, 1, 24, 1, 24, 1, 25, 1, 25, 3, 
+		25, 341, 8, 25, 1, 26, 3, 26, 344, 8, 26, 1, 26, 1, 26, 1, 27, 1, 27, 
+		5, 27, 350, 8, 27, 10, 27, 12, 27, 353, 9, 27, 1, 27, 1, 27, 1, 28, 1, 
+		28, 3, 28, 359, 8, 28, 1, 28, 0, 0, 29, 0, 2, 4, 6, 8, 10, 12, 14, 16, 
+		18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 
+		54, 56, 0, 2, 1, 0, 40, 41, 1, 0, 45, 46, 395, 0, 61, 1, 0, 0, 0, 2, 82, 
+		1, 0, 0, 0, 4, 105, 1, 0, 0, 0, 6, 113, 1, 0, 0, 0, 8, 137, 1, 0, 0, 0, 
+		10, 139, 1, 0, 0, 0, 12, 148, 1, 0, 0, 0, 14, 150, 1, 0, 0, 0, 16, 159, 
+		1, 0, 0, 0, 18, 161, 1, 0, 0, 0, 20, 170, 1, 0, 0, 0, 22, 172, 1, 0, 0, 
+		0, 24, 183, 1, 0, 0, 0, 26, 185, 1, 0, 0, 0, 28, 198, 1, 0, 0, 0, 30, 
+		200, 1, 0, 0, 0, 32, 211, 1, 0, 0, 0, 34, 213, 1, 0, 0, 0, 36, 224, 1, 
+		0, 0, 0, 38, 301, 1, 0, 0, 0, 40, 307, 1, 0, 0, 0, 42, 309, 1, 0, 0, 0, 
+		44, 316, 1, 0, 0, 0, 46, 318, 1, 0, 0, 0, 48, 334, 1, 0, 0, 0, 50, 340, 
+		1, 0, 0, 0, 52, 343, 1, 0, 0, 0, 54, 351, 1, 0, 0, 0, 56, 358, 1, 0, 0, 
+		0, 58, 60, 5, 3, 0, 0, 59, 58, 1, 0, 0, 0, 60, 63, 1, 0, 0, 0, 61, 59, 
+		1, 0, 0, 0, 61, 62, 1, 0, 0, 0, 62, 67, 1, 0, 0, 0, 63, 61, 1, 0, 0, 0, 
+		64, 66, 5, 4, 0, 0, 65, 64, 1, 0, 0, 0, 66, 69, 1, 0, 0, 0, 67, 65, 1, 
+		0, 0, 0, 67, 68, 1, 0, 0, 0, 68, 70, 1, 0, 0, 0, 69, 67, 1, 0, 0, 0, 70, 
+		74, 3, 10, 5, 0, 71, 73, 5, 4, 0, 0, 72, 71, 1, 0, 0, 0, 73, 76, 1, 0, 
+		0, 0, 74, 72, 1, 0, 0, 0, 74, 75, 1, 0, 0, 0, 75, 77, 1, 0, 0, 0, 76, 
+		74, 1, 0, 0, 0, 77, 78, 5, 0, 0, 1, 78, 1, 1, 0, 0, 0, 79, 81, 5, 3, 0, 
+		0, 80, 79, 1, 0, 0, 0, 81, 84, 1, 0, 0, 0, 82, 80, 1, 0, 0, 0, 82, 83, 
+		1, 0, 0, 0, 83, 88, 1, 0, 0, 0, 84, 82, 1, 0, 0, 0, 85, 87, 5, 4, 0, 0, 
+		86, 85, 1, 0, 0, 0, 87, 90, 1, 0, 0, 0, 88, 86, 1, 0, 0, 0, 88, 89, 1, 
+		0, 0, 0, 89, 91, 1, 0, 0, 0, 90, 88, 1, 0, 0, 0, 91, 95, 3, 4, 2, 0, 92, 
+		94, 5, 4, 0, 0, 93, 92, 1, 0, 0, 0, 94, 97, 1, 0, 0, 0, 95, 93, 1, 0, 
+		0, 0, 95, 96, 1, 0, 0, 0, 96, 98, 1, 0, 0, 0, 97, 95, 1, 0, 0, 0, 98, 
+		99, 5, 0, 0, 1, 99, 3, 1, 0, 0, 0, 100, 101, 3, 8, 4, 0, 101, 102, 3, 
+		6, 3, 0, 102, 104, 1, 0, 0, 0, 103, 100, 1, 0, 0, 0, 104, 107, 1, 0, 0, 
+		0, 105, 103, 1, 0, 0, 0, 105, 106, 1, 0, 0, 0, 106, 108, 1, 0, 0, 0, 107, 
+		105, 1, 0, 0, 0, 108, 109, 3, 10, 5, 0, 109, 5, 1, 0, 0, 0, 110, 112, 
+		5, 4, 0, 0, 111, 110, 1, 0, 0, 0, 112, 115, 1, 0, 0, 0, 113, 111, 1, 0, 
+		0, 0, 113, 114, 1, 0, 0, 0, 114, 124, 1, 0, 0, 0, 115, 113, 1, 0, 0, 0, 
+		116, 125, 5, 4, 0, 0, 117, 121, 5, 22, 0, 0, 118, 120, 5, 4, 0, 0, 119, 
+		118, 1, 0, 0, 0, 120, 123, 1, 0, 0, 0, 121, 119, 1, 0, 0, 0, 121, 122, 
+		1, 0, 0, 0, 122, 125, 1, 0, 0, 0, 123, 121, 1, 0, 0, 0, 124, 116, 1, 0, 
+		0, 0, 124, 117, 1, 0, 0, 0, 125, 7, 1, 0, 0, 0, 126, 127, 3, 10, 5, 0, 
+		127, 128, 5, 31, 0, 0, 128, 129, 3, 10, 5, 0, 129, 138, 1, 0, 0, 0, 130, 
+		131, 5, 6, 0, 0, 131, 132, 3, 10, 5, 0, 132, 133, 5, 7, 0, 0, 133, 134, 
+		3, 10, 5, 0, 134, 138, 1, 0, 0, 0, 135, 136, 5, 6, 0, 0, 136, 138, 3, 
+		10, 5, 0, 137, 126, 1, 0, 0, 0, 137, 130, 1, 0, 0, 0, 137, 135, 1, 0, 
+		0, 0, 138, 9, 1, 0, 0, 0, 139, 140, 3, 12, 6, 0, 140, 11, 1, 0, 0, 0, 
+		141, 149, 3, 14, 7, 0, 142, 143, 3, 14, 7, 0, 143, 144, 5, 23, 0, 0, 144, 
+		145, 3, 14, 7, 0, 145, 146, 5, 21, 0, 0, 146, 147, 3, 10, 5, 0, 147, 149, 
+		1, 0, 0, 0, 148, 141, 1, 0, 0, 0, 148, 142, 1, 0, 0, 0, 149, 13, 1, 0, 
+		0, 0, 150, 156, 3, 18, 9, 0, 151, 152, 3, 16, 8, 0, 152, 153, 3, 18, 9, 
+		0, 153, 155, 1, 0, 0, 0, 154, 151, 1, 0, 0, 0, 155, 158, 1, 0, 0, 0, 156, 
+		154, 1, 0, 0, 0, 156, 157, 1, 0, 0, 0, 157, 15, 1, 0, 0, 0, 158, 156, 
+		1, 0, 0, 0, 159, 160, 5, 32, 0, 0, 160, 17, 1, 0, 0, 0, 161, 167, 3, 22, 
+		11, 0, 162, 163, 3, 20, 10, 0, 163, 164, 3, 22, 11, 0, 164, 166, 1, 0, 
+		0, 0, 165, 162, 1, 0, 0, 0, 166, 169, 1, 0, 0, 0, 167, 165, 1, 0, 0, 0, 
+		167, 168, 1, 0, 0, 0, 168, 19, 1, 0, 0, 0, 169, 167, 1, 0, 0, 0, 170, 
+		171, 5, 33, 0, 0, 171, 21, 1, 0, 0, 0, 172, 178, 3, 26, 13, 0, 173, 174, 
+		3, 24, 12, 0, 174, 175, 3, 26, 13, 0, 175, 177, 1, 0, 0, 0, 176, 173, 
+		1, 0, 0, 0, 177, 180, 1, 0, 0, 0, 178, 176, 1, 0, 0, 0, 178, 179, 1, 0, 
+		0, 0, 179, 23, 1, 0, 0, 0, 180, 178, 1, 0, 0, 0, 181, 184, 5, 34, 0, 0, 
+		182, 184, 5, 35, 0, 0, 183, 181, 1, 0, 0, 0, 183, 182, 1, 0, 0, 0, 184, 
+		25, 1, 0, 0, 0, 185, 191, 3, 30, 15, 0, 186, 187, 3, 28, 14, 0, 187, 188, 
+		3, 30, 15, 0, 188, 190, 1, 0, 0, 0, 189, 186, 1, 0, 0, 0, 190, 193, 1, 
+		0, 0, 0, 191, 189, 1, 0, 0, 0, 191, 192, 1, 0, 0, 0, 192, 27, 1, 0, 0, 
+		0, 193, 191, 1, 0, 0, 0, 194, 199, 5, 36, 0, 0, 195, 199, 5, 37, 0, 0, 
+		196, 199, 5, 38, 0, 0, 197, 199, 5, 39, 0, 0, 198, 194, 1, 0, 0, 0, 198, 
+		195, 1, 0, 0, 0, 198, 196, 1, 0, 0, 0, 198, 197, 1, 0, 0, 0, 199, 29, 
+		1, 0, 0, 0, 200, 206, 3, 34, 17, 0, 201, 202, 3, 32, 16, 0, 202, 203, 
+		3, 34, 17, 0, 203, 205, 1, 0, 0, 0, 204, 201, 1, 0, 0, 0, 205, 208, 1, 
+		0, 0, 0, 206, 204, 1, 0, 0, 0, 206, 207, 1, 0, 0, 0, 207, 31, 1, 0, 0, 
+		0, 208, 206, 1, 0, 0, 0, 209, 212, 5, 40, 0, 0, 210, 212, 5, 41, 0, 0, 
+		211, 209, 1, 0, 0, 0, 211, 210, 1, 0, 0, 0, 212, 33, 1, 0, 0, 0, 213, 
+		219, 3, 38, 19, 0, 214, 215, 3, 36, 18, 0, 215, 216, 3, 38, 19, 0, 216, 
+		218, 1, 0, 0, 0, 217, 214, 1, 0, 0, 0, 218, 221, 1, 0, 0, 0, 219, 217, 
+		1, 0, 0, 0, 219, 220, 1, 0, 0, 0, 220, 35, 1, 0, 0, 0, 221, 219, 1, 0, 
+		0, 0, 222, 225, 5, 42, 0, 0, 223, 225, 5, 43, 0, 0, 224, 222, 1, 0, 0, 
+		0, 224, 223, 1, 0, 0, 0, 225, 37, 1, 0, 0, 0, 226, 227, 5, 25, 0, 0, 227, 
+		228, 3, 10, 5, 0, 228, 229, 5, 26, 0, 0, 229, 302, 1, 0, 0, 0, 230, 231, 
+		5, 8, 0, 0, 231, 232, 3, 10, 5, 0, 232, 233, 5, 9, 0, 0, 233, 234, 3, 
+		10, 5, 0, 234, 235, 5, 10, 0, 0, 235, 236, 3, 10, 5, 0, 236, 302, 1, 0, 
+		0, 0, 237, 238, 5, 24, 0, 0, 238, 302, 3, 10, 5, 0, 239, 302, 5, 23, 0, 
+		0, 240, 302, 5, 14, 0, 0, 241, 302, 5, 12, 0, 0, 242, 302, 5, 13, 0, 0, 
+		243, 302, 5, 15, 0, 0, 244, 245, 3, 52, 26, 0, 245, 246, 5, 44, 0, 0, 
+		246, 247, 3, 52, 26, 0, 247, 302, 1, 0, 0, 0, 248, 249, 3, 52, 26, 0, 
+		249, 250, 5, 44, 0, 0, 250, 302, 1, 0, 0, 0, 251, 252, 5, 44, 0, 0, 252, 
+		302, 3, 52, 26, 0, 253, 302, 3, 52, 26, 0, 254, 302, 5, 16, 0, 0, 255, 
+		256, 5, 27, 0, 0, 256, 261, 5, 48, 0, 0, 257, 258, 5, 20, 0, 0, 258, 260, 
+		5, 48, 0, 0, 259, 257, 1, 0, 0, 0, 260, 263, 1, 0, 0, 0, 261, 259, 1, 
+		0, 0, 0, 261, 262, 1, 0, 0, 0, 262, 264, 1, 0, 0, 0, 263, 261, 1, 0, 0, 
+		0, 264, 302, 5, 28, 0, 0, 265, 302, 5, 17, 0, 0, 266, 302, 5, 47, 0, 0, 
+		267, 269, 5, 18, 0, 0, 268, 270, 3, 40, 20, 0, 269, 268, 1, 0, 0, 0, 269, 
+		270, 1, 0, 0, 0, 270, 302, 1, 0, 0, 0, 271, 272, 5, 48, 0, 0, 272, 281, 
+		5, 25, 0, 0, 273, 278, 3, 10, 5, 0, 274, 275, 5, 20, 0, 0, 275, 277, 3, 
+		10, 5, 0, 276, 274, 1, 0, 0, 0, 277, 280, 1, 0, 0, 0, 278, 276, 1, 0, 
+		0, 0, 278, 279, 1, 0, 0, 0, 279, 282, 1, 0, 0, 0, 280, 278, 1, 0, 0, 0, 
+		281, 273, 1, 0, 0, 0, 281, 282, 1, 0, 0, 0, 282, 283, 1, 0, 0, 0, 283, 
+		302, 5, 26, 0, 0, 284, 286, 3, 54, 27, 0, 285, 287, 3, 40, 20, 0, 286, 
+		285, 1, 0, 0, 0, 286, 287, 1, 0, 0, 0, 287, 289, 1, 0, 0, 0, 288, 290, 
+		3, 42, 21, 0, 289, 288, 1, 0, 0, 0, 289, 290, 1, 0, 0, 0, 290, 292, 1, 
+		0, 0, 0, 291, 293, 3, 46, 23, 0, 292, 291, 1, 0, 0, 0, 292, 293, 1, 0, 
+		0, 0, 293, 302, 1, 0, 0, 0, 294, 295, 5, 23, 0, 0, 295, 297, 5, 48, 0, 
+		0, 296, 298, 3, 40, 20, 0, 297, 296, 1, 0, 0, 0, 297, 298, 1, 0, 0, 0, 
+		298, 302, 1, 0, 0, 0, 299, 300, 5, 41, 0, 0, 300, 302, 3, 10, 5, 0, 301, 
+		226, 1, 0, 0, 0, 301, 230, 1, 0, 0, 0, 301, 237, 1, 0, 0, 0, 301, 239, 
+		1, 0, 0, 0, 301, 240, 1, 0, 0, 0, 301, 241, 1, 0, 0, 0, 301, 242, 1, 0, 
+		0, 0, 301, 243, 1, 0, 0, 0, 301, 244, 1, 0, 0, 0, 301, 248, 1, 0, 0, 0, 
+		301, 251, 1, 0, 0, 0, 301, 253, 1, 0, 0, 0, 301, 254, 1, 0, 0, 0, 301, 
+		255, 1, 0, 0, 0, 301, 265, 1, 0, 0, 0, 301, 266, 1, 0, 0, 0, 301, 267, 
+		1, 0, 0, 0, 301, 271, 1, 0, 0, 0, 301, 284, 1, 0, 0, 0, 301, 294, 1, 0, 
+		0, 0, 301, 299, 1, 0, 0, 0, 302, 39, 1, 0, 0, 0, 303, 308, 5, 24, 0, 0, 
+		304, 308, 5, 23, 0, 0, 305, 306, 5, 23, 0, 0, 306, 308, 3, 10, 5, 0, 307, 
+		303, 1, 0, 0, 0, 307, 304, 1, 0, 0, 0, 307, 305, 1, 0, 0, 0, 308, 41, 
+		1, 0, 0, 0, 309, 310, 5, 29, 0, 0, 310, 311, 3, 44, 22, 0, 311, 312, 5, 
+		30, 0, 0, 312, 43, 1, 0, 0, 0, 313, 317, 5, 23, 0, 0, 314, 317, 5, 46, 
+		0, 0, 315, 317, 3, 54, 27, 0, 316, 313, 1, 0, 0, 0, 316, 314, 1, 0, 0, 
+		0, 316, 315, 1, 0, 0, 0, 317, 45, 1, 0, 0, 0, 318, 327, 5, 36, 0, 0, 319, 
+		324, 3, 48, 24, 0, 320, 321, 5, 20, 0, 0, 321, 323, 3, 48, 24, 0, 322, 
+		320, 1, 0, 0, 0, 323, 326, 1, 0, 0, 0, 324, 322, 1, 0, 0, 0, 324, 325, 
+		1, 0, 0, 0, 325, 328, 1, 0, 0, 0, 326, 324, 1, 0, 0, 0, 327, 319, 1, 0, 
+		0, 0, 327, 328, 1, 0, 0, 0, 328, 329, 1, 0, 0, 0, 329, 330, 5, 38, 0, 
+		0, 330, 47, 1, 0, 0, 0, 331, 332, 3, 56, 28, 0, 332, 333, 5, 21, 0, 0, 
+		333, 335, 1, 0, 0, 0, 334, 331, 1, 0, 0, 0, 334, 335, 1, 0, 0, 0, 335, 
+		336, 1, 0, 0, 0, 336, 337, 3, 50, 25, 0, 337, 49, 1, 0, 0, 0, 338, 341, 
+		5, 11, 0, 0, 339, 341, 3, 10, 5, 0, 340, 338, 1, 0, 0, 0, 340, 339, 1, 
+		0, 0, 0, 341, 51, 1, 0, 0, 0, 342, 344, 7, 0, 0, 0, 343, 342, 1, 0, 0, 
+		0, 343, 344, 1, 0, 0, 0, 344, 345, 1, 0, 0, 0, 345, 346, 7, 1, 0, 0, 346, 
+		53, 1, 0, 0, 0, 347, 348, 5, 48, 0, 0, 348, 350, 5, 19, 0, 0, 349, 347, 
+		1, 0, 0, 0, 350, 353, 1, 0, 0, 0, 351, 349, 1, 0, 0, 0, 351, 352, 1, 0, 
+		0, 0, 352, 354, 1, 0, 0, 0, 353, 351, 1, 0, 0, 0, 354, 355, 5, 48, 0, 
+		0, 355, 55, 1, 0, 0, 0, 356, 359, 5, 47, 0, 0, 357, 359, 5, 48, 0, 0, 
+		358, 356, 1, 0, 0, 0, 358, 357, 1, 0, 0, 0, 359, 57, 1, 0, 0, 0, 40, 61, 
+		67, 74, 82, 88, 95, 105, 113, 121, 124, 137, 148, 156, 167, 178, 183, 
+		191, 198, 206, 211, 219, 224, 261, 269, 278, 281, 286, 289, 292, 297, 
+		301, 307, 316, 324, 327, 334, 340, 343, 351, 358
+	];
 }
-
-
-
-const _serializedATN:&'static str =
-	"\x03\u{608b}\u{a72a}\u{8133}\u{b9ed}\u{417c}\u{3be7}\u{7786}\u{5964}\x03\
-	\x32\u{16b}\x04\x02\x09\x02\x04\x03\x09\x03\x04\x04\x09\x04\x04\x05\x09\
-	\x05\x04\x06\x09\x06\x04\x07\x09\x07\x04\x08\x09\x08\x04\x09\x09\x09\x04\
-	\x0a\x09\x0a\x04\x0b\x09\x0b\x04\x0c\x09\x0c\x04\x0d\x09\x0d\x04\x0e\x09\
-	\x0e\x04\x0f\x09\x0f\x04\x10\x09\x10\x04\x11\x09\x11\x04\x12\x09\x12\x04\
-	\x13\x09\x13\x04\x14\x09\x14\x04\x15\x09\x15\x04\x16\x09\x16\x04\x17\x09\
-	\x17\x04\x18\x09\x18\x04\x19\x09\x19\x04\x1a\x09\x1a\x04\x1b\x09\x1b\x04\
-	\x1c\x09\x1c\x04\x1d\x09\x1d\x04\x1e\x09\x1e\x03\x02\x07\x02\x3e\x0a\x02\
-	\x0c\x02\x0e\x02\x41\x0b\x02\x03\x02\x07\x02\x44\x0a\x02\x0c\x02\x0e\x02\
-	\x47\x0b\x02\x03\x02\x03\x02\x07\x02\x4b\x0a\x02\x0c\x02\x0e\x02\x4e\x0b\
-	\x02\x03\x02\x03\x02\x03\x03\x07\x03\x53\x0a\x03\x0c\x03\x0e\x03\x56\x0b\
-	\x03\x03\x03\x07\x03\x59\x0a\x03\x0c\x03\x0e\x03\x5c\x0b\x03\x03\x03\x03\
-	\x03\x07\x03\x60\x0a\x03\x0c\x03\x0e\x03\x63\x0b\x03\x03\x03\x03\x03\x03\
-	\x04\x03\x04\x03\x04\x07\x04\x6a\x0a\x04\x0c\x04\x0e\x04\x6d\x0b\x04\x03\
-	\x04\x03\x04\x03\x05\x07\x05\x72\x0a\x05\x0c\x05\x0e\x05\x75\x0b\x05\x03\
-	\x05\x03\x05\x03\x05\x07\x05\x7a\x0a\x05\x0c\x05\x0e\x05\x7d\x0b\x05\x05\
-	\x05\x7f\x0a\x05\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\
-	\x03\x06\x03\x06\x03\x06\x03\x06\x05\x06\u{8c}\x0a\x06\x03\x07\x03\x07\x03\
-	\x08\x03\x08\x03\x08\x03\x08\x03\x08\x03\x08\x03\x08\x05\x08\u{97}\x0a\x08\
-	\x03\x09\x03\x09\x03\x09\x03\x09\x07\x09\u{9d}\x0a\x09\x0c\x09\x0e\x09\u{a0}\
-	\x0b\x09\x03\x0a\x03\x0a\x03\x0b\x03\x0b\x03\x0b\x03\x0b\x07\x0b\u{a8}\x0a\
-	\x0b\x0c\x0b\x0e\x0b\u{ab}\x0b\x0b\x03\x0c\x03\x0c\x03\x0d\x03\x0d\x03\x0d\
-	\x03\x0d\x07\x0d\u{b3}\x0a\x0d\x0c\x0d\x0e\x0d\u{b6}\x0b\x0d\x03\x0e\x03\
-	\x0e\x05\x0e\u{ba}\x0a\x0e\x03\x0f\x03\x0f\x03\x0f\x03\x0f\x07\x0f\u{c0}\
-	\x0a\x0f\x0c\x0f\x0e\x0f\u{c3}\x0b\x0f\x03\x10\x03\x10\x03\x10\x03\x10\x05\
-	\x10\u{c9}\x0a\x10\x03\x11\x03\x11\x03\x11\x03\x11\x07\x11\u{cf}\x0a\x11\
-	\x0c\x11\x0e\x11\u{d2}\x0b\x11\x03\x12\x03\x12\x05\x12\u{d6}\x0a\x12\x03\
-	\x13\x03\x13\x03\x13\x03\x13\x07\x13\u{dc}\x0a\x13\x0c\x13\x0e\x13\u{df}\
-	\x0b\x13\x03\x14\x03\x14\x05\x14\u{e3}\x0a\x14\x03\x15\x03\x15\x03\x15\x03\
-	\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\
-	\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\
-	\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x03\
-	\x15\x03\x15\x03\x15\x07\x15\u{106}\x0a\x15\x0c\x15\x0e\x15\u{109}\x0b\x15\
-	\x03\x15\x03\x15\x03\x15\x03\x15\x03\x15\x05\x15\u{110}\x0a\x15\x03\x15\
-	\x03\x15\x03\x15\x03\x15\x03\x15\x07\x15\u{117}\x0a\x15\x0c\x15\x0e\x15\
-	\u{11a}\x0b\x15\x05\x15\u{11c}\x0a\x15\x03\x15\x03\x15\x03\x15\x05\x15\u{121}\
-	\x0a\x15\x03\x15\x05\x15\u{124}\x0a\x15\x03\x15\x05\x15\u{127}\x0a\x15\x03\
-	\x15\x03\x15\x03\x15\x05\x15\u{12c}\x0a\x15\x03\x15\x03\x15\x05\x15\u{130}\
-	\x0a\x15\x03\x16\x03\x16\x03\x16\x03\x16\x05\x16\u{136}\x0a\x16\x03\x17\
-	\x03\x17\x03\x17\x03\x17\x03\x18\x03\x18\x03\x18\x05\x18\u{13f}\x0a\x18\
-	\x03\x19\x03\x19\x03\x19\x03\x19\x07\x19\u{145}\x0a\x19\x0c\x19\x0e\x19\
-	\u{148}\x0b\x19\x05\x19\u{14a}\x0a\x19\x03\x19\x03\x19\x03\x1a\x03\x1a\x03\
-	\x1a\x05\x1a\u{151}\x0a\x1a\x03\x1a\x03\x1a\x03\x1b\x03\x1b\x05\x1b\u{157}\
-	\x0a\x1b\x03\x1c\x05\x1c\u{15a}\x0a\x1c\x03\x1c\x03\x1c\x03\x1d\x03\x1d\
-	\x07\x1d\u{160}\x0a\x1d\x0c\x1d\x0e\x1d\u{163}\x0b\x1d\x03\x1d\x03\x1d\x03\
-	\x1e\x03\x1e\x05\x1e\u{169}\x0a\x1e\x03\x1e\x02\x02\x1f\x02\x04\x06\x08\
-	\x0a\x0c\x0e\x10\x12\x14\x16\x18\x1a\x1c\x1e\x20\x22\x24\x26\x28\x2a\x2c\
-	\x2e\x30\x32\x34\x36\x38\x3a\x02\x04\x03\x02\x2a\x2b\x03\x02\x2f\x30\x02\
-	\u{18d}\x02\x3f\x03\x02\x02\x02\x04\x54\x03\x02\x02\x02\x06\x6b\x03\x02\
-	\x02\x02\x08\x73\x03\x02\x02\x02\x0a\u{8b}\x03\x02\x02\x02\x0c\u{8d}\x03\
-	\x02\x02\x02\x0e\u{96}\x03\x02\x02\x02\x10\u{98}\x03\x02\x02\x02\x12\u{a1}\
-	\x03\x02\x02\x02\x14\u{a3}\x03\x02\x02\x02\x16\u{ac}\x03\x02\x02\x02\x18\
-	\u{ae}\x03\x02\x02\x02\x1a\u{b9}\x03\x02\x02\x02\x1c\u{bb}\x03\x02\x02\x02\
-	\x1e\u{c8}\x03\x02\x02\x02\x20\u{ca}\x03\x02\x02\x02\x22\u{d5}\x03\x02\x02\
-	\x02\x24\u{d7}\x03\x02\x02\x02\x26\u{e2}\x03\x02\x02\x02\x28\u{12f}\x03\
-	\x02\x02\x02\x2a\u{135}\x03\x02\x02\x02\x2c\u{137}\x03\x02\x02\x02\x2e\u{13e}\
-	\x03\x02\x02\x02\x30\u{140}\x03\x02\x02\x02\x32\u{150}\x03\x02\x02\x02\x34\
-	\u{156}\x03\x02\x02\x02\x36\u{159}\x03\x02\x02\x02\x38\u{161}\x03\x02\x02\
-	\x02\x3a\u{168}\x03\x02\x02\x02\x3c\x3e\x07\x05\x02\x02\x3d\x3c\x03\x02\
-	\x02\x02\x3e\x41\x03\x02\x02\x02\x3f\x3d\x03\x02\x02\x02\x3f\x40\x03\x02\
-	\x02\x02\x40\x45\x03\x02\x02\x02\x41\x3f\x03\x02\x02\x02\x42\x44\x07\x06\
-	\x02\x02\x43\x42\x03\x02\x02\x02\x44\x47\x03\x02\x02\x02\x45\x43\x03\x02\
-	\x02\x02\x45\x46\x03\x02\x02\x02\x46\x48\x03\x02\x02\x02\x47\x45\x03\x02\
-	\x02\x02\x48\x4c\x05\x0c\x07\x02\x49\x4b\x07\x06\x02\x02\x4a\x49\x03\x02\
-	\x02\x02\x4b\x4e\x03\x02\x02\x02\x4c\x4a\x03\x02\x02\x02\x4c\x4d\x03\x02\
-	\x02\x02\x4d\x4f\x03\x02\x02\x02\x4e\x4c\x03\x02\x02\x02\x4f\x50\x07\x02\
-	\x02\x03\x50\x03\x03\x02\x02\x02\x51\x53\x07\x05\x02\x02\x52\x51\x03\x02\
-	\x02\x02\x53\x56\x03\x02\x02\x02\x54\x52\x03\x02\x02\x02\x54\x55\x03\x02\
-	\x02\x02\x55\x5a\x03\x02\x02\x02\x56\x54\x03\x02\x02\x02\x57\x59\x07\x06\
-	\x02\x02\x58\x57\x03\x02\x02\x02\x59\x5c\x03\x02\x02\x02\x5a\x58\x03\x02\
-	\x02\x02\x5a\x5b\x03\x02\x02\x02\x5b\x5d\x03\x02\x02\x02\x5c\x5a\x03\x02\
-	\x02\x02\x5d\x61\x05\x06\x04\x02\x5e\x60\x07\x06\x02\x02\x5f\x5e\x03\x02\
-	\x02\x02\x60\x63\x03\x02\x02\x02\x61\x5f\x03\x02\x02\x02\x61\x62\x03\x02\
-	\x02\x02\x62\x64\x03\x02\x02\x02\x63\x61\x03\x02\x02\x02\x64\x65\x07\x02\
-	\x02\x03\x65\x05\x03\x02\x02\x02\x66\x67\x05\x0a\x06\x02\x67\x68\x05\x08\
-	\x05\x02\x68\x6a\x03\x02\x02\x02\x69\x66\x03\x02\x02\x02\x6a\x6d\x03\x02\
-	\x02\x02\x6b\x69\x03\x02\x02\x02\x6b\x6c\x03\x02\x02\x02\x6c\x6e\x03\x02\
-	\x02\x02\x6d\x6b\x03\x02\x02\x02\x6e\x6f\x05\x0c\x07\x02\x6f\x07\x03\x02\
-	\x02\x02\x70\x72\x07\x06\x02\x02\x71\x70\x03\x02\x02\x02\x72\x75\x03\x02\
-	\x02\x02\x73\x71\x03\x02\x02\x02\x73\x74\x03\x02\x02\x02\x74\x7e\x03\x02\
-	\x02\x02\x75\x73\x03\x02\x02\x02\x76\x7f\x07\x06\x02\x02\x77\x7b\x07\x18\
-	\x02\x02\x78\x7a\x07\x06\x02\x02\x79\x78\x03\x02\x02\x02\x7a\x7d\x03\x02\
-	\x02\x02\x7b\x79\x03\x02\x02\x02\x7b\x7c\x03\x02\x02\x02\x7c\x7f\x03\x02\
-	\x02\x02\x7d\x7b\x03\x02\x02\x02\x7e\x76\x03\x02\x02\x02\x7e\x77\x03\x02\
-	\x02\x02\x7f\x09\x03\x02\x02\x02\u{80}\u{81}\x05\x0c\x07\x02\u{81}\u{82}\
-	\x07\x21\x02\x02\u{82}\u{83}\x05\x0c\x07\x02\u{83}\u{8c}\x03\x02\x02\x02\
-	\u{84}\u{85}\x07\x08\x02\x02\u{85}\u{86}\x05\x0c\x07\x02\u{86}\u{87}\x07\
-	\x09\x02\x02\u{87}\u{88}\x05\x0c\x07\x02\u{88}\u{8c}\x03\x02\x02\x02\u{89}\
-	\u{8a}\x07\x08\x02\x02\u{8a}\u{8c}\x05\x0c\x07\x02\u{8b}\u{80}\x03\x02\x02\
-	\x02\u{8b}\u{84}\x03\x02\x02\x02\u{8b}\u{89}\x03\x02\x02\x02\u{8c}\x0b\x03\
-	\x02\x02\x02\u{8d}\u{8e}\x05\x0e\x08\x02\u{8e}\x0d\x03\x02\x02\x02\u{8f}\
-	\u{97}\x05\x10\x09\x02\u{90}\u{91}\x05\x10\x09\x02\u{91}\u{92}\x07\x19\x02\
-	\x02\u{92}\u{93}\x05\x10\x09\x02\u{93}\u{94}\x07\x17\x02\x02\u{94}\u{95}\
-	\x05\x0c\x07\x02\u{95}\u{97}\x03\x02\x02\x02\u{96}\u{8f}\x03\x02\x02\x02\
-	\u{96}\u{90}\x03\x02\x02\x02\u{97}\x0f\x03\x02\x02\x02\u{98}\u{9e}\x05\x14\
-	\x0b\x02\u{99}\u{9a}\x05\x12\x0a\x02\u{9a}\u{9b}\x05\x14\x0b\x02\u{9b}\u{9d}\
-	\x03\x02\x02\x02\u{9c}\u{99}\x03\x02\x02\x02\u{9d}\u{a0}\x03\x02\x02\x02\
-	\u{9e}\u{9c}\x03\x02\x02\x02\u{9e}\u{9f}\x03\x02\x02\x02\u{9f}\x11\x03\x02\
-	\x02\x02\u{a0}\u{9e}\x03\x02\x02\x02\u{a1}\u{a2}\x07\x22\x02\x02\u{a2}\x13\
-	\x03\x02\x02\x02\u{a3}\u{a9}\x05\x18\x0d\x02\u{a4}\u{a5}\x05\x16\x0c\x02\
-	\u{a5}\u{a6}\x05\x18\x0d\x02\u{a6}\u{a8}\x03\x02\x02\x02\u{a7}\u{a4}\x03\
-	\x02\x02\x02\u{a8}\u{ab}\x03\x02\x02\x02\u{a9}\u{a7}\x03\x02\x02\x02\u{a9}\
-	\u{aa}\x03\x02\x02\x02\u{aa}\x15\x03\x02\x02\x02\u{ab}\u{a9}\x03\x02\x02\
-	\x02\u{ac}\u{ad}\x07\x23\x02\x02\u{ad}\x17\x03\x02\x02\x02\u{ae}\u{b4}\x05\
-	\x1c\x0f\x02\u{af}\u{b0}\x05\x1a\x0e\x02\u{b0}\u{b1}\x05\x1c\x0f\x02\u{b1}\
-	\u{b3}\x03\x02\x02\x02\u{b2}\u{af}\x03\x02\x02\x02\u{b3}\u{b6}\x03\x02\x02\
-	\x02\u{b4}\u{b2}\x03\x02\x02\x02\u{b4}\u{b5}\x03\x02\x02\x02\u{b5}\x19\x03\
-	\x02\x02\x02\u{b6}\u{b4}\x03\x02\x02\x02\u{b7}\u{ba}\x07\x24\x02\x02\u{b8}\
-	\u{ba}\x07\x25\x02\x02\u{b9}\u{b7}\x03\x02\x02\x02\u{b9}\u{b8}\x03\x02\x02\
-	\x02\u{ba}\x1b\x03\x02\x02\x02\u{bb}\u{c1}\x05\x20\x11\x02\u{bc}\u{bd}\x05\
-	\x1e\x10\x02\u{bd}\u{be}\x05\x20\x11\x02\u{be}\u{c0}\x03\x02\x02\x02\u{bf}\
-	\u{bc}\x03\x02\x02\x02\u{c0}\u{c3}\x03\x02\x02\x02\u{c1}\u{bf}\x03\x02\x02\
-	\x02\u{c1}\u{c2}\x03\x02\x02\x02\u{c2}\x1d\x03\x02\x02\x02\u{c3}\u{c1}\x03\
-	\x02\x02\x02\u{c4}\u{c9}\x07\x26\x02\x02\u{c5}\u{c9}\x07\x27\x02\x02\u{c6}\
-	\u{c9}\x07\x28\x02\x02\u{c7}\u{c9}\x07\x29\x02\x02\u{c8}\u{c4}\x03\x02\x02\
-	\x02\u{c8}\u{c5}\x03\x02\x02\x02\u{c8}\u{c6}\x03\x02\x02\x02\u{c8}\u{c7}\
-	\x03\x02\x02\x02\u{c9}\x1f\x03\x02\x02\x02\u{ca}\u{d0}\x05\x24\x13\x02\u{cb}\
-	\u{cc}\x05\x22\x12\x02\u{cc}\u{cd}\x05\x24\x13\x02\u{cd}\u{cf}\x03\x02\x02\
-	\x02\u{ce}\u{cb}\x03\x02\x02\x02\u{cf}\u{d2}\x03\x02\x02\x02\u{d0}\u{ce}\
-	\x03\x02\x02\x02\u{d0}\u{d1}\x03\x02\x02\x02\u{d1}\x21\x03\x02\x02\x02\u{d2}\
-	\u{d0}\x03\x02\x02\x02\u{d3}\u{d6}\x07\x2a\x02\x02\u{d4}\u{d6}\x07\x2b\x02\
-	\x02\u{d5}\u{d3}\x03\x02\x02\x02\u{d5}\u{d4}\x03\x02\x02\x02\u{d6}\x23\x03\
-	\x02\x02\x02\u{d7}\u{dd}\x05\x28\x15\x02\u{d8}\u{d9}\x05\x26\x14\x02\u{d9}\
-	\u{da}\x05\x28\x15\x02\u{da}\u{dc}\x03\x02\x02\x02\u{db}\u{d8}\x03\x02\x02\
-	\x02\u{dc}\u{df}\x03\x02\x02\x02\u{dd}\u{db}\x03\x02\x02\x02\u{dd}\u{de}\
-	\x03\x02\x02\x02\u{de}\x25\x03\x02\x02\x02\u{df}\u{dd}\x03\x02\x02\x02\u{e0}\
-	\u{e3}\x07\x2c\x02\x02\u{e1}\u{e3}\x07\x2d\x02\x02\u{e2}\u{e0}\x03\x02\x02\
-	\x02\u{e2}\u{e1}\x03\x02\x02\x02\u{e3}\x27\x03\x02\x02\x02\u{e4}\u{e5}\x07\
-	\x1b\x02\x02\u{e5}\u{e6}\x05\x0c\x07\x02\u{e6}\u{e7}\x07\x1c\x02\x02\u{e7}\
-	\u{130}\x03\x02\x02\x02\u{e8}\u{e9}\x07\x0a\x02\x02\u{e9}\u{ea}\x05\x0c\
-	\x07\x02\u{ea}\u{eb}\x07\x0b\x02\x02\u{eb}\u{ec}\x05\x0c\x07\x02\u{ec}\u{ed}\
-	\x07\x0c\x02\x02\u{ed}\u{ee}\x05\x0c\x07\x02\u{ee}\u{130}\x03\x02\x02\x02\
-	\u{ef}\u{f0}\x07\x1a\x02\x02\u{f0}\u{130}\x05\x0c\x07\x02\u{f1}\u{130}\x07\
-	\x19\x02\x02\u{f2}\u{130}\x07\x10\x02\x02\u{f3}\u{130}\x07\x0e\x02\x02\u{f4}\
-	\u{130}\x07\x0f\x02\x02\u{f5}\u{130}\x07\x11\x02\x02\u{f6}\u{f7}\x05\x36\
-	\x1c\x02\u{f7}\u{f8}\x07\x2e\x02\x02\u{f8}\u{f9}\x05\x36\x1c\x02\u{f9}\u{130}\
-	\x03\x02\x02\x02\u{fa}\u{fb}\x05\x36\x1c\x02\u{fb}\u{fc}\x07\x2e\x02\x02\
-	\u{fc}\u{130}\x03\x02\x02\x02\u{fd}\u{fe}\x07\x2e\x02\x02\u{fe}\u{130}\x05\
-	\x36\x1c\x02\u{ff}\u{130}\x05\x36\x1c\x02\u{100}\u{130}\x07\x12\x02\x02\
-	\u{101}\u{102}\x07\x1d\x02\x02\u{102}\u{107}\x07\x32\x02\x02\u{103}\u{104}\
-	\x07\x16\x02\x02\u{104}\u{106}\x07\x32\x02\x02\u{105}\u{103}\x03\x02\x02\
-	\x02\u{106}\u{109}\x03\x02\x02\x02\u{107}\u{105}\x03\x02\x02\x02\u{107}\
-	\u{108}\x03\x02\x02\x02\u{108}\u{10a}\x03\x02\x02\x02\u{109}\u{107}\x03\
-	\x02\x02\x02\u{10a}\u{130}\x07\x1e\x02\x02\u{10b}\u{130}\x07\x13\x02\x02\
-	\u{10c}\u{130}\x07\x31\x02\x02\u{10d}\u{10f}\x07\x14\x02\x02\u{10e}\u{110}\
-	\x05\x2a\x16\x02\u{10f}\u{10e}\x03\x02\x02\x02\u{10f}\u{110}\x03\x02\x02\
-	\x02\u{110}\u{130}\x03\x02\x02\x02\u{111}\u{112}\x07\x32\x02\x02\u{112}\
-	\u{11b}\x07\x1b\x02\x02\u{113}\u{118}\x05\x0c\x07\x02\u{114}\u{115}\x07\
-	\x16\x02\x02\u{115}\u{117}\x05\x0c\x07\x02\u{116}\u{114}\x03\x02\x02\x02\
-	\u{117}\u{11a}\x03\x02\x02\x02\u{118}\u{116}\x03\x02\x02\x02\u{118}\u{119}\
-	\x03\x02\x02\x02\u{119}\u{11c}\x03\x02\x02\x02\u{11a}\u{118}\x03\x02\x02\
-	\x02\u{11b}\u{113}\x03\x02\x02\x02\u{11b}\u{11c}\x03\x02\x02\x02\u{11c}\
-	\u{11d}\x03\x02\x02\x02\u{11d}\u{130}\x07\x1c\x02\x02\u{11e}\u{120}\x05\
-	\x38\x1d\x02\u{11f}\u{121}\x05\x2a\x16\x02\u{120}\u{11f}\x03\x02\x02\x02\
-	\u{120}\u{121}\x03\x02\x02\x02\u{121}\u{123}\x03\x02\x02\x02\u{122}\u{124}\
-	\x05\x2c\x17\x02\u{123}\u{122}\x03\x02\x02\x02\u{123}\u{124}\x03\x02\x02\
-	\x02\u{124}\u{126}\x03\x02\x02\x02\u{125}\u{127}\x05\x30\x19\x02\u{126}\
-	\u{125}\x03\x02\x02\x02\u{126}\u{127}\x03\x02\x02\x02\u{127}\u{130}\x03\
-	\x02\x02\x02\u{128}\u{129}\x07\x19\x02\x02\u{129}\u{12b}\x07\x32\x02\x02\
-	\u{12a}\u{12c}\x05\x2a\x16\x02\u{12b}\u{12a}\x03\x02\x02\x02\u{12b}\u{12c}\
-	\x03\x02\x02\x02\u{12c}\u{130}\x03\x02\x02\x02\u{12d}\u{12e}\x07\x2b\x02\
-	\x02\u{12e}\u{130}\x05\x0c\x07\x02\u{12f}\u{e4}\x03\x02\x02\x02\u{12f}\u{e8}\
-	\x03\x02\x02\x02\u{12f}\u{ef}\x03\x02\x02\x02\u{12f}\u{f1}\x03\x02\x02\x02\
-	\u{12f}\u{f2}\x03\x02\x02\x02\u{12f}\u{f3}\x03\x02\x02\x02\u{12f}\u{f4}\
-	\x03\x02\x02\x02\u{12f}\u{f5}\x03\x02\x02\x02\u{12f}\u{f6}\x03\x02\x02\x02\
-	\u{12f}\u{fa}\x03\x02\x02\x02\u{12f}\u{fd}\x03\x02\x02\x02\u{12f}\u{ff}\
-	\x03\x02\x02\x02\u{12f}\u{100}\x03\x02\x02\x02\u{12f}\u{101}\x03\x02\x02\
-	\x02\u{12f}\u{10b}\x03\x02\x02\x02\u{12f}\u{10c}\x03\x02\x02\x02\u{12f}\
-	\u{10d}\x03\x02\x02\x02\u{12f}\u{111}\x03\x02\x02\x02\u{12f}\u{11e}\x03\
-	\x02\x02\x02\u{12f}\u{128}\x03\x02\x02\x02\u{12f}\u{12d}\x03\x02\x02\x02\
-	\u{130}\x29\x03\x02\x02\x02\u{131}\u{136}\x07\x1a\x02\x02\u{132}\u{136}\
-	\x07\x19\x02\x02\u{133}\u{134}\x07\x19\x02\x02\u{134}\u{136}\x05\x0c\x07\
-	\x02\u{135}\u{131}\x03\x02\x02\x02\u{135}\u{132}\x03\x02\x02\x02\u{135}\
-	\u{133}\x03\x02\x02\x02\u{136}\x2b\x03\x02\x02\x02\u{137}\u{138}\x07\x1f\
-	\x02\x02\u{138}\u{139}\x05\x2e\x18\x02\u{139}\u{13a}\x07\x20\x02\x02\u{13a}\
-	\x2d\x03\x02\x02\x02\u{13b}\u{13f}\x07\x19\x02\x02\u{13c}\u{13f}\x07\x30\
-	\x02\x02\u{13d}\u{13f}\x05\x38\x1d\x02\u{13e}\u{13b}\x03\x02\x02\x02\u{13e}\
-	\u{13c}\x03\x02\x02\x02\u{13e}\u{13d}\x03\x02\x02\x02\u{13f}\x2f\x03\x02\
-	\x02\x02\u{140}\u{149}\x07\x26\x02\x02\u{141}\u{146}\x05\x32\x1a\x02\u{142}\
-	\u{143}\x07\x16\x02\x02\u{143}\u{145}\x05\x32\x1a\x02\u{144}\u{142}\x03\
-	\x02\x02\x02\u{145}\u{148}\x03\x02\x02\x02\u{146}\u{144}\x03\x02\x02\x02\
-	\u{146}\u{147}\x03\x02\x02\x02\u{147}\u{14a}\x03\x02\x02\x02\u{148}\u{146}\
-	\x03\x02\x02\x02\u{149}\u{141}\x03\x02\x02\x02\u{149}\u{14a}\x03\x02\x02\
-	\x02\u{14a}\u{14b}\x03\x02\x02\x02\u{14b}\u{14c}\x07\x28\x02\x02\u{14c}\
-	\x31\x03\x02\x02\x02\u{14d}\u{14e}\x05\x3a\x1e\x02\u{14e}\u{14f}\x07\x17\
-	\x02\x02\u{14f}\u{151}\x03\x02\x02\x02\u{150}\u{14d}\x03\x02\x02\x02\u{150}\
-	\u{151}\x03\x02\x02\x02\u{151}\u{152}\x03\x02\x02\x02\u{152}\u{153}\x05\
-	\x34\x1b\x02\u{153}\x33\x03\x02\x02\x02\u{154}\u{157}\x07\x0d\x02\x02\u{155}\
-	\u{157}\x05\x0c\x07\x02\u{156}\u{154}\x03\x02\x02\x02\u{156}\u{155}\x03\
-	\x02\x02\x02\u{157}\x35\x03\x02\x02\x02\u{158}\u{15a}\x09\x02\x02\x02\u{159}\
-	\u{158}\x03\x02\x02\x02\u{159}\u{15a}\x03\x02\x02\x02\u{15a}\u{15b}\x03\
-	\x02\x02\x02\u{15b}\u{15c}\x09\x03\x02\x02\u{15c}\x37\x03\x02\x02\x02\u{15d}\
-	\u{15e}\x07\x32\x02\x02\u{15e}\u{160}\x07\x15\x02\x02\u{15f}\u{15d}\x03\
-	\x02\x02\x02\u{160}\u{163}\x03\x02\x02\x02\u{161}\u{15f}\x03\x02\x02\x02\
-	\u{161}\u{162}\x03\x02\x02\x02\u{162}\u{164}\x03\x02\x02\x02\u{163}\u{161}\
-	\x03\x02\x02\x02\u{164}\u{165}\x07\x32\x02\x02\u{165}\x39\x03\x02\x02\x02\
-	\u{166}\u{169}\x07\x31\x02\x02\u{167}\u{169}\x07\x32\x02\x02\u{168}\u{166}\
-	\x03\x02\x02\x02\u{168}\u{167}\x03\x02\x02\x02\u{169}\x3b\x03\x02\x02\x02\
-	\x2a\x3f\x45\x4c\x54\x5a\x61\x6b\x73\x7b\x7e\u{8b}\u{96}\u{9e}\u{a9}\u{b4}\
-	\u{b9}\u{c1}\u{c8}\u{d0}\u{d5}\u{dd}\u{e2}\u{107}\u{10f}\u{118}\u{11b}\u{120}\
-	\u{123}\u{126}\u{12b}\u{12f}\u{135}\u{13e}\u{146}\u{149}\u{150}\u{156}\u{159}\
-	\u{161}\u{168}";
-

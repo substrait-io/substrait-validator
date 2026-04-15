@@ -52,7 +52,7 @@ serde_json = "1"
 regex = "1.12"
 
 # Used for the type derivation DSL.
-antlr-rust = "0.3.0-beta"
+antlr4rust = "0.5.2"
 
 # Used for checking URI syntax.
 uriparse = "0.6"

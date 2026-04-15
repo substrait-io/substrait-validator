@@ -19,8 +19,8 @@ import argparse
 
 # NOTE: the Rust bindings for ANTLR are not (yet) official, so we need to
 # download a forked ANTLR build.
-ANTLR_URL = "https://github.com/rrevenantt/antlr4rust/releases/download/antlr4-4.8-2-Rust0.3.0-beta/antlr4-4.8-2-SNAPSHOT-complete.jar"
-ANTLR_SHA1 = "775d24ac1ad5df1eb0ed0e802f0fb2a5aeace43c"
+ANTLR_URL = "https://github.com/antlr4rust/antlr4/releases/download/v0.5.0/antlr4-4.13.3-SNAPSHOT-complete.jar"
+ANTLR_SHA256 = "8227a91d45625aec824e31cc7792ecb8b22b973da71f2396e81542b88d897d8f"
 
 
 class Failure(Exception):
@@ -44,7 +44,7 @@ def verify_file_hash(fname, hash_str):
     """Verifies the hash of a (downloaded) file."""
     logging.info(f"Verifying {fname}...")
     with open(fname, "rb") as f:
-        file_hash = hashlib.sha1()
+        file_hash = hashlib.sha256()
         while chunk := f.read(8192):
             file_hash.update(chunk)
     actual = file_hash.hexdigest()
@@ -160,7 +160,7 @@ def main(*args):
     else:
         download_file(args.antlr, ANTLR_URL)
     if not args.no_verify:
-        verify_file_hash(args.antlr, ANTLR_SHA1)
+        verify_file_hash(args.antlr, ANTLR_SHA256)
 
     # Run ANTLR.
     if not os.path.isfile(args.grammar):
