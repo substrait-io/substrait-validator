@@ -1310,9 +1310,9 @@ pub fn push_antlr_child<'input, TP, TC, TR, FA>(
     analyzer: FA,
 ) -> OptionalResult<TR>
 where
-    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    TP: antlr4rust::parser_rule_context::ParserRuleContext<'input>,
     FA: FnOnce(&TC, &mut context::Context) -> diagnostic::Result<TR>,
-    TC: antlr_rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
+    TC: antlr4rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
         + 'input,
 {
     if let Some(child) = parent.child_of_type::<TC>(index) {
@@ -1359,9 +1359,9 @@ pub fn push_antlr_hidden_child<'input, TP, TC, TR, FA>(
     analyzer: FA,
 ) -> Option<TR>
 where
-    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    TP: antlr4rust::parser_rule_context::ParserRuleContext<'input>,
     FA: FnOnce(&TC, &mut context::Context) -> diagnostic::Result<TR>,
-    TC: antlr_rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
+    TC: antlr4rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
         + 'input,
 {
     parent.child_of_type::<TC>(index).and_then(|child| {
@@ -1399,7 +1399,7 @@ pub fn push_antlr_recurse<'input, TP, TR, FA>(
     analyzer: FA,
 ) -> RequiredResult<TR>
 where
-    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    TP: antlr4rust::parser_rule_context::ParserRuleContext<'input>,
     FA: FnOnce(&TP, &mut context::Context) -> diagnostic::Result<TR>,
 {
     push_child(
@@ -1435,9 +1435,9 @@ pub fn push_antlr_children<'input, TP, TC, TR, FA>(
     mut analyzer: FA,
 ) -> RepeatedResult<TR>
 where
-    TP: antlr_rust::parser_rule_context::ParserRuleContext<'input>,
+    TP: antlr4rust::parser_rule_context::ParserRuleContext<'input>,
     FA: FnMut(&TC, &mut context::Context) -> diagnostic::Result<TR>,
-    TC: antlr_rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
+    TC: antlr4rust::parser_rule_context::ParserRuleContext<'input, TF = TP::TF, Ctx = TP::Ctx>
         + 'input,
 {
     parent

@@ -17,7 +17,7 @@ use crate::output::type_system::meta;
 use crate::output::type_system::meta::Pattern;
 use crate::parse::context;
 use crate::util;
-use antlr_rust::Parser;
+use antlr4rust::Parser;
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -187,17 +187,17 @@ struct ErrorListener {
     messages: Rc<RefCell<Vec<String>>>,
 }
 
-impl<'a, T: antlr_rust::recognizer::Recognizer<'a>> antlr_rust::error_listener::ErrorListener<'a, T>
+impl<'a, T: antlr4rust::recognizer::Recognizer<'a>> antlr4rust::error_listener::ErrorListener<'a, T>
     for ErrorListener
 {
     fn syntax_error(
         &self,
         _recognizer: &T,
-        _offending_symbol: Option<&<<T>::TF as antlr_rust::token_factory::TokenFactory<'a>>::Inner>,
+        _offending_symbol: Option<&<<T>::TF as antlr4rust::token_factory::TokenFactory<'a>>::Inner>,
         line: isize,
         column: isize,
         msg: &str,
-        _error: Option<&antlr_rust::errors::ANTLRError>,
+        _error: Option<&antlr4rust::errors::ANTLRError>,
     ) {
         self.messages
             .borrow_mut()
@@ -221,8 +221,8 @@ impl ErrorListener {
 // a simple string slice with it.
 macro_rules! antlr_parse {
     ($x:expr, $y:expr, $start:ident) => {{
-        let lexer = substraittypelexer::SubstraitTypeLexer::new(antlr_rust::InputStream::new($x));
-        let token_source = antlr_rust::common_token_stream::CommonTokenStream::new(lexer);
+        let lexer = substraittypelexer::SubstraitTypeLexer::new(antlr4rust::InputStream::new($x));
+        let token_source = antlr4rust::common_token_stream::CommonTokenStream::new(lexer);
         let mut parser = SubstraitTypeParser::new(token_source);
         let listener = ErrorListener::new();
         parser.remove_error_listeners();

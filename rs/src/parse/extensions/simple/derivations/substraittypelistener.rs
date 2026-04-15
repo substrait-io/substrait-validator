@@ -2,8 +2,8 @@
 #![allow(clippy::all)]
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(nonstandard_style)]
-// Generated from SubstraitType.g4 by ANTLR 4.8
-use antlr_rust::tree::ParseTreeListener;
+// Generated from SubstraitType.g4 by ANTLR 4.13.2
+use antlr4rust::tree::ParseTreeListener;
 use super::substraittypeparser::*;
 
 pub trait SubstraitTypeListener<'input> : ParseTreeListener<'input,SubstraitTypeParserContextType>{
@@ -746,6 +746,6 @@ fn exit_Ident(&mut self, _ctx: &IdentContext<'input>) { }
 
 }
 
-antlr_rust::coerce_from!{ 'input : SubstraitTypeListener<'input> }
+antlr4rust::coerce_from!{ 'input : SubstraitTypeListener<'input> }
 
 
