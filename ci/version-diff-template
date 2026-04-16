@@ -1,8 +1,8 @@
 diff --git a/Cargo.toml b/Cargo.toml
-index bcfca76..3fbb0a7 100644
+index aa55159..88b5ca7 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -9,10 +9,10 @@ members = [
+@@ -10,11 +10,11 @@ members = [
  ]
 
  [workspace.package]
@@ -14,13 +14,15 @@ index bcfca76..3fbb0a7 100644
  [workspace.dependencies]
 -substrait-validator = {{ path = "rs", version = "{frm}" }}
 -substrait-validator-derive = {{ path = "derive", version = "{frm}" }}
+-substrait-validator-build = {{ path = "build", version = "{frm}" }}
 +substrait-validator = {{ path = "rs", version = "{to}" }}
 +substrait-validator-derive = {{ path = "derive", version = "{to}" }}
++substrait-validator-build = {{ path = "build", version = "{to}" }}
 diff --git a/py/pyproject.toml b/py/pyproject.toml
-index 95d1031..d3ad41b 100644
+index cf6bfc0..cebe23f 100644
 --- a/py/pyproject.toml
 +++ b/py/pyproject.toml
-@@ -5,7 +5,7 @@ backend-path = ["."]
+@@ -4,7 +4,7 @@ build-backend = "maturin"
 
  [project]
  name = "substrait-validator"
@@ -30,9 +32,18 @@ index 95d1031..d3ad41b 100644
  readme = "README.md"
  license = "Apache-2.0"
 diff --git a/rs/README.md b/rs/README.md
-index 04a001d..b8cb106 100644
+index 3361d6c..0453403 100644
 --- a/rs/README.md
 +++ b/rs/README.md
+@@ -6,7 +6,7 @@ plans.
+
+ ```
+ [dependencies]
+-substrait-validator = "{frm}"
++substrait-validator = "{to}"
+ ```
+
+ YAML file resolution
 @@ -20,7 +20,7 @@ dependency:
 
  ```
