@@ -30,6 +30,6 @@ substrait-validator = "substrait_validator:cli"
 
 [tool.maturin]
 include = [
-    "substrait_validator/substrait/**/*.py",
+    { path = "substrait_validator/substrait/**/*.py", format = ["sdist", "wheel"] },
     { path = "substrait_validator_build/*.py", format = "sdist" },
 ]
