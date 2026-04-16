@@ -152,7 +152,6 @@ impl SubstraitSync {
         }
         Ok(())
     }
-
 }
 
 #[cfg(feature = "protoc")]
