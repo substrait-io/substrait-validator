@@ -50,9 +50,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Python build dependencies
         run: python3 -m pip install --upgrade pip "maturin>=1.0.0,<1.14"
-      - name: Prepare build environment
-        working-directory: py
-        run: python3 prepare_build.py populate
       - name: Create sdist
         if: ${{ matrix.type == 'sdist' }}
         uses: PyO3/maturin-action@v1.51.0

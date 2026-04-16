@@ -12,13 +12,12 @@ include = [
     "/text",
     "/src",
     "/substrait_validator/*.py",
-    "/substrait_validator_build/*.py",
     "/tests",
 ]
 
 [features]
 # Build and vendor protoc from source. See also rs/Cargo.toml.
-protoc = ["dep:protobuf-src", "substrait-validator/protoc"]
+protoc = ["dep:protobuf-src", "substrait-validator/protoc", "substrait-validator-build/protoc"]
 
 [lib]
 crate-type = ["cdylib"]
@@ -37,6 +36,7 @@ substrait-validator = { workspace = true }
 pyo3 = { version = "0.28.3", features = ["extension-module"] }
 
 [build-dependencies]
+substrait-validator-build = { workspace = true }
 prost-build = "0.14.3"
 pyo3-build-config = "0.27.2"
 walkdir = "2"

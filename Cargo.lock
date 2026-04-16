@@ -1460,10 +1460,18 @@ dependencies = [
  "serde_yaml",
  "strum",
  "strum_macros",
+ "substrait-validator-build",
  "substrait-validator-derive",
  "thiserror",
  "uriparse",
  "url",
+]
+
+[[package]]
+name = "substrait-validator-build"
+version = "0.1.4"
+dependencies = [
+ "protobuf-src",
  "walkdir",
 ]
 
@@ -1497,6 +1505,7 @@ dependencies = [
  "pyo3",
  "pyo3-build-config 0.27.2",
  "substrait-validator",
+ "substrait-validator-build",
  "walkdir",
 ]
 

@@ -5,7 +5,8 @@ members = [
     "rs",
     "c",
     "py",
-    "tests"
+    "tests",
+    "build"
 ]
 
 [workspace.package]
@@ -16,3 +17,4 @@ license = "Apache-2.0"
 [workspace.dependencies]
 substrait-validator = { path = "rs", version = "0.1.4" }
 substrait-validator-derive = { path = "derive", version = "0.1.4" }
+substrait-validator-build = { path = "build", version = "0.1.4" }

@@ -1,7 +1,6 @@
 [build-system]
 requires = ["maturin>=1.0.0,<1.14"]
-build-backend = "substrait_validator_build"
-backend-path = ["."]
+build-backend = "maturin"
 
 [project]
 name = "substrait-validator"
@@ -29,7 +28,5 @@ repository = "https://github.com/substrait-io/substrait-validator"
 substrait-validator = "substrait_validator:cli"
 
 [tool.maturin]
-include = [
-    { path = "substrait_validator/substrait/**/*.py", format = ["sdist", "wheel"] },
-    { path = "substrait_validator_build/*.py", format = "sdist" },
-]
+python-source = "."
+python-packages = ["substrait_validator", "tests"]
