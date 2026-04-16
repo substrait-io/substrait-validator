@@ -3,6 +3,7 @@
 **/.gradle
 **/.idea
 **/build
+!/build
 gen
 /target/
 **/*.rs.bk
