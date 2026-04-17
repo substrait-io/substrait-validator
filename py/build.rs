@@ -13,17 +13,21 @@ use std::process::Command;
 use walkdir::WalkDir;
 
 fn main() {
-    // Directory that the proto files are stored in. If we're building
-    // from an sdist package the proto files should have been included in
-    // local directories.
-    assert!(
-        std::path::Path::new("..")
-            .join("substrait")
-            .join("proto")
-            .exists(),
-        "Could not find (git-root)/substrait/proto. Did you check out submodules?"
-    );
-    let input_paths = ["../proto", "../substrait/proto"];
+    // Directory that the proto files are stored in. If the local_dependencies
+    // directory exists, we're building from an sdist package, in which case
+    // the proto files should have been copied to a local directory.
+    let input_paths = if std::path::Path::new("local_dependencies").exists() {
+        vec!["local_dependencies/substrait-validator/src/resources/proto"]
+    } else {
+        assert!(
+            std::path::Path::new("..")
+                .join("substrait")
+                .join("proto")
+                .exists(),
+            "Could not find (git-root)/substrait/proto. Did you check out submodules?"
+        );
+        vec!["../proto", "../substrait/proto"]
+    };
 
     // Ensure above path is relative to the Cargo.toml directory.
     let pwd = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR");

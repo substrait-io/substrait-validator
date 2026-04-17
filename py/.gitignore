@@ -74,6 +74,5 @@ docs/_build/
 # Generated files
 /text/
 /proto/
-/LICENSE
 /protoc_out/
 /substrait_validator/substrait/

@@ -40,11 +40,11 @@ Some hints if you run into issues:
 
 You can build wheels and source distributions using
 [maturin](https://github.com/PyO3/maturin), specifically using the `build` and
-`sdist` commands. The required files from elsewhere in the repository are
-included directly through the [`[tool.maturin] include`](../pyproject.toml#34)
-configuration in [`pyproject.toml`](../pyproject.toml). Since maturin includes
-only work with paths with the same parent directory as `pyproject.toml` we need
-to keep `pyproject.toml` in the repository root.
+`sdist` commands. The proto files are automatically handled by the build process:
+when building from the repository, [`build.rs`](build.rs) reuses the proto files
+that the `rs` crate copies to `src/resources`. When building from an sdist
+package, the proto files are included in a `local_dependencies` directory and
+used from there.
 
 ## Running tests
 

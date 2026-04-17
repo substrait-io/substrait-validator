@@ -16,10 +16,10 @@ index bcfca76..3fbb0a7 100644
 -substrait-validator-derive = {{ path = "derive", version = "{frm}" }}
 +substrait-validator = {{ path = "rs", version = "{to}" }}
 +substrait-validator-derive = {{ path = "derive", version = "{to}" }}
-diff --git a/pyproject.toml b/pyproject.toml
+diff --git a/py/pyproject.toml b/py/pyproject.toml
 index 95d1031..d3ad41b 100644
---- a/pyproject.toml
-+++ b/pyproject.toml
+--- a/py/pyproject.toml
++++ b/py/pyproject.toml
 @@ -4,7 +4,7 @@ build-backend = "maturin"
 
  [project]

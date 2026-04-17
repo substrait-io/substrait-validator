@@ -133,13 +133,13 @@ synchronized by `cargo package`.
 
 ### Python
 
-For Python packaging, the proto and schema files are included in source
-distributions via the `include` configuration in
-[pyproject.toml](https://github.com/substrait-io/substrait-validator/blob/\
-main/pyproject.toml). This configuration tells maturin to include the necessary
-files from the `proto/`, `substrait/proto/`, and `substrait/text/` directories
-when building source distributions, ensuring they are available during the build
-process without requiring manual synchronization steps.
+For Python packaging, the proto files are handled by the Python package's
+[build.rs](https://github.com/substrait-io/substrait-validator/blob/\
+main/py/build.rs). When building from the repository, it reads proto files
+directly from `proto/` and `substrait/proto/`. When building from a source
+distribution, the proto files are included from this crate (which contains
+the proto files in `src/resources`), ensuring they are available during the
+build process without requiring manual synchronization steps.
 
 ### Protobuf
 
