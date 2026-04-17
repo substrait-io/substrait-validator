@@ -73,9 +73,6 @@ CI to use the appropriate environment.
  - Remove the `rs/src/resources` directory, if one exists.
  - Run `cargo build` to recreate above directory using the protobuf and schema
    files from outside the validator folder.
- - Run `python3 prepare_build.py clean`.
- - Run `python3 prepare_build.py populate`. This makes a local copy of the
-   protobuf files for inclusion in an sdist.
  - Run `maturin sdist` to build the source distribution.
  - Run `maturin build` in the appropriate environments to build binary
    distributions.

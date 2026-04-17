@@ -16,12 +16,11 @@ If you want to build manually, running something along the lines of
 [rust](https://www.rust-lang.org/tools/install) compiler installed.
 
 If you want to create wheels or sdists of your own, you can do so using
-maturin (note the manual prepare_build.py invocation, see hints):
+maturin:
 
 ```console
 user@host:~$ pip install "maturin>=0.14,<0.15"
 ...
-user@host:~$ ./prepare_build.py populate
 user@host:~$ maturin build
 ...
 📦 Built wheel for CPython 3.x to /path/to/substrait-validator/target/wheels/substrait_validator-x.y.z-cp3xx-cp3xx-linux_x86_64.whl
@@ -36,22 +35,16 @@ Some hints if you run into issues:
  - Out-of-tree builds are not supported, so you may need to beat pip into
    submission if you're using an old version or it otherwise insists on
    building from a temp directory.
- - If you get weird errors, try running `./prepare_build.py populate` manually
-   first. The protobuf generation logic has to be run very early in the build
-   process, and while this is done automatically for most build methods, not
-   all methods provide a hook for this.
 
 ## Building wheels and source distributions
 
 You can build wheels and source distributions using
 [maturin](https://github.com/PyO3/maturin), specifically using the `build` and
-`sdist` commands. However, before you can do this, you must run
-`./prepare_build.py populate`. This makes local copies of some files in the
-repository that live outside of this subdirectory, such as the protobuf
-description files. When you use `pip` or some other tool based on
-`pyproject.toml`, this will be done automatically via build system hooks, but
-unfortunately maturin doesn't itself provide hooks with which this can be
-automated.
+`sdist` commands. The required files from elsewhere in the repository are
+included directly through the [`[tool.maturin] include`](../pyproject.toml#34)
+configuration in [`pyproject.toml`](../pyproject.toml). Since maturin includes
+only work with paths with the same parent directory as `pyproject.toml` we need
+to keep `pyproject.toml` in the repository root.
 
 ## Running tests
 

@@ -193,7 +193,9 @@ def test_version():
     assert sv.substrait_version() == substrait_version
 
     with open(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "../pyproject.toml"),
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "../../pyproject.toml"
+        ),
         "r",
     ) as f:
         version = toml.loads(f.read())["project"]["version"]
