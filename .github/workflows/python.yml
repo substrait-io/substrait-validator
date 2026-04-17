@@ -87,7 +87,7 @@ jobs:
         run: |
           sudo chown 1001:1001 -R /home/runner/work/substrait-validator/substrait-validator
       - name: Install runtime dependencies
-        run: python3 -m pip install --upgrade -e "py/[test]"
+        run: python3 -m pip install --upgrade -e ".[test]"
       - name: Install generated sdist
         if: ${{ matrix.type == 'sdist' }}
         run: python3 -m pip install dist/substrait_validator-*.tar.gz
