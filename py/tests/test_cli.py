@@ -254,7 +254,7 @@ def test_uri_resolution():
                 "info",  # all other diagnostics -> info
                 "--uri-depth",
                 "-1",  # opt in to URI resolution, this will be the default
-                *args
+                *args,
             ).exit_code
 
         # Actual remote lookup.

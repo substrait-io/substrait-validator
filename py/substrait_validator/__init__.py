@@ -20,7 +20,6 @@ from .substrait_validator import (
 from .substrait.plan_pb2 import Plan
 from .substrait.validator.tree_pb2 import ParseResult, Diagnostic, Path
 
-
 __VERSION__ = _get_version()
 
 
