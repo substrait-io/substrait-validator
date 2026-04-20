@@ -20,7 +20,7 @@ diff --git a/py/pyproject.toml b/py/pyproject.toml
 index 95d1031..d3ad41b 100644
 --- a/py/pyproject.toml
 +++ b/py/pyproject.toml
-@@ -5,7 +5,7 @@ backend-path = ["."]
+@@ -4,7 +4,7 @@ build-backend = "maturin"
 
  [project]
  name = "substrait-validator"

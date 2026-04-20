@@ -17,7 +17,7 @@ fn main() {
     // directory exists, we're building from an sdist package, in which case
     // the proto files should have been copied to a local directory.
     let input_paths = if std::path::Path::new("local_dependencies").exists() {
-        vec!["proto"]
+        vec!["local_dependencies/substrait-validator/src/resources/proto"]
     } else {
         assert!(
             std::path::Path::new("..")
