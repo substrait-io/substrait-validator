@@ -38,7 +38,7 @@ pyo3 = { version = "0.28.3", features = ["extension-module"] }
 
 [build-dependencies]
 prost-build = "0.14.3"
-pyo3-build-config = "0.27.2"
+pyo3-build-config = "0.28.3"
 walkdir = "2"
 dunce = "1"
 
