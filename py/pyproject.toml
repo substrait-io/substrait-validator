@@ -7,7 +7,7 @@ name = "substrait-validator"
 version = "0.1.4"
 description = "Validator for Substrait query plans"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
 keywords = ["substrait"]
 requires-python = ">=3.10"
 classifiers = [
