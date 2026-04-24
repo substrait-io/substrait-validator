@@ -7,3 +7,4 @@ gen
 /target/
 **/*.rs.bk
 *.iml
+dist

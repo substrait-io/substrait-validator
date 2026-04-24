@@ -19,7 +19,7 @@ If you want to create wheels or sdists of your own, you can do so using
 maturin:
 
 ```console
-user@host:~$ pip install "maturin>=0.14,<0.15"
+user@host:~$ pip install "maturin>=1.0,<2"
 ...
 user@host:~$ maturin build
 ...
