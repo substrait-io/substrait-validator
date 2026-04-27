@@ -28,7 +28,7 @@ index 95d1031..d3ad41b 100644
 +version = "{to}"
  description = "Validator for Substrait query plans"
  readme = "README.md"
- license = {{ file = "LICENSE" }}
+ license = "Apache-2.0"
 diff --git a/rs/README.md b/rs/README.md
 index 04a001d..b8cb106 100644
 --- a/rs/README.md

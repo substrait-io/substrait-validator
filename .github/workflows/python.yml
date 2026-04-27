@@ -13,11 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         type: [wheel]
         include:
           - os: ubuntu-latest
-            python-version: "3.8"
+            python-version: "3.10"
             type: sdist
     runs-on: ${{ matrix.os }}
     steps:
@@ -58,7 +58,9 @@ jobs:
         if: ${{ matrix.type == 'wheel' && matrix.os == 'ubuntu-latest' }}
         uses: PyO3/maturin-action@v1.51.0
         with:
-          manylinux: auto
+          # use 2_28 as latest stable supported for Python 3.10+
+          # https://github.com/pypa/manylinux
+          manylinux: 2_28
           command: build
           args: -i ${{ matrix.python-version }} --release -o dist -m py/Cargo.toml
           # Download protoc into the container, for use in the build
