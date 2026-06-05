@@ -8,7 +8,6 @@ import json
 import pprint
 from os.path import join as pjoin
 from os.path import isfile
-import platform
 
 
 def run(*args):
@@ -217,8 +216,8 @@ def test_export():
         assert y("output.txt").startswith(b"Info")
 
 
-def test_uri_resolution():
-    """Test URI resolution logic."""
+def test_urn_resolution():
+    """Test extension URN resolution logic."""
     with tempfile.TemporaryDirectory() as tmp:
         with open(pjoin(tmp, "plan.json"), "w") as f:
             f.write(
@@ -227,18 +226,12 @@ def test_uri_resolution():
                         "extensionUrns": [
                             {
                                 "extension_urn_anchor": 1,
-                                "urn": "https://raw.githubusercontent.com/substrait-io/substrait/82078995c19faa9d4e53a90cd66800c26d88f970/extensions/extension_types.yaml",
+                                "urn": "extension:io.substrait:extension_types",
                             }
                         ]
                     }
                 )
             )
-
-        # Obtain a valid file:// URL for the above JSON file as well.
-        if platform.system() == "Windows":
-            local_url = "file:///" + pjoin(tmp, "plan.json").replace("\\", "/")
-        else:
-            local_url = "file://" + pjoin(tmp, "plan.json")
 
         def x(*args):
             return run(
@@ -249,25 +242,22 @@ def test_uri_resolution():
                 "error",
                 "error",  # YAML resolution failure -> error
                 "--diagnostic-level",
+                "2001",
+                "error",
+                "error",  # YAML resolution disabled -> error
+                "--diagnostic-level",
                 "0",
                 "info",
                 "info",  # all other diagnostics -> info
-                "--uri-depth",
-                "-1",  # opt in to URI resolution, this will be the default
+                "--urn-depth",
+                "-1",  # opt in to URN resolution, this will be the default
                 *args
             ).exit_code
 
-        # Actual remote lookup.
+        # The standard extensions are bundled into the validator, so this URN
+        # resolves out of the box.
         assert x() == 0
 
-        # Disable remote lookups, so we expect a failure (not file://).
-        assert x("--no-use-urllib") == 1
-
-        # Try file:// protocol instead. This one is handled by the Rust
-        # fallback resolution logic. Note that plan.json is obviously not
-        # valid YAML, but all diagnostics not related to URI resolution are
-        # overridden to info, so we don't have to care.
-        assert x("--no-use-urllib", "--override-uri", "*", local_url) == 0
-
-        # urllib should also support file://.
-        assert x("--use-urllib", "--override-uri", "*", local_url) == 0
+        # Remapping the URN to None disables resolution, so we expect a
+        # failure.
+        assert x("--override-urn", "extension:io.substrait:*", "-") == 1

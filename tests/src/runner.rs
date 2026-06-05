@@ -404,17 +404,18 @@ impl TestCase {
             );
         }
         let path_os_str = path.as_os_str().to_owned();
-        validator_config.add_uri_resolver(move |uri| {
-            if let Some(name) = uri.strip_prefix("test:") {
+        validator_config.add_urn_resolver(move |urn| {
+            // Inline test extensions are referenced with the synthetic URN
+            // `extension:test:<index>` and written next to the test file as
+            // `<test>.<index>.yaml`. The standard `extension:io.substrait:*`
+            // extensions are resolved automatically from the bundle, so they
+            // are not handled here.
+            if let Some(index) = urn.strip_prefix("extension:test:") {
                 let mut yaml_path = path_os_str.clone();
-                yaml_path.push(".");
-                yaml_path.push(name);
-                let yaml_path = std::path::PathBuf::from(yaml_path);
-                std::fs::read(yaml_path)
-            } else if let Some(uri) = uri.strip_prefix('/') {
-                std::fs::read(std::path::PathBuf::from("../substrait/extensions").join(uri))
+                yaml_path.push(format!(".{index}.yaml"));
+                std::fs::read(std::path::PathBuf::from(yaml_path))
             } else {
-                Err(std::io::Error::other("non-test URI"))
+                Err(std::io::Error::other("not a test URN"))
             }
         });
 

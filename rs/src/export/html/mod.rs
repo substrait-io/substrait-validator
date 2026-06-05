@@ -515,11 +515,11 @@ fn format_node_tree(
             &target.path,
             None,
         ),
-        tree::NodeType::ResolvedUri(uri) => {
+        tree::NodeType::ResolvedUrn(urn) => {
             format!(
                 "= {} {brief} {}",
-                format_span("value", uri),
-                format_span("type", "string, resolved as URI")
+                format_span("value", urn),
+                format_span("type", "string, resolved as URN")
             )
         }
         tree::NodeType::YamlMap => format!("{brief} {}", format_span("type", "YAML map")),

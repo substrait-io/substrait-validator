@@ -1001,19 +1001,19 @@ pub mod yaml_primitive_parsers {
 }
 
 //=============================================================================
-// URI resolution and YAML root handling
+// URN resolution and YAML root handling
 //=============================================================================
 
-/// Worker for resolve_uri().
-fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::BinaryData> {
+/// Worker for resolve_urn().
+fn resolve_urn(urn: &str, context: &mut context::Context) -> Option<config::BinaryData> {
     // Check for cyclic dependencies.
-    let uri_stack = context.uri_stack();
-    if let Some((index, _)) = uri_stack.iter().enumerate().find(|(_, x)| &x[..] == uri) {
+    let urn_stack = context.urn_stack();
+    if let Some((index, _)) = urn_stack.iter().enumerate().find(|(_, x)| &x[..] == urn) {
         let cycle = itertools::Itertools::intersperse(
-            uri_stack
+            urn_stack
                 .iter()
                 .map(|x| &x[index..])
-                .chain(std::iter::once(uri)),
+                .chain(std::iter::once(urn)),
             " -> ",
         )
         .collect::<String>();
@@ -1022,151 +1022,103 @@ fn resolve_uri(uri: &str, context: &mut context::Context) -> Option<config::Bina
     }
 
     // Check for recursion limit.
-    if let Some(max_depth) = context.config.max_uri_resolution_depth {
-        if context.uri_stack().len() >= max_depth {
+    if let Some(max_depth) = context.config.max_urn_resolution_depth {
+        if context.urn_stack().len() >= max_depth {
             diagnostic!(
                 context,
                 Warning,
                 YamlResolutionDisabled,
-                "configured recursion limit for URI resolution has been reached"
+                "configured recursion limit for URN resolution has been reached"
             );
             return None;
         }
     }
 
-    // Apply yaml_uri_overrides configuration.
-    let remapped_uri = context
+    // Apply urn_overrides configuration.
+    let remapped_urn = context
         .config
-        .uri_overrides
+        .urn_overrides
         .iter()
         .find_map(|(pattern, mapping)| {
-            if pattern.matches(uri) {
+            if pattern.matches(urn) {
                 Some(mapping.as_ref().map(|x| &x[..]))
             } else {
                 None
             }
         });
-    let is_remapped = remapped_uri.is_some();
-    let remapped_uri = remapped_uri.unwrap_or(Some(uri));
+    let is_remapped = remapped_urn.is_some();
+    let remapped_urn = remapped_urn.unwrap_or(Some(urn));
 
-    let remapped_uri = if let Some(remapped_uri) = remapped_uri {
-        remapped_uri.to_owned()
+    let remapped_urn = if let Some(remapped_urn) = remapped_urn {
+        remapped_urn.to_owned()
     } else {
         diagnostic!(
             context,
             Warning,
             YamlResolutionDisabled,
-            "YAML resolution for {uri} was disabled"
+            "YAML resolution for {urn} was disabled"
         );
         return None;
     };
     if is_remapped {
-        diagnostic!(context, Info, Yaml, "URI was remapped to {remapped_uri}");
+        diagnostic!(context, Info, Yaml, "URN was remapped to {remapped_urn}");
     }
 
-    // If a custom download function is specified, use it to resolve.
-    if let Some(ref resolver) = context.config.uri_resolver {
-        return match resolver(&remapped_uri) {
-            Ok(x) => Some(x),
+    // If a custom resolver is specified, use it to look up the content for
+    // this URN. A URN is an identifier rather than a location, so resolution
+    // is a lookup rather than a download: the resolver maps the URN to the
+    // bytes of the corresponding YAML file.
+    if let Some(ref resolver) = context.config.urn_resolver {
+        match resolver(&remapped_urn) {
+            Ok(x) => return Some(x),
             Err(e) => {
+                // Fall back to the bundled standard extensions below if the
+                // custom resolver couldn't handle this URN.
+                if let Some(data) = crate::parse::extensions::simple::stdlib::resolve(&remapped_urn)
+                {
+                    return Some(Box::new(data));
+                }
                 diagnostic!(context, Warning, YamlResolutionFailed, "{e}");
-                None
-            }
-        };
-    }
-
-    // Parse as a URL.
-    let url = match url::Url::parse(&remapped_uri) {
-        Ok(url) => url,
-        Err(e) => {
-            if is_remapped {
-                diagnostic!(
-                    context,
-                    Warning,
-                    YamlResolutionFailed,
-                    "configured URI remapping ({remapped_uri}) did not parse as URL: {e}"
-                )
-            } else {
-                diagnostic!(
-                    context,
-                    Warning,
-                    YamlResolutionFailed,
-                    "failed to parse {remapped_uri} as URL: {e}"
-                )
-            };
-            return None;
-        }
-    };
-
-    // Reject anything that isn't file://-based.
-    if url.scheme() != "file" {
-        if is_remapped {
-            diagnostic!(
-                context,
-                Warning,
-                YamlResolutionFailed,
-                "configured URI remapping ({remapped_uri}) does not use file:// scheme"
-            )
-        } else {
-            diagnostic!(
-                context,
-                Warning,
-                YamlResolutionFailed,
-                "URI does not use file:// scheme"
-            )
-        };
-        return None;
-    }
-
-    // Convert to path.
-    let path =
-        match url.to_file_path() {
-            Ok(path) => path,
-            Err(_) => {
-                if is_remapped {
-                    diagnostic!(context, Warning,
-                    YamlResolutionFailed,
-                    "configured URI remapping ({remapped_uri}) could not be converted to file path"
-                )
-                } else {
-                    diagnostic!(
-                        context,
-                        Warning,
-                        YamlResolutionFailed,
-                        "URI could not be converted to file path"
-                    )
-                };
                 return None;
             }
-        };
-
-    // Read the file.
-    match std::fs::read(path) {
-        Ok(data) => Some(Box::new(data)),
-        Err(e) => {
-            if is_remapped {
-                diagnostic!(
-                    context,
-                    Warning,
-                    YamlResolutionFailed,
-                    "failed to file remapping for URI ({remapped_uri}): {e}"
-                );
-            } else {
-                ediagnostic!(context, Warning, YamlResolutionFailed, e);
-            }
-            None
         }
     }
+
+    // Without a custom resolver, fall back to the standard extensions that are
+    // bundled into the validator. These cover the `extension:io.substrait:*`
+    // URNs and allow plans referencing them to be validated offline.
+    if let Some(data) = crate::parse::extensions::simple::stdlib::resolve(&remapped_urn) {
+        return Some(Box::new(data));
+    }
+
+    if is_remapped {
+        diagnostic!(
+            context,
+            Warning,
+            YamlResolutionFailed,
+            "configured URN remapping ({remapped_urn}) is not a known standard \
+            extension and no resolver is registered for it"
+        );
+    } else {
+        diagnostic!(
+            context,
+            Warning,
+            YamlResolutionFailed,
+            "{remapped_urn} is not a known standard extension and no resolver \
+            is registered for it"
+        );
+    }
+    None
 }
 
-/// Attempts to resolve a URI. If resolution fails or is disabled, None is
+/// Attempts to resolve a URN. If resolution fails or is disabled, None is
 /// returned and an appropriate diagnostic may be emitted. This function
 /// includes detection and prevention of recursive resolution. The reader
 /// function will first be called to convert the binary data from the
 /// resolution to a traversable tree (something that satisfied InputNode),
 /// then the parser will be called on the root of that tree.
-pub fn parse_uri<FP, FR, TF, TR>(
-    uri: &str,
+pub fn parse_urn<FP, FR, TF, TR>(
+    urn: &str,
     context: &mut context::Context,
     reader: FR,
     parser: FP,
@@ -1176,12 +1128,12 @@ where
     FR: FnOnce(config::BinaryData, &mut context::Context) -> Option<TF>,
     FP: FnOnce(&TF, &mut context::Context) -> diagnostic::Result<TR>,
 {
-    // Try resolving the URI.
-    if let Some(data) = resolve_uri(uri, context) {
+    // Try resolving the URN.
+    if let Some(data) = resolve_urn(urn, context) {
         // Parse the flat file to a traversable tree.
         if let Some(root) = reader(data, context) {
             // Update recursion stack.
-            context.uri_stack().push(uri.to_string());
+            context.urn_stack().push(urn.to_string());
 
             // Defer to the provided parser to handle parsing the resolved
             // data.
@@ -1194,11 +1146,11 @@ where
             );
 
             // Revert recursion stack update.
-            context.uri_stack().pop();
+            context.urn_stack().pop();
 
             // Replace node type to make clear what the child node we just
             // added signifies.
-            context.replace_node_type(tree::NodeType::ResolvedUri(uri.to_string()));
+            context.replace_node_type(tree::NodeType::ResolvedUrn(urn.to_string()));
 
             // Success, at least to the point that a tree was formed. The
             // tree itself might still be invalid.
@@ -1209,7 +1161,7 @@ where
     (None, None)
 }
 
-/// Read function for YAML files, to be used with [parse_uri()].
+/// Read function for YAML files, to be used with [parse_urn()].
 pub fn read_yaml(
     binary_data: config::BinaryData,
     context: &mut context::Context,

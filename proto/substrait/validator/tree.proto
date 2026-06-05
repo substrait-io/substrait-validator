@@ -72,15 +72,15 @@ message Node {
     PrimitiveData yaml_primitive = 8;
 
     // Special case for string primitives that were interpreted and resolved as
-    // a URI. These nodes will have a single child node with path `data` that
+    // a URN. These nodes will have a single child node with path `data` that
     // represents the parse result of the referred file.
-    string resolved_uri = 9;
+    string resolved_urn = 9;
 
     // This node represents an abstract syntax tree node, used for representing
     // complex YAML string parse results.
     google.protobuf.Empty ast_node = 10;
 
-    // No longer used. The more generic ResolvedUri type is used instead.
+    // No longer used. The more generic ResolvedUrn type is used instead.
     YamlReference yaml_reference = 5 [deprecated = true];
   }
 
@@ -192,8 +192,8 @@ message Node {
   message YamlReference {
     option deprecated = true;
 
-    // URI to the YAML file.
-    string uri = 1;
+    // URN to the YAML file.
+    string urn = 1;
   }
 
   // Value for a primitive data element.
@@ -345,16 +345,16 @@ message Comment {
 
 // Information about the usage of a function.
 message FunctionUsage {
-  // URI of the YAML file that the function is (supposed to be) defined in,
+  // URN of the YAML file that the function is (supposed to be) defined in,
   // if known.
-  string uri = 1;
+  string urn = 1;
 
   // Compound name of the function, uniquely identifying a function
-  // implementation within the scope of the URI.
+  // implementation within the scope of the URN.
   string compound_name = 2;
 
   // Simple name of the function, uniquely identifying the function behavior
-  // description within the scope of the URI. If the function only has a
+  // description within the scope of the URN. If the function only has a
   // single implementation, this name may also be used to refer to it.
   string simple_name = 3;
 

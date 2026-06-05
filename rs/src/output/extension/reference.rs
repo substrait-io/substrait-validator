@@ -100,15 +100,15 @@ impl Identifier {
 }
 
 /// Named/namespaced reference to a particular named extension within a
-/// particular URI-referenced extension.
+/// particular URN-referenced extension.
 #[derive(Debug)]
 pub struct Data<T> {
     /// The name of the type, type variation, or function. If we're referring
     /// to a module, this is unused (both name and anchor are set to None)
     pub name: Arc<Identifier>,
 
-    /// The URI of the YAML file that defined this extension.
-    pub uri: Arc<Identifier>,
+    /// The URN of the YAML file that defined this extension.
+    pub urn: Arc<Identifier>,
 
     /// Extension definition information, specific to this type of extension,
     /// if we managed to resolve the reference.
@@ -119,7 +119,7 @@ impl<T> Clone for Data<T> {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
-            uri: self.uri.clone(),
+            urn: self.urn.clone(),
             definition: self.definition.clone(),
         }
     }
@@ -129,7 +129,7 @@ impl<T> Default for Data<T> {
     fn default() -> Self {
         Self {
             name: Default::default(),
-            uri: Default::default(),
+            urn: Default::default(),
             definition: Default::default(),
         }
     }
@@ -140,7 +140,7 @@ impl<T> PartialEq for Data<T> {
     /// they refer to it. If we're not sure because either reference is
     /// (partially) unresolved, return false pessimistically.
     fn eq(&self, other: &Self) -> bool {
-        self.name == other.name && self.uri == other.uri
+        self.name == other.name && self.urn == other.urn
     }
 }
 
@@ -149,13 +149,13 @@ impl<T> Eq for Data<T> {}
 impl<T> std::hash::Hash for Data<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
-        self.uri.hash(state);
+        self.urn.hash(state);
     }
 }
 
 impl<T> std::fmt::Display for Data<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}::{}", self.uri, self.name)
+        write!(f, "{}::{}", self.urn, self.name)
     }
 }
 
@@ -163,7 +163,7 @@ impl<T> From<String> for Data<T> {
     fn from(name: String) -> Self {
         Data {
             name: Arc::new(name.into()),
-            uri: Arc::default(),
+            urn: Arc::default(),
             definition: None,
         }
     }
@@ -173,7 +173,7 @@ impl<T> From<&str> for Data<T> {
     fn from(name: &str) -> Self {
         Data {
             name: Arc::new(name.into()),
-            uri: Arc::default(),
+            urn: Arc::default(),
             definition: None,
         }
     }

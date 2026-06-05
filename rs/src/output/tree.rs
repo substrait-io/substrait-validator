@@ -206,10 +206,10 @@ pub enum NodeType {
     /// The associated node represents a YAML primitive.
     YamlPrimitive(primitive_data::PrimitiveData),
 
-    /// Used for string primitives that were resolved as URIs. The node will
+    /// Used for string primitives that were resolved as URNs. The node will
     /// have a child named "data" with the validation tree of the resolved
     /// data.
-    ResolvedUri(String),
+    ResolvedUrn(String),
 
     /// The associated node represents a node in an abstract syntax tree parsed
     /// from a string.

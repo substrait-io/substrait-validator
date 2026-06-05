@@ -42,6 +42,30 @@ pub fn check_uri_glob(s: &str) -> diagnostic::Result<()> {
     Ok(())
 }
 
+/// Checks an extension URN for validity.
+///
+/// Extension URNs identify simple extension files and use the format
+/// `extension:<OWNER>:<ID>`, where `OWNER` follows reverse domain name notation
+/// (e.g. `io.substrait`) and `ID` is a name for the extension. Note that these
+/// are URN-*like* but lack the `urn:` prefix, per the Substrait specification.
+pub fn check_urn(s: &str) -> diagnostic::Result<()> {
+    static URN_RE: once_cell::sync::Lazy<regex::Regex> = once_cell::sync::Lazy::new(|| {
+        regex::Regex::new(
+            r"^extension:[A-Za-z0-9_][A-Za-z0-9_-]*(\.[A-Za-z0-9_][A-Za-z0-9_-]*)*:[A-Za-z0-9_][A-Za-z0-9_.-]*$",
+        )
+        .unwrap()
+    });
+    if URN_RE.is_match(s) {
+        Ok(())
+    } else {
+        Err(cause!(
+            IllegalUrn,
+            "{s:?} is not a valid extension URN; expected the format \
+            extension:<OWNER>:<ID> (e.g. extension:io.substrait:functions_arithmetic)"
+        ))
+    }
+}
+
 /// Returns the given string as a quoted string.
 pub fn as_quoted_string<S: AsRef<str>>(s: S) -> String {
     let s = s.as_ref();
@@ -415,6 +439,26 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_check_urn() {
+        // Valid extension URNs.
+        assert!(check_urn("extension:io.substrait:functions_arithmetic").is_ok());
+        assert!(check_urn("extension:com.example:my_ext").is_ok());
+        assert!(check_urn("extension:test:0").is_ok());
+        assert!(check_urn("extension:org.apache.arrow:functions").is_ok());
+
+        // Invalid: missing the extension: prefix.
+        assert!(check_urn("io.substrait:functions_arithmetic").is_err());
+        // Invalid: this is a URI, not a URN.
+        assert!(check_urn("/functions_arithmetic.yaml").is_err());
+        assert!(check_urn("https://substrait.io/functions.yaml").is_err());
+        // Invalid: missing the ID component.
+        assert!(check_urn("extension:io.substrait").is_err());
+        assert!(check_urn("extension:io.substrait:").is_err());
+        // Invalid: empty owner.
+        assert!(check_urn("extension::functions").is_err());
+    }
 
     /// Helper to test describe functions with a specific limit
     fn test_describe_with_limit<F>(input: &str, limit: Limit, describe_fn: F) -> String

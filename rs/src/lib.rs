@@ -8,8 +8,10 @@
 //!
 //!  1) Build a [`Config`] structure to configure the validator. You can also
 //!     just use [`std::default::Default`] if you don't need to configure
-//!     anything, but you might want to at least call
-//!     `Config::add_curl_uri_resolver()` (if you're using the `curl` feature).
+//!     anything. The standard `extension:io.substrait:*` extensions are bundled
+//!     into the validator and resolved out of the box; to resolve custom
+//!     extension URNs, register a resolver with
+//!     [`Config::add_urn_resolver()`].
 //!  2) Parse the incoming `substrait.Plan` message using [`parse()`] or
 //!     [`validate()`]. This creates a [ParseResult], containing a
 //!     [tree](output::tree) structure corresponding to the query plan that also
@@ -81,32 +83,26 @@ converting the JSON-as-YAML protobuf tree into the binary serialization format,
 but also allows diagnostic presence checks to be inserted in the plan where
 they are expected (rather than having to link up the tree paths manually) and
 allows YAML extensions to be specified inline (they'll be extracted and
-replaced with a special URI that the test runner understands).
+replaced with a special URN that the test runner understands).
 
 The APIs for the bindings on top of the Rust crate are tested using
 [pytest](https://docs.pytest.org/) (Python) and
 [googletest](https://google.github.io/googletest/) (C).
 
-## Resolving extension URIs
+## Resolving extension URNs
 
-URI resolution deserves an honorable mention here, because it unfortunately
-can't easily be hidden away in some private module: anything that uses HTTPS
-must either link into the operating system's certificate store or ship its own
-root certificates. The latter is sure to be a security issue, so let's restrict
-ourselves to the former solution.
+Simple extensions are identified by an extension URN of the form
+`extension:<OWNER>:<ID>` (e.g. `extension:io.substrait:functions_arithmetic`).
+Unlike the URIs used by older versions of Substrait, a URN is an *identifier*
+rather than a *location*: it cannot be downloaded. Resolution is therefore a
+lookup that maps a URN to the contents of the corresponding YAML file.
 
-The problem with this is that it pollutes the Rust crate with runtime linking
-shenanigans that are not at all compatible from one system to another. In
-particular, we can't build universal Python packages around crates that do
-this. Since we rely on Python for the CLI, this is a bit of an issue.
-
-For this reason, URI resolution is guarded behind the `curl` feature. When the
-feature is enabled, `libcurl` will be used to resolve URIs, using the system's
-certificate store for HTTPS. When disabled, the crate will fall back to
-resolving only `file://` URIs, unless a more capable resolver is
-[installed](Config::add_uri_resolver()). The Python bindings will do just that:
-they install a resolver based on Python's own
-[urllib](https://docs.python.org/3/library/urllib.html).
+The standard `extension:io.substrait:*` extensions are bundled into the
+validator at build time (see `build.rs`) and resolved automatically, so plans
+that only use the standard extensions can be validated offline with no
+configuration. Custom extensions are resolved through a user-supplied resolver
+registered via [`Config::add_urn_resolver()`], or remapped to a known URN with
+[`Config::override_urn()`].
 
 ## Build process
 

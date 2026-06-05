@@ -13,6 +13,7 @@ use crate::parse::context;
 mod builder;
 mod derivations;
 mod function_decls;
+pub mod stdlib;
 mod type_decls;
 mod type_variation_decls;
 mod yaml;
@@ -45,25 +46,25 @@ fn parse_anchor(x: &u32, y: &mut context::Context) -> Result<u32> {
 }
 
 /// Parse a mapping from a URN anchor to a YAML extension.
-fn parse_simple_extension_yaml_uri_mapping(
+fn parse_simple_extension_yaml_urn_mapping(
     x: &substrait::extensions::SimpleExtensionUrn,
     y: &mut context::Context,
 ) -> Result<()> {
     // Parse the fields.
     let anchor = proto_primitive_field!(x, y, extension_urn_anchor, parse_anchor).1;
-    let yaml_data = proto_primitive_field!(x, y, urn, yaml::parse_uri)
+    let yaml_data = proto_primitive_field!(x, y, urn, yaml::parse_urn)
         .1
         .unwrap();
 
     // If the specified anchor is valid, insert a mapping for it.
     if let Some(anchor) = anchor {
-        if let Err((prev_data, prev_path)) = y.define_extension_uri(anchor, yaml_data) {
+        if let Err((prev_data, prev_path)) = y.define_extension_urn(anchor, yaml_data) {
             diagnostic!(
                 y,
                 Error,
                 IllegalValue,
-                "anchor {anchor} is already in use for URI {}",
-                prev_data.uri
+                "anchor {anchor} is already in use for URN {}",
+                prev_data.urn
             );
             link!(y, prev_path, "Previous definition was here.");
         }
@@ -72,20 +73,20 @@ fn parse_simple_extension_yaml_uri_mapping(
     Ok(())
 }
 
-/// Parse an URI reference and resolve it.
-fn parse_uri_reference(
+/// Parse an URN reference and resolve it.
+fn parse_urn_reference(
     x: &u32,
     y: &mut context::Context,
 ) -> Result<extension::simple::module::Reference> {
-    match y.extension_uris().resolve(x).cloned() {
+    match y.extension_urns().resolve(x).cloned() {
         Some((yaml_data, path)) => {
-            describe!(y, Misc, "{}", yaml_data.uri);
-            link!(y, path, "URI anchor is defined here");
+            describe!(y, Misc, "{}", yaml_data.urn);
+            link!(y, path, "URN anchor is defined here");
             Ok(yaml_data)
         }
         None => {
-            describe!(y, Misc, "Unresolved URI");
-            Err(cause!(LinkMissingAnchor, "URI anchor {x} does not exist"))
+            describe!(y, Misc, "Unresolved URN");
+            Err(cause!(LinkMissingAnchor, "URN anchor {x} does not exist"))
         }
     }
 }
@@ -226,19 +227,19 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionType(x) => {
 
             // Parse the fields.
-            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_urn_reference).1;
             let anchor = proto_primitive_field!(x, y, type_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name, parse_name).1;
 
             // Construct an unresolved reference for this data type.
             let reference_data = extension::reference::Data {
                 name: extension::reference::Identifier::new(name.as_ref(), Some(y.path_buf())),
-                uri: module_ref_opt.as_ref().map(|x| x.uri.clone()).unwrap_or_default(),
+                urn: module_ref_opt.as_ref().map(|x| x.urn.clone()).unwrap_or_default(),
                 definition: None
             };
 
-            // If we successfully resolved the URI reference to a URI, resolved
-            // that URI, and managed to parse the YAML it pointed to, try to
+            // If we successfully resolved the URN reference to a URN, resolved
+            // that URN, and managed to parse the YAML it pointed to, try to
             // resolve the data type in it.
             let resolution_result = module_ref_opt.as_ref().and_then(|module_ref| {
                 module_ref.definition.as_ref().and_then(|module| {
@@ -270,19 +271,19 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionTypeVariation(x) => {
 
             // Parse the fields.
-            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_urn_reference).1;
             let anchor = proto_primitive_field!(x, y, type_variation_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name, parse_name).1;
 
             // Construct an unresolved reference for this data type.
             let reference_data = extension::reference::Data {
                 name: extension::reference::Identifier::new(name.as_ref(), Some(y.path_buf())),
-                uri: module_ref_opt.as_ref().map(|x| x.uri.clone()).unwrap_or_default(),
+                urn: module_ref_opt.as_ref().map(|x| x.urn.clone()).unwrap_or_default(),
                 definition: None
             };
 
-            // If we successfully resolved the URI reference to a URI, resolved
-            // that URI, and managed to parse the YAML it pointed to, try to
+            // If we successfully resolved the URN reference to a URN, resolved
+            // that URN, and managed to parse the YAML it pointed to, try to
             // resolve the type variations for it. Note that an
             // anchor/reference pair can legally refer to multiple variations
             // at once, as Substrait scopes them to the type class they are
@@ -317,19 +318,19 @@ fn parse_extension_mapping_data(
         substrait::extensions::simple_extension_declaration::MappingType::ExtensionFunction(x) => {
 
             // Parse the fields.
-            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_uri_reference).1;
+            let module_ref_opt = proto_primitive_field!(x, y, extension_urn_reference, parse_urn_reference).1;
             let anchor = proto_primitive_field!(x, y, function_anchor, parse_anchor).1;
             let name = proto_primitive_field!(x, y, name).1;
 
             // Construct an unresolved reference for this data type.
             let reference_data = extension::reference::Data {
                 name: extension::reference::Identifier::new(name.as_ref(), Some(y.path_buf())),
-                uri: module_ref_opt.as_ref().map(|x| x.uri.clone()).unwrap_or_default(),
+                urn: module_ref_opt.as_ref().map(|x| x.urn.clone()).unwrap_or_default(),
                 definition: None
             };
 
-            // If we successfully resolved the URI reference to a URI, resolved
-            // that URI, and managed to parse the YAML it pointed to, try to
+            // If we successfully resolved the URN reference to a URN, resolved
+            // that URN, and managed to parse the YAML it pointed to, try to
             // resolve the type variations for it. Note that an
             // anchor/reference pair can legally refer to multiple variations
             // at once, as Substrait scopes them to the type class they are
@@ -400,7 +401,7 @@ pub fn parse_plan(x: &substrait::Plan, y: &mut context::Context) {
         x,
         y,
         extension_urns,
-        parse_simple_extension_yaml_uri_mapping
+        parse_simple_extension_yaml_urn_mapping
     );
     proto_repeated_field!(x, y, extensions, parse_extension_mapping);
 }

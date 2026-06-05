@@ -123,11 +123,13 @@ def strip_test_tags(data, path=(), yaml_counter=None):
        may be left blank, or may be a .-separated list of key names and list
        indices.
      - Replaces all "<name>__yaml" keys with "<name>", replacing their value
-       with "test:<index>.yaml", where index is a unique integer index within
-       the plan. For each replaced value, the original yaml data is recursively
-       stripped using 'data' for the path element (this is how it will appear
-       in the validator output tree) and then yielded in the form of a
-       ('yaml', index, data) triple.
+       with the synthetic extension URN "extension:test:<index>", where index
+       is a unique integer index within the plan. A matching "urn" field is
+       injected into the inline YAML so that it is self-consistent. For each
+       replaced value, the original yaml data is recursively stripped using
+       'data' for the path element (this is how it will appear in the validator
+       output tree) and then yielded in the form of a ('yaml', index, data)
+       triple.
     """
     if yaml_counter is None:
         yaml_counter = [0]
@@ -158,7 +160,12 @@ def strip_test_tags(data, path=(), yaml_counter=None):
             yaml_counter[0] += 1
             yaml_data = data.pop(key)
             new_key = key.rsplit("__")[0]
-            data[new_key] = f"test:{index}.yaml"
+            urn = f"extension:test:{index}"
+            data[new_key] = urn
+            # Inject a matching urn field into the inline YAML so that the file
+            # is self-consistent with the URN used to reference it.
+            if isinstance(yaml_data, dict) and "urn" not in yaml_data:
+                yaml_data = {"urn": urn, **yaml_data}
             for x in strip_test_tags(yaml_data, path + (new_key, "data"), yaml_counter):
                 yield x
             yield ("yaml", index, yaml_data)

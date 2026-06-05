@@ -89,14 +89,14 @@ impl Config {
         Ok(())
     }
 
-    /// Overrides the resolution behavior for (YAML) URIs matching the given
+    /// Overrides the resolution behavior for extension URNs matching the given
     /// pattern. The pattern may include * and ? wildcards for glob-like
     /// matching (see https://docs.rs/glob/latest/glob/struct.Pattern.html
-    /// for the complete syntax). If resolve_as is None, the URI will not
-    /// be resolved; otherwise it should be a string representing the URI it
+    /// for the complete syntax). If resolve_as is None, the URN will not
+    /// be resolved; otherwise it should be a string representing the URN it
     /// should be resolved as.
     #[pyo3(signature = (pattern, resolve_as = "None"))]
-    pub fn override_uri(&mut self, pattern: &str, resolve_as: Option<&str>) -> PyResult<()> {
+    pub fn override_urn(&mut self, pattern: &str, resolve_as: Option<&str>) -> PyResult<()> {
         let pattern = match ::substrait_validator::Pattern::new(pattern) {
             Ok(p) => p,
             Err(e) => {
@@ -105,20 +105,21 @@ impl Config {
                 )));
             }
         };
-        self.config.override_uri(pattern, resolve_as);
+        self.config.override_urn(pattern, resolve_as);
         Ok(())
     }
 
-    /// Registers a URI resolution function with this configuration. If
-    /// the given function fails, any previously registered function will be
+    /// Registers an extension URN resolution function with this configuration.
+    /// If the given function fails, any previously registered function will be
     /// used as a fallback. The callback function must take a single string
-    /// argument and return a bytes object, or throw an exception on failure.
-    pub fn add_uri_resolver(&mut self, callback: Py<PyAny>) {
+    /// argument (the URN) and return a bytes object with the content of the
+    /// corresponding YAML file, or throw an exception on failure.
+    pub fn add_urn_resolver(&mut self, callback: Py<PyAny>) {
         self.config
-            .add_uri_resolver(move |uri| -> Result<Vec<u8>, PyErr> {
+            .add_urn_resolver(move |urn| -> Result<Vec<u8>, PyErr> {
                 pyo3::Python::attach(|py| {
                     Ok(callback
-                        .call1(py, (uri,))?
+                        .call1(py, (urn,))?
                         .bind(py)
                         .cast::<pyo3::types::PyBytes>()?
                         .as_bytes()
@@ -127,12 +128,12 @@ impl Config {
             })
     }
 
-    /// Sets the maximum recursion depth for URI resolution, in the presence of
+    /// Sets the maximum recursion depth for URN resolution, in the presence of
     /// transitive dependencies. Setting this to None disables the limit,
-    /// setting this to zero disables URI resolution entirely.
+    /// setting this to zero disables URN resolution entirely.
     #[pyo3(signature = (depth=None))]
-    pub fn set_max_uri_resolution_depth(&mut self, depth: Option<usize>) {
-        self.config.set_max_uri_resolution_depth(depth);
+    pub fn set_max_urn_resolution_depth(&mut self, depth: Option<usize>) {
+        self.config.set_max_urn_resolution_depth(depth);
     }
 }
 

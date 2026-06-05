@@ -178,5 +178,5 @@ pub type UnresolvedReference = extension::reference::Data<Definition>;
 pub type ResolutionResult = extension::namespace::ResolutionResult<Definition>;
 
 /// A potentially unresolved reference to a user-defined type class. Includes
-/// the name and URI even if unresolved.
+/// the name and URN even if unresolved.
 pub type Reference = extension::Reference<Definition>;

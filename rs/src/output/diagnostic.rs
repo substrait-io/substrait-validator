@@ -170,6 +170,9 @@ pub enum Classification {
     #[strum(props(Description = "illegal glob"))]
     IllegalGlob = 5,
 
+    #[strum(props(Description = "illegal URN"))]
+    IllegalUrn = 8,
+
     #[strum(props(Description = "deprecation"))]
     Deprecation = 6,
 
@@ -345,7 +348,7 @@ pub enum Classification {
     #[strum(props(Description = "redundant protobuf \"any\" declaration"))]
     RedundantProtoAnyDeclaration = 7001,
 
-    #[strum(props(Description = "redundant extension URI definition"))]
+    #[strum(props(Description = "redundant extension URN definition"))]
     RedundantExtensionDefition = 7002,
 
     #[strum(props(Description = "redundant function declaration"))]

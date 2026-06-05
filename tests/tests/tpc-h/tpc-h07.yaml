@@ -49,13 +49,13 @@ plan:
   version: { producer: validator-test }
   extensionUrns:
   - extensionUrnAnchor: 1
-    urn: /functions_boolean.yaml
+    urn: extension:io.substrait:functions_boolean
   - extensionUrnAnchor: 2
-    urn: /functions_comparison.yaml
+    urn: extension:io.substrait:functions_comparison
   - extensionUrnAnchor: 3
-    urn: /functions_datetime.yaml
+    urn: extension:io.substrait:functions_datetime
   - extensionUrnAnchor: 4
-    urn: /functions_arithmetic_decimal.yaml
+    urn: extension:io.substrait:functions_arithmetic_decimal
   extensions:
   - extensionFunction:
       extensionUrnReference: 1

@@ -14,7 +14,7 @@ option java_package = "io.substrait.validator.proto";
 
 // This is effectively a more homogeneous form of substrait.Type, but should
 // otherwise be equally powerful. It is also less context-sensitive, in that
-// usage of type class and type variation extensions includes the complete URI
+// usage of type class and type variation extensions includes the complete URN
 // and name, rather than only a plan-specific link.
 message DataType {
   // Type class.
@@ -68,9 +68,9 @@ message DataType {
 
   // Information about a user-defined type.
   message UserDefinedType {
-    // URI of the YAML file that the type is (supposed to be) defined in, if
+    // URN of the YAML file that the type is (supposed to be) defined in, if
     // known.
-    string uri = 1;
+    string urn = 1;
 
     // Name of the type within the scope of that YAML file.
     string name = 2;
@@ -109,9 +109,9 @@ message DataType {
 
   // Information about a type variation.
   message UserDefinedVariation {
-    // URI of the YAML file that the type variation is (supposed to be) defined
+    // URN of the YAML file that the type variation is (supposed to be) defined
     // in, if known.
-    string uri = 1;
+    string urn = 1;
 
     // Name of the type within the scope of that YAML file.
     string name = 2;

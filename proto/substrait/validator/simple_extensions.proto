@@ -65,17 +65,17 @@ message ExtensionDefinition {
   // Identifying information associated with an extension, that can be used to
   // refer to the extension from elsewhere.
   message Identifier {
-    // URI of the extension module that defined the extension. URI matching is
+    // URN of the extension module that defined the extension. URN matching is
     // case sensitive.
-    string uri = 1;
+    string urn = 1;
 
     // The set of names that may be used to case-insensitively refer to this
-    // extension within the scope of the above URI. For type classes and type
+    // extension within the scope of the above URN. For type classes and type
     // variations there will only ever be one of these. For functions, the
     // first name is always the compound name. The simple name will only be
     // added when there is only one implementation for the function. For
     // modules, the name list will be empty, as they are referred to by only
-    // their URI.
+    // their URN.
     repeated string names = 2;
 
     // Unique identifier that may be used to refer to this definition elsewhere
@@ -97,15 +97,15 @@ message ExtensionDefinition {
     // Common metadata for the extension.
     Metadata metadata = 2;
 
-    // The URI that was actually used to resolve the extension (the validator
-    // allows URI overrides to be specified).
-    string actual_uri = 3;
+    // The URN that was actually used to resolve the extension (the validator
+    // allows URN overrides to be specified).
+    string actual_urn = 3;
 
     // List of immediate dependencies.
     repeated Dependency dependencies = 4;
     message Dependency {
-      // URI of the dependency.
-      string uri = 1;
+      // URN of the dependency.
+      string urn = 1;
 
       // Name used to refer to the dependency internally.
       string name = 2;

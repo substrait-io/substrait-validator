@@ -16,28 +16,13 @@ pub type BinaryData = Box<dyn AsRef<[u8]>>;
 /// Trait object representing some error data.
 pub type ErrorData = Box<dyn std::error::Error>;
 
-/// Callback function type for resolving/downloading URIs.
-pub type UriResolver =
+/// Callback function type for resolving the content of an extension URN.
+///
+/// A URN is an identifier, not a location, so resolution is a lookup that maps
+/// the URN to the bytes of the corresponding YAML file (rather than a
+/// download).
+pub type UrnResolver =
     Box<dyn Fn(&str) -> std::result::Result<BinaryData, ErrorData> + Send + Sync>;
-
-/// Attempts to resolve and fetch the data for the given URI using libcurl,
-/// allowing the validator to handle remote YAML extension URLs with most
-/// protocols.
-#[cfg(feature = "curl")]
-fn resolve_with_curl(uri: &str) -> Result<Vec<u8>, curl::Error> {
-    let mut binary_data: Vec<u8> = vec![];
-    let mut curl_handle = curl::easy::Easy::new();
-    curl_handle.url(uri)?;
-    {
-        let mut transfer = curl_handle.transfer();
-        transfer.write_function(|buf| {
-            binary_data.extend_from_slice(buf);
-            Ok(buf.len())
-        })?;
-        transfer.perform()?;
-    }
-    Ok(binary_data)
-}
 
 /// Configuration structure.
 pub struct Config {
@@ -66,28 +51,28 @@ pub struct Config {
     pub diagnostic_level_overrides:
         HashMap<diagnostic::Classification, (diagnostic::Level, diagnostic::Level)>,
 
-    /// Allows URIs from the plan to be remapped (Some(mapping)) or ignored
-    /// (None). All resolution can effectively be disabled by just adding a
-    /// rule that maps * to None. Furthermore, in the absence of a custom
-    /// yaml_uri_resolver function, this can be used to remap URIs to
-    /// pre-downloaded files.
-    pub uri_overrides: Vec<(glob::Pattern, Option<String>)>,
+    /// Allows extension URNs from the plan to be remapped (Some(mapping)) or
+    /// ignored (None). All resolution can effectively be disabled by just
+    /// adding a rule that maps * to None. Furthermore, this can be used to
+    /// remap a URN to a different URN that a custom resolver knows how to
+    /// resolve.
+    pub urn_overrides: Vec<(glob::Pattern, Option<String>)>,
 
-    /// Optional callback function for resolving URIs. If specified, all URIs
-    /// (after processing yaml_uri_overrides) are resolved using this function.
-    /// The function takes the URI as its argument, and should either return the
-    /// download contents as a `Vec<u8>` or return a String-based error. If no
-    /// downloader is specified, only file:// URLs with an absolute path are
-    /// supported.
-    pub uri_resolver: Option<UriResolver>,
+    /// Optional callback function for resolving extension URNs. If specified,
+    /// all URNs (after processing urn_overrides) are looked up using this
+    /// function. The function takes the URN as its argument, and should either
+    /// return the content of the corresponding YAML file as a `Vec<u8>` or
+    /// return a String-based error. If no resolver is specified, only the
+    /// standard extensions bundled into the validator can be resolved.
+    pub urn_resolver: Option<UrnResolver>,
 
-    /// Optional URI resolution depth. If specified, dependencies are only
+    /// Optional URN resolution depth. If specified, dependencies are only
     /// resolved this many levels deep. Setting this to zero effectively
-    /// disables extension URI resolution altogether.
-    pub max_uri_resolution_depth: Option<usize>,
+    /// disables extension URN resolution altogether.
+    pub max_urn_resolution_depth: Option<usize>,
 }
 
-// TODO: enable URI resolution by default once all that works. Then this can
+// TODO: enable URN resolution by default once all that works. Then this can
 // be derived again. Also still need to expose the depth option in extensions.
 impl Default for Config {
     fn default() -> Self {
@@ -95,9 +80,9 @@ impl Default for Config {
             ignore_unknown_fields: Default::default(),
             allowed_proto_any_urls: Default::default(),
             diagnostic_level_overrides: Default::default(),
-            uri_overrides: Default::default(),
-            uri_resolver: Default::default(),
-            max_uri_resolution_depth: Some(0),
+            urn_overrides: Default::default(),
+            urn_resolver: Default::default(),
+            max_urn_resolution_depth: Some(0),
         }
     }
 }
@@ -138,45 +123,37 @@ impl Config {
             .insert(class, (minimum, maximum));
     }
 
-    /// Overrides the resolution behavior for (YAML) URIs matching the given
-    /// pattern. If resolve_as is None, the URI file will not be resolved;
-    /// if it is Some(s), it will be resolved as if the URI in the plan had
-    /// been s.
-    pub fn override_uri<S: Into<String>>(&mut self, pattern: glob::Pattern, resolve_as: Option<S>) {
-        self.uri_overrides
+    /// Overrides the resolution behavior for extension URNs matching the given
+    /// pattern. If resolve_as is None, the URN will not be resolved; if it is
+    /// Some(s), it will be resolved as if the URN in the plan had been s.
+    pub fn override_urn<S: Into<String>>(&mut self, pattern: glob::Pattern, resolve_as: Option<S>) {
+        self.urn_overrides
             .push((pattern, resolve_as.map(|s| s.into())));
     }
 
-    /// Registers a URI resolution function with this configuration. If
-    /// the given function fails, any previously registered function will be
+    /// Registers an extension URN resolution function with this configuration.
+    /// If the given function fails, any previously registered function will be
     /// used as a fallback.
-    pub fn add_uri_resolver<F, D, E>(&mut self, resolver: F)
+    pub fn add_urn_resolver<F, D, E>(&mut self, resolver: F)
     where
         F: Fn(&str) -> Result<D, E> + Send + Sync + 'static,
         D: AsRef<[u8]> + 'static,
         E: std::error::Error + 'static,
     {
-        let previous = self.uri_resolver.take();
-        self.uri_resolver = Some(Box::new(move |uri| match resolver(uri) {
+        let previous = self.urn_resolver.take();
+        self.urn_resolver = Some(Box::new(move |urn| match resolver(urn) {
             Ok(d) => Ok(Box::new(d)),
             Err(e) => match &previous {
-                Some(f) => f.as_ref()(uri),
+                Some(f) => f.as_ref()(urn),
                 None => Err(Box::new(e)),
             },
         }));
     }
 
-    /// Registers a URI resolver based on libcurl. If libcurl fails, any
-    /// `uri_resolver` registered previously will be used as a fallback.
-    #[cfg(feature = "curl")]
-    pub fn add_curl_uri_resolver(&mut self) {
-        self.add_uri_resolver(resolve_with_curl)
-    }
-
-    /// Sets the maximum recursion depth for URI resolution, in the presence of
+    /// Sets the maximum recursion depth for URN resolution, in the presence of
     /// transitive dependencies. Setting this to None disables the limit,
-    /// setting this to zero disables URI resolution entirely.
-    pub fn set_max_uri_resolution_depth(&mut self, depth: Option<usize>) {
-        self.max_uri_resolution_depth = depth;
+    /// setting this to zero disables URN resolution entirely.
+    pub fn set_max_urn_resolution_depth(&mut self, depth: Option<usize>) {
+        self.max_urn_resolution_depth = depth;
     }
 }
