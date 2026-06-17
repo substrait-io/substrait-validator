@@ -31,11 +31,11 @@ plan:
   version: { producer: validator-test }
   extensionUrns:
   - extensionUrnAnchor: 1
-    urn: /functions_datetime.yaml
+    urn: extension:io.substrait:functions_datetime
   - extensionUrnAnchor: 2
-    urn: /functions_arithmetic_decimal.yaml
+    urn: extension:io.substrait:functions_arithmetic_decimal
   - extensionUrnAnchor: 3
-    urn: /functions_aggregate_generic.yaml
+    urn: extension:io.substrait:functions_aggregate_generic
   extensions:
   - extensionFunction:
       extensionUrnReference: 1

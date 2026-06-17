@@ -187,7 +187,7 @@ impl From<&tree::NodeType> for validator::node::NodeType {
             tree::NodeType::YamlPrimitive(data) => {
                 validator::node::NodeType::YamlPrimitive(data.into())
             }
-            tree::NodeType::ResolvedUri(uri) => validator::node::NodeType::ResolvedUri(uri.clone()),
+            tree::NodeType::ResolvedUrn(urn) => validator::node::NodeType::ResolvedUrn(urn.clone()),
             tree::NodeType::AstNode => validator::node::NodeType::AstNode(()),
         }
     }
@@ -341,7 +341,7 @@ impl From<&extension::simple::type_class::Reference> for validator::data_type::U
     fn from(node: &extension::simple::type_class::Reference) -> Self {
         #[allow(deprecated)]
         Self {
-            uri: node.uri.name().unwrap_or_default().to_string(),
+            urn: node.urn.name().unwrap_or_default().to_string(),
             name: node.name.name().unwrap_or_default().to_string(),
             definition: None,
             extension_id: node
@@ -382,7 +382,7 @@ impl From<&data::Variation> for validator::data_type::Variation {
                 validator::data_type::Variation::UserDefinedVariation(
                     #[allow(deprecated)]
                     validator::data_type::UserDefinedVariation {
-                        uri: variation.uri.name().unwrap_or_default().to_string(),
+                        urn: variation.urn.name().unwrap_or_default().to_string(),
                         name: variation.name.name().unwrap_or_default().to_string(),
                         definition: None,
                         extension_id: variation

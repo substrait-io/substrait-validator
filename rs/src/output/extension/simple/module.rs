@@ -81,8 +81,8 @@ pub struct Definition {
     /// Description of the module.
     pub description: String,
 
-    /// The URI that was actually used to resolve the module.
-    pub actual_uri: String,
+    /// The URN that was actually used to resolve the module.
+    pub actual_urn: String,
 
     /// Map with references to dependencies.
     pub dependencies: HashMap<String, Reference>,
@@ -144,7 +144,7 @@ impl Scope for Definition {
     }
 }
 
-/// A potentially unresolved reference to a module. Includes the URI even if
+/// A potentially unresolved reference to a module. Includes the URN even if
 /// unresolved. The name fields of ExtensionReference are unused.
 pub type Reference = extension::Reference<Definition>;
 

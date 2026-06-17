@@ -5,7 +5,6 @@ import json
 import jdot
 import yaml
 import click
-import urllib.request
 from io import BytesIO
 from typing import Iterable
 from google.protobuf import json_format
@@ -19,7 +18,6 @@ from .substrait_validator import (
 )
 from .substrait.plan_pb2 import Plan
 from .substrait.validator.tree_pb2 import ParseResult, Diagnostic, Path
-
 
 __VERSION__ = _get_version()
 
@@ -51,8 +49,8 @@ def _jdot_loads(data: str):
 
 
 def _populate_config(cfg):
-    """We can't derive from _Config to add the add_urllib_resolver() function,
-    so we'll just have to monkey-patch it."""
+    """Monkey-patch the methods of the native _Config onto the Python Config
+    wrapper class."""
 
     def generate_method(cls, name, fn):
         def x(self, *args, **kwargs):
@@ -88,14 +86,6 @@ class Config:
             return None
         else:
             raise TypeError("unsupported type: {}".format(type(config)))
-
-    def add_urllib_resolver(self):
-        """Adds a URI resolver based on urllib."""
-
-        def urllib_resolver(uri):
-            return urllib.request.urlopen(uri).read()
-
-        self._config.add_uri_resolver(urllib_resolver)
 
 
 def load_plan_from_proto(data: bytes) -> Plan:
@@ -385,34 +375,25 @@ def substrait_version() -> str:
     ),
 )
 @click.option(
-    "--override-uri",
+    "--override-urn",
     nargs=2,
     multiple=True,
     help=(
-        "Overrides URIs in the plan that match [0] with [1]. Set "
-        '[1] to "-" to disable resolution of matching URIs. '
+        "Overrides extension URNs in the plan that match [0] with [1]. Set "
+        '[1] to "-" to disable resolution of matching URNs. '
         "Supports glob syntax. For example, "
-        '"--override-uri http://* -" disables resolution via '
-        "http."
+        '"--override-urn extension:com.example:* -" disables resolution of '
+        "that owner's extensions."
     ),
 )
 @click.option(
-    "--use-urllib/--no-use-urllib",
-    default=True,
-    help=(
-        "Enable URI resolution via urllib. Enabled by default. "
-        "If disabled, only file:// URIs will resolve (after "
-        "application of any --override-uri options)."
-    ),
-)
-@click.option(
-    "--uri-depth",
+    "--urn-depth",
     type=int,
     default=None,
     help=(
         "Sets the maximum recursion depth for resolving transitive "
         "dependencies. You can specify a negative number to disable "
-        "the limit, or set this to zero to disable URI resolution "
+        "the limit, or set this to zero to disable URN resolution "
         "entirely."
     ),
 )
@@ -446,9 +427,8 @@ def cli(  # noqa: C901
     ignore_unknown_fields,
     allow_proto_any,
     diagnostic_level,
-    override_uri,
-    use_urllib,
-    uri_depth,
+    override_urn,
+    urn_depth,
     help_diagnostics,
     print_version,
     print_substrait_version,
@@ -761,20 +741,18 @@ def cli(  # noqa: C901
             config.override_diagnostic_level(code, minimum, maximum)
         except ValueError as e:
             fatal(e)
-    for pattern, resolve_as in override_uri:
+    for pattern, resolve_as in override_urn:
         if resolve_as == "-":
             resolve_as = None
         try:
-            config.override_uri(pattern, resolve_as)
+            config.override_urn(pattern, resolve_as)
         except ValueError as e:
             fatal(e)
-    if use_urllib:
-        config.add_urllib_resolver()
-    if uri_depth is not None:
-        if uri_depth < 0:
-            config.set_max_uri_resolution_depth(None)
+    if urn_depth is not None:
+        if urn_depth < 0:
+            config.set_max_urn_resolution_depth(None)
         else:
-            config.set_max_uri_resolution_depth(uri_depth)
+            config.set_max_urn_resolution_depth(urn_depth)
 
     # Run the parser/validator.
     result = plan_to_result_handle(in_plan, config)

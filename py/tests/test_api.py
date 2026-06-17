@@ -112,12 +112,12 @@ def test_valid_invalid():
 
 
 def test_resolver_callback():
-    """Tests whether the YAML URI resolver callback works."""
+    """Tests whether the extension URN resolver callback works."""
 
     def resolver(s):
-        if s == "test:hello":
+        if s == "extension:io.substrait:extension_types":
             return BASIC_YAML.encode("utf-8")
-        raise ValueError("unknown URI")
+        raise ValueError("unknown URN")
 
     config = sv.Config()
 
@@ -130,12 +130,12 @@ def test_resolver_callback():
     # Disable missing root relation error, so we don't have to supply one.
     config.override_diagnostic_level(5001, "info", "info")
 
-    # Explicitly disable the resolution depth limit, to opt in to URI
+    # Explicitly disable the resolution depth limit, to opt in to URN
     # resolution.
-    config.set_max_uri_resolution_depth(None)
+    config.set_max_urn_resolution_depth(None)
 
     # Add the resolver.
-    config.add_uri_resolver(resolver)
+    config.add_urn_resolver(resolver)
 
     sv.check_plan_valid(
         {
@@ -146,7 +146,7 @@ def test_resolver_callback():
             "extensionUrns": [
                 {
                     "extension_urn_anchor": 1,
-                    "urn": "test:hello",
+                    "urn": "extension:io.substrait:extension_types",
                 }
             ],
         },
@@ -155,7 +155,7 @@ def test_resolver_callback():
 
     with pytest.raises(
         ValueError,
-        match=r"failed to resolve YAML: ValueError: unknown URI \(code 2002\)",
+        match=r"failed to resolve YAML: ValueError: unknown URN \(code 2002\)",
     ):
         sv.check_plan_valid(
             {
@@ -166,7 +166,7 @@ def test_resolver_callback():
                 "extensionUrns": [
                     {
                         "extension_urn_anchor": 1,
-                        "urn": "test:bye",
+                        "urn": "extension:com.example:bye",
                     }
                 ],
             },

@@ -3,9 +3,8 @@ project(substrait-validator)
 
 include(FetchContent)
 
-# Use Corrosion to make a shared librarywith target name
-# "substrait-validator-c". Note that static linking is not (easily) possible
-# due to the many dependencies introduced by libcurl.
+# Use Corrosion to make a shared library with target name
+# "substrait-validator-c".
 FetchContent_Declare(
     Corrosion
     GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git

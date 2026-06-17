@@ -89,7 +89,7 @@ impl<'a> Context<'a> {
     /// Replaces the node type of the associated node.
     ///
     /// This should only be needed to upgrade primitive nodes to more specific
-    /// types, for instance references or resolved URIs.
+    /// types, for instance references or resolved URNs.
     pub fn replace_node_type(&mut self, node_type: tree::NodeType) -> tree::NodeType {
         std::mem::replace(&mut self.output.node_type, node_type)
     }
@@ -253,7 +253,7 @@ impl<'a> Context<'a> {
         &self.output.data
     }
 
-    /// Returns the URI -> simple extension module map. This includes
+    /// Returns the URN -> simple extension module map. This includes
     /// transitive dependencies that don't have an anchor.
     pub fn extension_modules(
         &mut self,
@@ -261,21 +261,21 @@ impl<'a> Context<'a> {
         &mut self.state.extension_modules
     }
 
-    /// Returns the resolver for URI anchors and references.
-    pub fn extension_uris(&mut self) -> &mut Resolver<u32, extension::simple::module::Reference> {
-        &mut self.state.extension_uris
+    /// Returns the resolver for URN anchors and references.
+    pub fn extension_urns(&mut self) -> &mut Resolver<u32, extension::simple::module::Reference> {
+        &mut self.state.extension_urns
     }
 
-    /// Registers an extension URI definition. Shorthand for uris().define(),
+    /// Registers an extension URN definition. Shorthand for urns().define(),
     /// using the current path as the registration path.
-    pub fn define_extension_uri(
+    pub fn define_extension_urn(
         &mut self,
         anchor: u32,
-        uri: extension::simple::module::Reference,
+        urn: extension::simple::module::Reference,
     ) -> Result<(), (extension::simple::module::Reference, path::PathBuf)> {
         self.state
-            .extension_uris
-            .define(anchor, uri, self.breadcrumb.path.to_path_buf())
+            .extension_urns
+            .define(anchor, urn, self.breadcrumb.path.to_path_buf())
     }
 
     /// Returns the resolver for function anchors and references.
@@ -418,12 +418,12 @@ impl<'a> Context<'a> {
         self.breadcrumb.fields_parsed.contains(field.as_ref())
     }
 
-    /// Provides access to the URI recursion stack. When a URI is about to be
+    /// Provides access to the URN recursion stack. When a URN is about to be
     /// parsed, it is pushed into the vec; when parsing completes, it is popped
-    /// off the stack. The URI resolution function uses this to check for
+    /// off the stack. The URN resolution function uses this to check for
     /// duplicates and recursion depth.
-    pub fn uri_stack(&mut self) -> &mut Vec<String> {
-        &mut self.state.uri_stack
+    pub fn urn_stack(&mut self) -> &mut Vec<String> {
+        &mut self.state.urn_stack
     }
 }
 
@@ -505,12 +505,12 @@ where
 /// Global state information tracked by the validation logic.
 #[derive(Default)]
 pub struct State {
-    /// List of all resolved simple extension modules by URI, including
+    /// List of all resolved simple extension modules by URN, including
     /// transitive dependencies.
     pub extension_modules: HashMap<String, extension::simple::module::Reference>,
 
-    /// URI anchor resolver.
-    pub extension_uris: Resolver<u32, extension::simple::module::Reference>,
+    /// URN anchor resolver.
+    pub extension_urns: Resolver<u32, extension::simple::module::Reference>,
 
     /// YAML-defined function anchor resolver.
     pub functions: Resolver<u32, extension::simple::function::ResolutionResult>,
@@ -534,8 +534,8 @@ pub struct State {
     /// stream).
     pub schema_stack: Vec<Option<data::Type>>,
 
-    /// Stack for URIs being parsed. Used to detect recursion and limit depth.
-    pub uri_stack: Vec<String>,
+    /// Stack for URNs being parsed. Used to detect recursion and limit depth.
+    pub urn_stack: Vec<String>,
 }
 
 /// Breadcrumbs structure. Each breadcrumb is associated with a node, and

@@ -327,16 +327,16 @@ pub extern "C" fn substrait_validator_config_override_diagnostic_level(
     true
 }
 
-/// Overrides the resolution behavior for (YAML) URIs matching the given
+/// Overrides the resolution behavior for (YAML) URNs matching the given
 /// pattern. The pattern may include * and ? wildcards for glob-like matching
 /// (see https://docs.rs/glob/latest/glob/struct.Pattern.html for the complete
-/// syntax). If resolve_as is null, the URI will not be resolved; otherwise, it
-/// will be resolved as if the URI in the plan had been that string.
+/// syntax). If resolve_as is null, the URN will not be resolved; otherwise, it
+/// will be resolved as if the URN in the plan had been that string.
 ///
 /// Returns whether the function was successful. If false is returned, retrieve
 /// the error message with substrait_validator_get_last_error().
 #[no_mangle]
-pub extern "C" fn substrait_validator_config_override_uri(
+pub extern "C" fn substrait_validator_config_override_urn(
     config: *mut ConfigHandle,
     pattern: *const libc::c_char,
     resolve_as: *const libc::c_char,
@@ -386,14 +386,14 @@ pub extern "C" fn substrait_validator_config_override_uri(
         Some(match resolve_as.to_str() {
             Ok(p) => p,
             Err(e) => {
-                set_last_error(format!("received invalid replacement URI: {e}"));
+                set_last_error(format!("received invalid replacement URN: {e}"));
                 return false;
             }
         })
     };
 
     // Update configuration and return success.
-    config.override_uri(pattern, resolve_as);
+    config.override_urn(pattern, resolve_as);
     true
 }
 
@@ -401,10 +401,10 @@ pub extern "C" fn substrait_validator_config_override_uri(
 pub type Deleter =
     Option<unsafe extern "C" fn(user: *mut libc::c_void, buf: *const u8, size: usize)>;
 
-/// (YAML) URI resolution callback function.
+/// (YAML) URN resolution callback function.
 ///
-/// The first argument (uri) is set to a null-terminated UTF-8 string
-/// representing the URI that is to be resolved. If resolution succeeds, the
+/// The first argument (urn) is set to a null-terminated UTF-8 string
+/// representing the URN that is to be resolved. If resolution succeeds, the
 /// function must return the binary result buffer via buf and size and return
 /// true. If it fails, it should instead write a UTF-8 error message to this
 /// buffer (but it may also set buf to nullptr or leave it unchanged) and
@@ -423,7 +423,7 @@ pub type Deleter =
 /// the callback is called.
 pub type Resolver = Option<
     unsafe extern "C" fn(
-        uri: *const libc::c_char,
+        urn: *const libc::c_char,
         buf: *mut *const u8,
         size: *mut usize,
         deleter: *mut Deleter,
@@ -498,7 +498,7 @@ impl std::fmt::Display for ApplicationError {
     }
 }
 
-/// Registers a URI resolution function with this configuration. If the given
+/// Registers a URN resolution function with this configuration. If the given
 /// function fails, any previously registered function will be used as a
 /// fallback.
 ///
@@ -508,7 +508,7 @@ impl std::fmt::Display for ApplicationError {
 /// Returns whether the function was successful. If false is returned, retrieve
 /// the error message with substrait_validator_get_last_error().
 #[no_mangle]
-pub extern "C" fn substrait_validator_config_uri_resolver(
+pub extern "C" fn substrait_validator_config_urn_resolver(
     config: *mut ConfigHandle,
     resolver: Resolver,
 ) -> bool {
@@ -532,12 +532,12 @@ pub extern "C" fn substrait_validator_config_uri_resolver(
     };
 
     // Update configuration and return success.
-    config.add_uri_resolver(move |uri| {
-        let uri = match std::ffi::CString::new(uri) {
+    config.add_urn_resolver(move |urn| {
+        let urn = match std::ffi::CString::new(urn) {
             Ok(u) => u,
             Err(_) => {
                 return Err(ApplicationError::new(
-                    "cannot resolve URI with embedded nul characters",
+                    "cannot resolve URN with embedded nul characters",
                 ))
             }
         };
@@ -547,7 +547,7 @@ pub extern "C" fn substrait_validator_config_uri_resolver(
         // valid.
         let result = unsafe {
             resolver(
-                uri.as_ptr(),
+                urn.as_ptr(),
                 &mut buffer.buf,
                 &mut buffer.size,
                 &mut buffer.deleter,
@@ -558,13 +558,13 @@ pub extern "C" fn substrait_validator_config_uri_resolver(
         if result {
             if buffer.buf.is_null() {
                 Err(ApplicationError::new(
-                    "URI resolver callback returned success but also a null buffer",
+                    "URN resolver callback returned success but also a null buffer",
                 ))
             } else {
                 Ok(buffer)
             }
         } else if buffer.buf.is_null() {
-            Err(ApplicationError::new("URI resolver callback failed"))
+            Err(ApplicationError::new("URN resolver callback failed"))
         } else {
             Err(ApplicationError::from(buffer))
         }
@@ -572,14 +572,14 @@ pub extern "C" fn substrait_validator_config_uri_resolver(
     true
 }
 
-/// Sets the maximum recursion depth for URI resolution, in the presence of
+/// Sets the maximum recursion depth for URN resolution, in the presence of
 /// transitive dependencies. Setting this to a negative number disables the
-/// limit, setting this to zero disables URI resolution entirely.
+/// limit, setting this to zero disables URN resolution entirely.
 ///
 /// Returns whether the function was successful. If false is returned, retrieve
 /// the error message with substrait_validator_get_last_error().
 #[no_mangle]
-pub extern "C" fn substrait_validator_config_max_uri_resolution_depth(
+pub extern "C" fn substrait_validator_config_max_urn_resolution_depth(
     config: *mut ConfigHandle,
     max_depth: i64,
 ) -> bool {
@@ -595,9 +595,9 @@ pub extern "C" fn substrait_validator_config_max_uri_resolution_depth(
 
     // Update configuration and return success.
     if max_depth < 0 {
-        config.set_max_uri_resolution_depth(None);
+        config.set_max_urn_resolution_depth(None);
     } else if let Ok(max_depth) = usize::try_from(max_depth) {
-        config.set_max_uri_resolution_depth(Some(max_depth));
+        config.set_max_urn_resolution_depth(Some(max_depth));
     } else {
         set_last_error("specified depth is out of range");
         return false;

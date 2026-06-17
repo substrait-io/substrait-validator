@@ -31,7 +31,7 @@ pub type NamespaceReference = extension::namespace::Reference<Definition>;
 /// A potentially mutable type variation namespace definition.
 pub type NamespaceDefinition = extension::namespace::Definition<Definition>;
 
-/// A to-be-resolved reference to a type variation. Includes the name and URI
+/// A to-be-resolved reference to a type variation. Includes the name and URN
 /// even if unresolved.
 pub type UnresolvedReference = extension::reference::Data<Definition>;
 

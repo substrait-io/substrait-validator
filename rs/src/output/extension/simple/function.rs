@@ -213,7 +213,7 @@ pub type NamespaceReference = extension::namespace::Reference<Definition>;
 /// A potentially mutable function namespace definition.
 pub type NamespaceDefinition = extension::namespace::Definition<Definition>;
 
-/// A to-be-resolved reference to a function. Includes the name and URI even if
+/// A to-be-resolved reference to a function. Includes the name and URN even if
 /// unresolved.
 pub type UnresolvedReference = extension::reference::Data<Definition>;
 
@@ -226,5 +226,5 @@ pub type UnresolvedReference = extension::reference::Data<Definition>;
 pub type ResolutionResult = extension::namespace::ResolutionResult<Definition>;
 
 /// A potentially unresolved reference to a function implementation. Includes
-/// the name and URI even if unresolved.
+/// the name and URN even if unresolved.
 pub type Reference = extension::Reference<Definition>;

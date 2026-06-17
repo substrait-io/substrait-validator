@@ -15,8 +15,8 @@ pub struct Builder {
     /// Description of the extension.
     pub description: String,
 
-    /// The URI that was actually used to resolve this extension.
-    pub actual_uri: String,
+    /// The URN that was actually used to resolve this extension.
+    pub actual_urn: String,
 
     /// Map with references to dependencies.
     pub dependencies: HashMap<String, extension::simple::module::Reference>,
@@ -39,7 +39,7 @@ impl From<Builder> for extension::simple::module::Definition {
         extension::simple::module::Definition {
             extension_id: builder.extension_id,
             description: builder.description,
-            actual_uri: builder.actual_uri,
+            actual_urn: builder.actual_urn,
             dependencies: builder.dependencies,
             type_classes: Arc::new(builder.type_classes),
             type_variations: Arc::new(builder.type_variations),
