@@ -569,8 +569,7 @@ fn identifier_to_value(
             meta::pattern::Value::Binding(meta::pattern::Binding {
                 name: binding_name,
                 inconsistent: false,
-                nullability: nullable
-                    .map(|n| Arc::new(meta::pattern::Value::Boolean(Some(n)))),
+                nullability: nullable.map(|n| Arc::new(meta::pattern::Value::Boolean(Some(n)))),
             })
         }
     }
@@ -728,17 +727,29 @@ fn analyze_parameterized_type(
         ParameterizedTypeContextAll::VarCharContext(c) => (
             data::Class::Compound(Compound::VarChar),
             c.QMark().is_some(),
-            Some(numeric_parameters(c.numericParameter().into_iter().collect(), y, z)),
+            Some(numeric_parameters(
+                c.numericParameter().into_iter().collect(),
+                y,
+                z,
+            )),
         ),
         ParameterizedTypeContextAll::FixedCharContext(c) => (
             data::Class::Compound(Compound::FixedChar),
             c.QMark().is_some(),
-            Some(numeric_parameters(c.numericParameter().into_iter().collect(), y, z)),
+            Some(numeric_parameters(
+                c.numericParameter().into_iter().collect(),
+                y,
+                z,
+            )),
         ),
         ParameterizedTypeContextAll::FixedBinaryContext(c) => (
             data::Class::Compound(Compound::FixedBinary),
             c.QMark().is_some(),
-            Some(numeric_parameters(c.numericParameter().into_iter().collect(), y, z)),
+            Some(numeric_parameters(
+                c.numericParameter().into_iter().collect(),
+                y,
+                z,
+            )),
         ),
         ParameterizedTypeContextAll::StructContext(c) => (
             data::Class::Compound(Compound::Struct),
@@ -853,7 +864,11 @@ fn analyze_type_def(
     z: &mut AnalysisContext,
 ) -> meta::pattern::Value {
     if let Some(scalar) = x.scalarType() {
-        data_type_pattern(Some(analyze_scalar_type(&scalar)), x.QMark().is_some(), None)
+        data_type_pattern(
+            Some(analyze_scalar_type(&scalar)),
+            x.QMark().is_some(),
+            None,
+        )
     } else if let Some(parameterized) = x.parameterizedType() {
         analyze_parameterized_type(&parameterized, y, z)
     } else if let Some(any) = x.anyType() {
@@ -876,11 +891,7 @@ fn analyze_function_call(
         diagnostic!(y, Error, TypeParseError, "unknown function");
     }
     let function = function.unwrap_or_default();
-    let arguments: Vec<_> = x
-        .expr_all()
-        .iter()
-        .map(|e| analyze_expr(e, y, z))
-        .collect();
+    let arguments: Vec<_> = x.expr_all().iter().map(|e| analyze_expr(e, y, z)).collect();
     check_function(y, z, &function, &arguments);
     meta::pattern::Value::Function(function, arguments)
 }
