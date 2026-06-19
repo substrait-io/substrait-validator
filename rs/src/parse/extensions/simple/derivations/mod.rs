@@ -5,10 +5,6 @@
 // TODO
 #![allow(dead_code)]
 
-mod substraittypelexer;
-mod substraittypelistener;
-mod substraittypeparser;
-
 use crate::output::diagnostic::Result;
 use crate::output::extension;
 use crate::output::extension::simple::module::DynScope;
@@ -21,11 +17,10 @@ use antlr4rust::Parser;
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::rc::Rc;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
-use substraittypeparser::*;
+use substrait_antlr::substrait_type::substraittypeparser::*;
 
 /// Enum for objects that are defined locally in analysis scope.
 #[derive(Clone, Debug)]
@@ -218,10 +213,14 @@ impl ErrorListener {
 }
 
 // Boilerplate code for connecting ANTLR to our diagnostic system and parsing
-// a simple string slice with it.
+// a simple string slice with it. `$start` is the parser entry-rule method to
+// invoke (`startRule` for expressions/derivations, `typeStatement` for plain
+// types); it returns the corresponding root context on success.
 macro_rules! antlr_parse {
     ($x:expr, $y:expr, $start:ident) => {{
-        let lexer = substraittypelexer::SubstraitTypeLexer::new(antlr4rust::InputStream::new($x));
+        let lexer = substrait_antlr::substrait_type::SubstraitTypeLexer::new(
+            antlr4rust::InputStream::new($x),
+        );
         let token_source = antlr4rust::common_token_stream::CommonTokenStream::new(lexer);
         let mut parser = SubstraitTypeParser::new(token_source);
         let listener = ErrorListener::new();
@@ -230,48 +229,6 @@ macro_rules! antlr_parse {
         let result = parser.$start();
         listener.to_context($y);
         result.map_err(|e| cause!(TypeParseError, "{e}"))
-    }};
-}
-
-// Boilerplate code for converting the awkward left-recursion-avoidance rules
-// for expressions into a normal expression tree.
-macro_rules! antlr_reduce_left_recursion {
-    (
-        $x:expr, $y:expr, $z:expr, $x_typ:ty,
-        $all_operands:ident, $next_analyzer:expr,
-        $one_operator:ident, $operator_match:tt
-    ) => {{
-        fn left_recursive(
-            x: &$x_typ,
-            y: &mut context::Context,
-            z: &mut AnalysisContext,
-            start: usize,
-        ) -> Result<meta::pattern::Value> {
-            if start == 0 {
-                // Only one operand remaining.
-                Ok(antlr_hidden_child!(x, y, 0, $next_analyzer, z).unwrap_or_default())
-            } else {
-                // We're traversing the tree bottom-up, so start with the last
-                // operation. The operations are evaluated left-to-right, so that's
-                // the rightmost operation.
-                let lhs = antlr_recurse!(x, y, lhs, left_recursive, z, start - 1)
-                    .1
-                    .unwrap_or_default();
-                let rhs = antlr_child!(x, y, rhs, start, $next_analyzer, z)
-                    .1
-                    .unwrap_or_default();
-                let arguments = vec![lhs, rhs];
-                let function = x
-                    .$one_operator(start - 1)
-                    .map(|x| match x.as_ref() $operator_match)
-                    .unwrap_or_default();
-                check_function(y, z, &function, &arguments);
-                Ok(meta::pattern::Value::Function(function, arguments))
-            }
-        }
-
-        let total_operands = $x.$all_operands().len();
-        left_recursive($x, $y, $z, total_operands - 1)
     }};
 }
 
@@ -565,900 +522,480 @@ fn check_function(
     }
 }
 
-/// Analyzes a string literal.
-fn analyze_string<S: AsRef<str>>(
-    x: S,
-    _y: &mut context::Context,
-    _z: &mut AnalysisContext,
-) -> Option<String> {
-    let x = x.as_ref();
-    if !x.starts_with('"') || !x.ends_with('"') || x.len() < 2 {
-        None
-    } else {
-        Some(x[1..x.len() - 1].to_string())
-    }
-}
-
-/// Analyzes an integer literal.
-fn analyze_integer(
-    x: &IntegerContextAll,
-    y: &mut context::Context,
-    _z: &mut AnalysisContext,
-) -> Result<i64> {
-    let value = if let Some(value) = x.Nonzero() {
-        value.symbol.text.parse().unwrap_or(i128::MAX)
-    } else {
-        0i128
-    };
-    Ok(if x.Minus().is_some() {
-        match i64::try_from(-value) {
-            Ok(val) => val,
-            Err(_) => {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeDerivationInvalid,
-                    "integer literal is too small, minimum is {}",
-                    i64::MIN
-                );
-                i64::MIN
-            }
-        }
-    } else {
-        match i64::try_from(value) {
-            Ok(val) => val,
-            Err(_) => {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeDerivationInvalid,
-                    "integer literal is too large, maximum is {}",
-                    i64::MAX
-                );
-                i64::MAX
-            }
-        }
-    })
-}
-
-/// Analyzes and resolves an identifier path.
-fn analyze_object_identifier(
-    x: &IdentifierPathContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<PatternObject> {
-    Ok(z.resolve_pattern(
-        x.Identifier_all().iter().map(|x| x.symbol.text.to_string()),
-        y,
-    ))
-}
-
-/// Analyzes a pattern that can end up being either a data type pattern, a
-/// binding, or an enum constant, depending on name resolution.
-fn analyze_dtbc(
-    x: &DatatypeBindingOrConstantContext,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    let object = antlr_hidden_child!(x, y, 0, analyze_object_identifier, z)
-        .ok_or_else(|| cause!(TypeDerivationInvalid, "failed to resolve identifier"))?;
-    match object {
-        PatternObject::NamedBinding(name) => {
-            if x.variation().is_some() {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeParseError,
-                    "variation cannot be specified for bindings"
-                );
-            }
-            if x.parameters().is_some() {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeParseError,
-                    "parameters cannot be specified for bindings"
-                );
-            }
-            let nullability = x.nullability().map(|nullability| {
-                Arc::new(match nullability.as_ref() {
-                    NullabilityContextAll::NullableContext(_) => {
-                        meta::pattern::Value::Boolean(Some(true))
-                    }
-                    NullabilityContextAll::NonNullableContext(_) => {
-                        meta::pattern::Value::Boolean(Some(false))
-                    }
-                    NullabilityContextAll::NullableIfContext(x) => {
-                        let pattern = antlr_child!(x, y, nullability, 0, analyze_pattern, z)
-                            .1
-                            .unwrap_or_default();
-                        let typ = pattern.determine_type();
-                        if !matches!(typ, meta::Type::Boolean | meta::Type::Unresolved) {
-                            diagnostic!(
-                                y,
-                                Error,
-                                TypeDerivationInvalid,
-                                "nullability pattern must be boolean, but {typ} was found"
-                            );
-                        }
-                        pattern
-                    }
-                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
-                })
-            });
-            if nullability.is_some() {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeDerivationNotSupported,
-                    "bindings with nullability override are not officially supported"
-                );
-            }
-            Ok(meta::pattern::Value::Binding(meta::pattern::Binding {
-                name,
-                inconsistent: false,
-                nullability,
-            }))
-        }
-        PatternObject::EnumVariant(name) => {
-            if x.nullability().is_some() {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeParseError,
-                    "nullability cannot be specified for enum literals"
-                );
-            }
-            if x.variation().is_some() {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeParseError,
-                    "variation cannot be specified for enum literals"
-                );
-            }
-            if x.parameters().is_some() {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeParseError,
-                    "parameters cannot be specified for enum literals"
-                );
-            }
-            Ok(meta::pattern::Value::Enum(Some(vec![name])))
-        }
-        PatternObject::TypeClass(class) => {
-            let nullable = if let Some(nullability) = x.nullability() {
-                match nullability.as_ref() {
-                    NullabilityContextAll::NullableContext(_) => {
-                        meta::pattern::Value::Boolean(Some(true))
-                    }
-                    NullabilityContextAll::NonNullableContext(_) => {
-                        diagnostic!(
-                            y,
-                            Error,
-                            TypeDerivationNotSupported,
-                            "explicitly-non-nullable type suffix is not officially supported"
-                        );
-                        meta::pattern::Value::Boolean(Some(false))
-                    }
-                    NullabilityContextAll::NullableIfContext(x) => {
-                        let pattern = antlr_child!(x, y, nullability, 0, analyze_pattern, z)
-                            .1
-                            .unwrap_or_default();
-                        let typ = pattern.determine_type();
-                        if !matches!(typ, meta::Type::Boolean | meta::Type::Unresolved) {
-                            diagnostic!(
-                                y,
-                                Error,
-                                TypeDerivationInvalid,
-                                "nullability pattern must be boolean, but {typ} was found"
-                            );
-                        }
-                        diagnostic!(
-                            y,
-                            Error,
-                            TypeDerivationNotSupported,
-                            "nullability patterns are not officially supported"
-                        );
-                        pattern
-                    }
-                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
-                }
-            } else {
-                meta::pattern::Value::Boolean(Some(false))
-            };
-            let variation = antlr_child!(x, y, variation, 0, analyze_type_variation, z, &class)
-                .1
-                .unwrap_or(meta::pattern::Variation::Compatible);
-            let parameters = antlr_child!(x, y, parameters, 0, analyze_type_parameters, z).1;
-            Ok(meta::pattern::Value::DataType(meta::pattern::DataType {
-                class: Some(class),
-                nullable: std::sync::Arc::new(nullable),
-                variation,
-                parameters,
-            }))
+/// Parses an integer literal token's text. The `Number` token already includes
+/// an optional leading sign, so negatives arrive as a single token.
+fn analyze_number(raw: &str, y: &mut context::Context) -> Option<i64> {
+    match raw.parse::<i64>() {
+        Ok(value) => Some(value),
+        Err(_) => {
+            diagnostic!(y, Error, TypeParseError, "invalid integer literal {raw}");
+            None
         }
     }
 }
 
-/// Analyzes a type variation suffix.
-fn analyze_type_variation_identifier(
-    x: &IdentifierPathContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-    class: &data::Class,
-) -> Result<extension::simple::type_variation::Reference> {
-    Ok(z.resolve_type_variation(
-        x.Identifier_all().iter().map(|x| x.symbol.text.to_string()),
-        y,
+/// Builds a data type pattern from a resolved class, nullability, and optional
+/// parameter pack. Type variations are not expressible in the grammar, so the
+/// variation is always left as the system-preferred-compatible default.
+fn data_type_pattern(
+    class: Option<data::Class>,
+    nullable: bool,
+    parameters: Option<Vec<meta::pattern::Parameter>>,
+) -> meta::pattern::Value {
+    meta::pattern::Value::DataType(meta::pattern::DataType {
         class,
-    ))
-}
-
-/// Analyzes a type variation suffix.
-fn analyze_type_variation(
-    x: &VariationContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-    class: &data::Class,
-) -> Result<meta::pattern::Variation> {
-    Ok(if let Some(x) = x.variationBody() {
-        match x.as_ref() {
-            VariationBodyContextAll::VarAnyContext(_) => meta::pattern::Variation::Any,
-            VariationBodyContextAll::VarSystemPreferredContext(_) => {
-                meta::pattern::Variation::Exactly(data::Variation::SystemPreferred)
-            }
-            VariationBodyContextAll::VarUserDefinedContext(x) => {
-                meta::pattern::Variation::Exactly(data::Variation::UserDefined(
-                    antlr_child!(
-                        x,
-                        y,
-                        variation,
-                        0,
-                        analyze_type_variation_identifier,
-                        z,
-                        class
-                    )
-                    .1
-                    .unwrap_or_default(),
-                ))
-            }
-            VariationBodyContextAll::Error(_) => meta::pattern::Variation::Any,
-        }
-    } else {
-        meta::pattern::Variation::Any
+        nullable: Arc::new(meta::pattern::Value::Boolean(Some(nullable))),
+        variation: meta::pattern::Variation::Compatible,
+        parameters,
     })
 }
 
-/// Analyzes a single type parameter.
-fn analyze_type_parameter(
-    x: &ParameterContextAll,
+/// Resolves a bare identifier to a pattern value. Depending on name resolution
+/// (see [`AnalysisContext::resolve_pattern`]) it becomes a (zero-parameter) data
+/// type pattern, an enumeration constant, or a named binding. `nullable` is
+/// `None` when no nullability suffix was given, `Some(true)` for a `?` suffix.
+fn identifier_to_value(
+    name: &str,
+    nullable: Option<bool>,
     y: &mut context::Context,
     z: &mut AnalysisContext,
-) -> Result<meta::pattern::Parameter> {
-    let name = x.identifierOrString().and_then(|name| {
-        let name = match name.as_ref() {
-            IdentifierOrStringContextAll::StrContext(x) => x
-                .String()
-                .and_then(|x| analyze_string(&x.symbol.text, y, z))
-                .unwrap_or_default(),
-            IdentifierOrStringContextAll::IdentContext(x) => x
-                .Identifier()
-                .map(|x| x.symbol.text.to_string())
-                .unwrap_or_default(),
-            IdentifierOrStringContextAll::Error(_) => String::from(""),
-        };
+) -> meta::pattern::Value {
+    match z.resolve_pattern(std::iter::once(name), y) {
+        PatternObject::TypeClass(class) => {
+            data_type_pattern(Some(class), nullable.unwrap_or(false), None)
+        }
+        PatternObject::EnumVariant(variant) => meta::pattern::Value::Enum(Some(vec![variant])),
+        PatternObject::NamedBinding(binding_name) => {
+            meta::pattern::Value::Binding(meta::pattern::Binding {
+                name: binding_name,
+                inconsistent: false,
+                nullability: nullable.map(|n| Arc::new(meta::pattern::Value::Boolean(Some(n)))),
+            })
+        }
+    }
+}
+
+/// Maps the operator token of a left-recursive `expr` binary alternative to the
+/// corresponding builtin meta-function.
+fn binary_operator(x: &BinaryExprContext<'_>) -> meta::Function {
+    if x.And().is_some() {
+        meta::Function::And
+    } else if x.Or().is_some() {
+        meta::Function::Or
+    } else if x.Plus().is_some() {
+        meta::Function::Add
+    } else if x.Minus().is_some() {
+        meta::Function::Subtract
+    } else if x.Asterisk().is_some() {
+        meta::Function::Multiply
+    } else if x.ForwardSlash().is_some() {
+        meta::Function::Divide
+    } else if x.Lte().is_some() {
+        meta::Function::LessEqual
+    } else if x.Gte().is_some() {
+        meta::Function::GreaterEqual
+    } else if x.Lt().is_some() {
+        meta::Function::LessThan
+    } else if x.Gt().is_some() {
+        meta::Function::GreaterThan
+    } else if x.Eq().is_some() {
+        meta::Function::Equal
+    } else if x.Ne().is_some() {
+        meta::Function::NotEqual
+    } else {
+        meta::Function::Unresolved
+    }
+}
+
+/// Analyzes an optional child `expr`, mapping a missing child to the unresolved
+/// value (any diagnostics have already been emitted while parsing).
+fn child_value(
+    e: Option<Rc<ExprContextAll<'_>>>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> meta::pattern::Value {
+    match e {
+        Some(e) => analyze_expr(&e, y, z),
+        None => meta::pattern::Value::Unresolved,
+    }
+}
+
+/// Analyzes a single numeric parameter (the `<...>` arguments of a parameterized
+/// type) into a pattern value.
+fn numeric_parameter(
+    x: &NumericParameterContextAll<'_>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> meta::pattern::Value {
+    match x {
+        NumericParameterContextAll::NumericLiteralContext(c) => c
+            .Number()
+            .and_then(|n| analyze_number(n.symbol.text.as_ref(), y))
+            .map(|v| meta::pattern::Value::Integer(v, v))
+            .unwrap_or_default(),
+        NumericParameterContextAll::NumericParameterNameContext(c) => match c.Identifier() {
+            Some(id) => identifier_to_value(id.symbol.text.as_ref(), None, y, z),
+            None => meta::pattern::Value::Unresolved,
+        },
+        NumericParameterContextAll::NumericExpressionContext(c) => child_value(c.expr(), y, z),
+        NumericParameterContextAll::Error(_) => meta::pattern::Value::Unresolved,
+    }
+}
+
+/// Wraps a sequence of numeric parameters as unnamed pattern parameters.
+fn numeric_parameters(
+    xs: Vec<Rc<NumericParameterContextAll<'_>>>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Vec<meta::pattern::Parameter> {
+    xs.iter()
+        .map(|p| meta::pattern::Parameter {
+            name: None,
+            value: Some(numeric_parameter(p, y, z)),
+        })
+        .collect()
+}
+
+/// Wraps a sequence of `expr` parameters (used by `struct`, `list`, `map`, ...)
+/// as unnamed pattern parameters.
+fn expr_parameters(
+    xs: Vec<Rc<ExprContextAll<'_>>>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> Vec<meta::pattern::Parameter> {
+    xs.iter()
+        .map(|e| meta::pattern::Parameter {
+            name: None,
+            value: Some(analyze_expr(e, y, z)),
+        })
+        .collect()
+}
+
+/// Maps a scalar type alternative to its data type class.
+fn analyze_scalar_type(x: &ScalarTypeContextAll<'_>) -> data::Class {
+    use data::class::Simple;
+    let simple = match x {
+        ScalarTypeContextAll::BooleanContext(_) => Simple::Boolean,
+        ScalarTypeContextAll::I8Context(_) => Simple::I8,
+        ScalarTypeContextAll::I16Context(_) => Simple::I16,
+        ScalarTypeContextAll::I32Context(_) => Simple::I32,
+        ScalarTypeContextAll::I64Context(_) => Simple::I64,
+        ScalarTypeContextAll::Fp32Context(_) => Simple::Fp32,
+        ScalarTypeContextAll::Fp64Context(_) => Simple::Fp64,
+        ScalarTypeContextAll::StringContext(_) => Simple::String,
+        ScalarTypeContextAll::BinaryContext(_) => Simple::Binary,
+        ScalarTypeContextAll::TimestampContext(_) => Simple::Timestamp,
+        ScalarTypeContextAll::TimestampTzContext(_) => Simple::TimestampTz,
+        ScalarTypeContextAll::DateContext(_) => Simple::Date,
+        ScalarTypeContextAll::TimeContext(_) => Simple::Time,
+        ScalarTypeContextAll::IntervalYearContext(_) => Simple::IntervalYear,
+        ScalarTypeContextAll::UuidContext(_) => Simple::Uuid,
+        ScalarTypeContextAll::Error(_) => return data::Class::Unresolved,
+    };
+    data::Class::Simple(simple)
+}
+
+/// Analyzes a parameterized type alternative into a data type pattern.
+///
+/// NOTE: the grammar (and the spec) include several classes the validator's
+/// type system does not yet model (`func`, the `precision_*` temporal types and
+/// `interval_compound`). These are mapped to an unresolved class with a
+/// diagnostic for now; extending [`data::Class`] to cover them is tracked as a
+/// follow-up to the substrait-antlr migration.
+fn analyze_parameterized_type(
+    x: &ParameterizedTypeContextAll<'_>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> meta::pattern::Value {
+    use data::class::Compound;
+
+    let unsupported = |y: &mut context::Context, what: &str| {
         diagnostic!(
             y,
             Error,
             TypeDerivationNotSupported,
-            "named parameters are not officially supported (nstruct is not a real type)"
+            "the {what} type class is not yet supported by the validator"
         );
-        if name.is_empty() {
-            diagnostic!(
-                y,
-                Error,
-                TypeInvalidFieldName,
-                "parameter names (if specified) cannot be empty"
-            );
-            None
-        } else {
-            Some(name)
-        }
-    });
-
-    let value = if let Some(value) = x.parameterValue() {
-        match value.as_ref() {
-            ParameterValueContextAll::SpecifiedContext(x) => Some(
-                antlr_child!(x, y, pattern, 0, analyze_pattern, z)
-                    .1
-                    .unwrap_or_default(),
-            ),
-            ParameterValueContextAll::NullContext(_) => None,
-            ParameterValueContextAll::Error(_) => Some(meta::pattern::Value::Unresolved),
-        }
-    } else {
-        Some(meta::pattern::Value::Unresolved)
     };
 
-    Ok(meta::pattern::Parameter { name, value })
-}
-
-/// Analyzes a type parameter pack.
-fn analyze_type_parameters(
-    x: &ParametersContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<Vec<meta::pattern::Parameter>> {
-    Ok(antlr_children!(x, y, argument, analyze_type_parameter, z)
-        .1
-        .into_iter()
-        .map(|x| x.unwrap_or_default())
-        .collect())
-}
-
-/// Analyzes miscellaneous pattern types.
-fn analyze_pattern_misc(
-    x: &PatternMiscContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    match x {
-        PatternMiscContextAll::ParenthesesContext(x) => {
-            Ok(antlr_hidden_child!(x, y, 0, analyze_pattern, z).unwrap_or_default())
+    let (class, nullable, parameters) = match x {
+        ParameterizedTypeContextAll::DecimalContext(c) => (
+            data::Class::Compound(Compound::Decimal),
+            c.QMark().is_some(),
+            Some(numeric_parameters(c.numericParameter_all(), y, z)),
+        ),
+        ParameterizedTypeContextAll::VarCharContext(c) => (
+            data::Class::Compound(Compound::VarChar),
+            c.QMark().is_some(),
+            Some(numeric_parameters(
+                c.numericParameter().into_iter().collect(),
+                y,
+                z,
+            )),
+        ),
+        ParameterizedTypeContextAll::FixedCharContext(c) => (
+            data::Class::Compound(Compound::FixedChar),
+            c.QMark().is_some(),
+            Some(numeric_parameters(
+                c.numericParameter().into_iter().collect(),
+                y,
+                z,
+            )),
+        ),
+        ParameterizedTypeContextAll::FixedBinaryContext(c) => (
+            data::Class::Compound(Compound::FixedBinary),
+            c.QMark().is_some(),
+            Some(numeric_parameters(
+                c.numericParameter().into_iter().collect(),
+                y,
+                z,
+            )),
+        ),
+        ParameterizedTypeContextAll::StructContext(c) => (
+            data::Class::Compound(Compound::Struct),
+            c.QMark().is_some(),
+            Some(expr_parameters(c.expr_all(), y, z)),
+        ),
+        ParameterizedTypeContextAll::NStructContext(c) => {
+            // The i-th field name (`Identifier(i)`, filtered by token type)
+            // pairs with the i-th field type expression.
+            let values = c.expr_all();
+            let parameters = values
+                .iter()
+                .enumerate()
+                .map(|(i, value)| meta::pattern::Parameter {
+                    name: c.Identifier(i).map(|name| name.symbol.text.to_string()),
+                    value: Some(analyze_expr(value, y, z)),
+                })
+                .collect();
+            (
+                data::Class::Compound(Compound::NamedStruct),
+                c.QMark().is_some(),
+                Some(parameters),
+            )
         }
-        PatternMiscContextAll::IfThenElseContext(x) => {
-            let condition = antlr_child!(x, y, condition, 0, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let if_true = antlr_child!(x, y, if_true, 1, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let if_false = antlr_child!(x, y, if_false, 2, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let arguments = vec![condition, if_true, if_false];
+        ParameterizedTypeContextAll::ListContext(c) => (
+            data::Class::Compound(Compound::List),
+            c.QMark().is_some(),
+            Some(vec![meta::pattern::Parameter {
+                name: None,
+                value: Some(child_value(c.expr(), y, z)),
+            }]),
+        ),
+        ParameterizedTypeContextAll::MapContext(c) => (
+            data::Class::Compound(Compound::Map),
+            c.QMark().is_some(),
+            Some(expr_parameters(c.expr_all(), y, z)),
+        ),
+        ParameterizedTypeContextAll::UserDefinedContext(c) => {
+            let nullable = c.QMark().is_some();
+            let parameters = expr_parameters(c.expr_all(), y, z);
+            let class = match c.Identifier() {
+                Some(id) => {
+                    let name = id.symbol.text.to_string();
+                    match z.resolve_pattern(std::iter::once(name.as_str()), y) {
+                        PatternObject::TypeClass(class) => class,
+                        _ => data::Class::Unresolved,
+                    }
+                }
+                None => data::Class::Unresolved,
+            };
+            (
+                class,
+                nullable,
+                if parameters.is_empty() {
+                    None
+                } else {
+                    Some(parameters)
+                },
+            )
+        }
+        ParameterizedTypeContextAll::FuncContext(c) => {
+            unsupported(y, "func");
+            (data::Class::Unresolved, c.QMark().is_some(), None)
+        }
+        ParameterizedTypeContextAll::PrecisionTimeContext(c) => {
+            unsupported(y, "precision_time");
+            (data::Class::Unresolved, c.QMark().is_some(), None)
+        }
+        ParameterizedTypeContextAll::PrecisionTimestampContext(c) => {
+            unsupported(y, "precision_timestamp");
+            (data::Class::Unresolved, c.QMark().is_some(), None)
+        }
+        ParameterizedTypeContextAll::PrecisionTimestampTZContext(c) => {
+            unsupported(y, "precision_timestamp_tz");
+            (data::Class::Unresolved, c.QMark().is_some(), None)
+        }
+        ParameterizedTypeContextAll::PrecisionIntervalDayContext(c) => {
+            unsupported(y, "interval_day");
+            (data::Class::Unresolved, c.QMark().is_some(), None)
+        }
+        ParameterizedTypeContextAll::PrecisionIntervalCompoundContext(c) => {
+            unsupported(y, "interval_compound");
+            (data::Class::Unresolved, c.QMark().is_some(), None)
+        }
+        ParameterizedTypeContextAll::Error(_) => (data::Class::Unresolved, false, None),
+    };
+
+    data_type_pattern(Some(class), nullable, parameters)
+}
+
+/// Analyzes an `anyType` (`any`/`anyN`). These behave like (wildcard) bindings:
+/// they match any value and reproduce it on evaluation, which mirrors the
+/// historical treatment of `anyN` identifiers as named bindings.
+fn analyze_any_type(
+    x: &AnyTypeContextAll<'_>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> meta::pattern::Value {
+    let name = x
+        .Any()
+        .or_else(|| x.AnyVar())
+        .map(|n| n.symbol.text.to_string())
+        .unwrap_or_default();
+    let nullable = x.QMark().is_some().then_some(true);
+    identifier_to_value(&name, nullable, y, z)
+}
+
+/// Analyzes a `typeDef` (a scalar, parameterized, or `any` type) into a pattern.
+fn analyze_type_def(
+    x: &TypeDefContextAll<'_>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> meta::pattern::Value {
+    if let Some(scalar) = x.scalarType() {
+        data_type_pattern(
+            Some(analyze_scalar_type(&scalar)),
+            x.QMark().is_some(),
+            None,
+        )
+    } else if let Some(parameterized) = x.parameterizedType() {
+        analyze_parameterized_type(&parameterized, y, z)
+    } else if let Some(any) = x.anyType() {
+        analyze_any_type(&any, y, z)
+    } else {
+        meta::pattern::Value::Unresolved
+    }
+}
+
+/// Analyzes a `FunctionCall` (`identifier(args...)`) into a function pattern.
+fn analyze_function_call(
+    x: &FunctionCallContext<'_>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> meta::pattern::Value {
+    let function = x
+        .Identifier()
+        .and_then(|id| meta::Function::try_from(id.symbol.text.as_ref()).ok());
+    if function.is_none() {
+        diagnostic!(y, Error, TypeParseError, "unknown function");
+    }
+    let function = function.unwrap_or_default();
+    let arguments: Vec<_> = x.expr_all().iter().map(|e| analyze_expr(e, y, z)).collect();
+    check_function(y, z, &function, &arguments);
+    meta::pattern::Value::Function(function, arguments)
+}
+
+/// Analyzes a parsed `expr` node into a meta-pattern value.
+fn analyze_expr(
+    x: &ExprContextAll<'_>,
+    y: &mut context::Context,
+    z: &mut AnalysisContext,
+) -> meta::pattern::Value {
+    match x {
+        ExprContextAll::ParenExpressionContext(x) => child_value(x.expr(), y, z),
+        ExprContextAll::TypeLiteralContext(x) => match x.typeDef() {
+            Some(td) => analyze_type_def(&td, y, z),
+            None => meta::pattern::Value::Unresolved,
+        },
+        ExprContextAll::LiteralNumberContext(x) => x
+            .Number()
+            .and_then(|n| analyze_number(n.symbol.text.as_ref(), y))
+            .map(|v| meta::pattern::Value::Integer(v, v))
+            .unwrap_or_default(),
+        ExprContextAll::ParameterNameContext(x) => {
+            let nullable = x.QMark().is_some().then_some(true);
+            match x.Identifier() {
+                Some(id) => identifier_to_value(id.symbol.text.as_ref(), nullable, y, z),
+                None => meta::pattern::Value::Unresolved,
+            }
+        }
+        ExprContextAll::FunctionCallContext(x) => analyze_function_call(x, y, z),
+        ExprContextAll::BinaryExprContext(x) => {
+            let arguments = vec![child_value(x.expr(0), y, z), child_value(x.expr(1), y, z)];
+            let function = binary_operator(x);
+            check_function(y, z, &function, &arguments);
+            meta::pattern::Value::Function(function, arguments)
+        }
+        ExprContextAll::IfExprContext(x) => {
+            let arguments = vec![
+                child_value(x.expr(0), y, z),
+                child_value(x.expr(1), y, z),
+                child_value(x.expr(2), y, z),
+            ];
             let function = meta::Function::IfThenElse;
             check_function(y, z, &function, &arguments);
-            Ok(meta::pattern::Value::Function(function, arguments))
+            meta::pattern::Value::Function(function, arguments)
         }
-        PatternMiscContextAll::UnaryNotContext(x) => {
-            let expression = antlr_child!(x, y, expression, 0, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let arguments = vec![expression];
+        ExprContextAll::TernaryContext(x) => {
+            let arguments = vec![
+                child_value(x.expr(0), y, z),
+                child_value(x.expr(1), y, z),
+                child_value(x.expr(2), y, z),
+            ];
+            let function = meta::Function::IfThenElse;
+            check_function(y, z, &function, &arguments);
+            meta::pattern::Value::Function(function, arguments)
+        }
+        ExprContextAll::NotExprContext(x) => {
+            let arguments = vec![child_value(x.expr(), y, z)];
             let function = meta::Function::Not;
             check_function(y, z, &function, &arguments);
-            Ok(meta::pattern::Value::Function(function, arguments))
+            meta::pattern::Value::Function(function, arguments)
         }
-        PatternMiscContextAll::UnaryNegateContext(x) => {
-            let expression = antlr_child!(x, y, expression, 0, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let arguments = vec![expression];
-            let function = meta::Function::Negate;
-            check_function(y, z, &function, &arguments);
-            Ok(meta::pattern::Value::Function(function, arguments))
+        ExprContextAll::MultilineDefinitionContext(x) => {
+            // A derivation program used in expression position; the statements
+            // are handled by parse_program, so here we only yield its result.
+            analyze_multiline(x, y, z).expression
         }
-        PatternMiscContextAll::AnyContext(_) => {
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the 'any' pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Any)
-        }
-        PatternMiscContextAll::BoolAnyContext(_) => {
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the 'any boolean' pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Boolean(None))
-        }
-        PatternMiscContextAll::BoolTrueContext(_) => Ok(meta::pattern::Value::Boolean(Some(true))),
-        PatternMiscContextAll::BoolFalseContext(_) => {
-            Ok(meta::pattern::Value::Boolean(Some(false)))
-        }
-        PatternMiscContextAll::IntAnyContext(_) => {
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the 'any integer' pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Integer(i64::MIN, i64::MAX))
-        }
-        PatternMiscContextAll::IntRangeContext(x) => {
-            let lower = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MIN);
-            let upper = antlr_hidden_child!(x, y, 1, analyze_integer, z).unwrap_or(i64::MAX);
-            if lower > upper {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeDerivationInvalid,
-                    "lower bound of range is greater than upper bound"
-                );
-            }
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the integer range pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Integer(lower, upper))
-        }
-        PatternMiscContextAll::IntAtMostContext(x) => {
-            let upper = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the integer range pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Integer(i64::MIN, upper))
-        }
-        PatternMiscContextAll::IntAtLeastContext(x) => {
-            let lower = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the integer range pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Integer(lower, i64::MAX))
-        }
-        PatternMiscContextAll::IntExactlyContext(x) => {
-            let value = antlr_hidden_child!(x, y, 0, analyze_integer, z).unwrap_or(i64::MAX);
-            Ok(meta::pattern::Value::Integer(value, value))
-        }
-        PatternMiscContextAll::EnumAnyContext(_) => {
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the 'any enumeration' pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Enum(None))
-        }
-        PatternMiscContextAll::EnumSetContext(x) => {
-            let names = x
-                .Identifier_all()
-                .iter()
-                .map(|x| x.symbol.text.to_string())
-                .collect::<Vec<_>>();
-            let mut unique_names = HashSet::new();
-            let mut repeated_names = HashSet::new();
-            for name in names.iter() {
-                if !unique_names.insert(name.to_ascii_uppercase()) {
-                    repeated_names.insert(name.to_ascii_uppercase());
-                }
-            }
-            if !repeated_names.is_empty() {
-                diagnostic!(
-                    y,
-                    Error,
-                    RedundantEnumVariant,
-                    "enumeration variant names should be case-insensitively unique: {}",
-                    repeated_names.iter().join(", ")
-                );
-            }
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the enum set pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::Enum(Some(names)))
-        }
-        PatternMiscContextAll::StrAnyContext(_) => {
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the 'any string' pattern is not officially supported"
-            );
-            Ok(meta::pattern::Value::String(None))
-        }
-        PatternMiscContextAll::StrExactlyContext(x) => {
-            let s = x
-                .String()
-                .and_then(|x| analyze_string(&x.symbol.text, y, z));
-            if s.is_none() {
-                diagnostic!(y, Error, TypeParseError, "invalid string literal");
-            }
-            Ok(meta::pattern::Value::String(s))
-        }
-        PatternMiscContextAll::DtAnyContext(x) => {
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "the 'any data type' pattern is not officially supported"
-            );
-            let nullable = if let Some(nullability) = x.nullability() {
-                match nullability.as_ref() {
-                    NullabilityContextAll::NullableContext(_) => {
-                        meta::pattern::Value::Boolean(Some(true))
-                    }
-                    NullabilityContextAll::NonNullableContext(_) => {
-                        meta::pattern::Value::Boolean(Some(false))
-                    }
-                    NullabilityContextAll::NullableIfContext(x) => {
-                        let pattern = antlr_child!(x, y, nullability, 0, analyze_pattern, z)
-                            .1
-                            .unwrap_or_default();
-                        let typ = pattern.determine_type();
-                        if !matches!(typ, meta::Type::Boolean | meta::Type::Unresolved) {
-                            diagnostic!(
-                                y,
-                                Error,
-                                TypeDerivationInvalid,
-                                "nullability pattern must be boolean, but {typ} was found"
-                            );
-                        }
-                        pattern
-                    }
-                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
-                }
-            } else {
-                meta::pattern::Value::Boolean(Some(false))
-            };
-            Ok(meta::pattern::Value::DataType(meta::pattern::DataType {
-                class: None,
-                nullable: Arc::new(nullable),
-                variation: meta::pattern::Variation::Compatible,
-                parameters: None,
-            }))
-        }
-        PatternMiscContextAll::FunctionContext(x) => {
-            let function = x
-                .Identifier()
-                .and_then(|x| meta::Function::try_from(x.symbol.text.as_ref()).ok());
-            if function.is_none() {
-                diagnostic!(y, Error, TypeParseError, "unknown function");
-            }
-            let function = function.unwrap_or_default();
-            let arguments = antlr_children!(x, y, argument, analyze_pattern, z)
-                .1
-                .into_iter()
-                .map(|x| x.unwrap_or_default())
-                .collect::<Vec<_>>();
-            check_function(y, z, &function, &arguments);
-            Ok(meta::pattern::Value::Function(function, arguments))
-        }
-        PatternMiscContextAll::DatatypeBindingOrConstantContext(x) => analyze_dtbc(x, y, z),
-        PatternMiscContextAll::InconsistentContext(x) => {
-            let name = x
-                .Identifier()
-                .map(|x| x.symbol.text.to_string())
-                .unwrap_or_else(|| "!".to_string());
-
-            // Check that the name actually maps to a binding.
-            match z.resolve_pattern(std::iter::once(&name), y) {
-                PatternObject::NamedBinding(_) => (),
-                PatternObject::EnumVariant(x) => {
-                    diagnostic!(
-                        y,
-                        Error,
-                        TypeDerivationInvalid,
-                        "{name} cannot be used as a binding; it maps to enum variant {x}"
-                    );
-                }
-                PatternObject::TypeClass(x) => {
-                    diagnostic!(
-                        y,
-                        Error,
-                        TypeDerivationInvalid,
-                        "{name} cannot be used as a binding; it maps to type class {x}"
-                    );
-                }
-            }
-
-            let nullability = x.nullability().map(|nullability| {
-                Arc::new(match nullability.as_ref() {
-                    NullabilityContextAll::NullableContext(_) => {
-                        meta::pattern::Value::Boolean(Some(true))
-                    }
-                    NullabilityContextAll::NonNullableContext(_) => {
-                        meta::pattern::Value::Boolean(Some(false))
-                    }
-                    NullabilityContextAll::NullableIfContext(x) => {
-                        antlr_child!(x, y, nullability, 0, analyze_pattern, z)
-                            .1
-                            .unwrap_or_default()
-                    }
-                    NullabilityContextAll::Error(_) => meta::pattern::Value::Unresolved,
-                })
-            });
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "inconsistent bindings are not officially supported"
-            );
-            Ok(meta::pattern::Value::Binding(meta::pattern::Binding {
-                name,
-                inconsistent: true,
-                nullability,
-            }))
-        }
-        PatternMiscContextAll::Error(_) => Ok(meta::pattern::Value::Unresolved),
+        ExprContextAll::Error(_) => meta::pattern::Value::Unresolved,
     }
 }
 
-/// Analyzes a set of zero or more a*b or a/b expressions.
-fn analyze_pattern_mul_div(
-    x: &PatternMulDivContextAll,
+/// Analyzes a multi-line definition (`name = expr` assignments followed by a
+/// final type) into a derivation program.
+fn analyze_multiline(
+    x: &MultilineDefinitionContext<'_>,
     y: &mut context::Context,
     z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    antlr_reduce_left_recursion!(
-        x, y, z, PatternMulDivContextAll,
-        patternMisc_all, analyze_pattern_misc, operatorMulDiv,
-        {
-            OperatorMulDivContextAll::MulContext(_) => meta::Function::Multiply,
-            OperatorMulDivContextAll::DivContext(_) => meta::Function::Divide,
-            OperatorMulDivContextAll::Error(_) => meta::Function::Unresolved,
-        }
-    )
-}
-
-/// Analyzes a set of zero or more a+b or a-b expressions.
-fn analyze_pattern_add_sub(
-    x: &PatternAddSubContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    antlr_reduce_left_recursion!(
-        x, y, z, PatternAddSubContextAll,
-        patternMulDiv_all, analyze_pattern_mul_div, operatorAddSub,
-        {
-            OperatorAddSubContextAll::AddContext(_) => meta::Function::Add,
-            OperatorAddSubContextAll::SubContext(_) => meta::Function::Subtract,
-            OperatorAddSubContextAll::Error(_) => meta::Function::Unresolved,
-        }
-    )
-}
-
-/// Analyzes a set of zero or more integer inequality expressions.
-fn analyze_pattern_ineq(
-    x: &PatternIneqContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    antlr_reduce_left_recursion!(
-        x, y, z, PatternIneqContextAll,
-        patternAddSub_all, analyze_pattern_add_sub, operatorIneq,
-        {
-            OperatorIneqContextAll::LtContext(_) => meta::Function::LessThan,
-            OperatorIneqContextAll::LeContext(_) => meta::Function::LessEqual,
-            OperatorIneqContextAll::GtContext(_) => meta::Function::GreaterThan,
-            OperatorIneqContextAll::GeContext(_) => meta::Function::GreaterEqual,
-            OperatorIneqContextAll::Error(_) => meta::Function::Unresolved,
-        }
-    )
-}
-
-/// Analyzes a set of zero or more x==y or x!=y expressions.
-fn analyze_pattern_eq_neq(
-    x: &PatternEqNeqContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    antlr_reduce_left_recursion!(
-        x, y, z, PatternEqNeqContextAll,
-        patternIneq_all, analyze_pattern_ineq, operatorEqNeq,
-        {
-            OperatorEqNeqContextAll::EqContext(_) => meta::Function::Equal,
-            OperatorEqNeqContextAll::NeqContext(_) => meta::Function::NotEqual,
-            OperatorEqNeqContextAll::Error(_) => meta::Function::Unresolved,
-        }
-    )
-}
-
-/// Analyzes a set of zero or more x&&y expressions.
-fn analyze_pattern_and(
-    x: &PatternAndContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    antlr_reduce_left_recursion!(
-        x, y, z, PatternAndContextAll,
-        patternEqNeq_all, analyze_pattern_eq_neq, operatorAnd,
-        {
-            OperatorAndContextAll::AndContext(_) => meta::Function::And,
-            OperatorAndContextAll::Error(_) => meta::Function::Unresolved,
-        }
-    )
-}
-
-/// Analyzes a set of zero or more x||y expressions.
-fn analyze_pattern_or(
-    x: &PatternOrContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    antlr_reduce_left_recursion!(
-        x, y, z, PatternOrContextAll,
-        patternAnd_all, analyze_pattern_and, operatorOr,
-        {
-            OperatorOrContextAll::OrContext(_) => meta::Function::Or,
-            OperatorOrContextAll::Error(_) => meta::Function::Unresolved,
-        }
-    )
-}
-
-/// Analyzes a set of zero or more x||y expressions.
-fn analyze_pattern_invalid_if_then_else(
-    x: &PatternInvalidIfThenElseContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    match x {
-        PatternInvalidIfThenElseContextAll::InvalidIfThenElseContext(x) => {
-            diagnostic!(
-                y,
-                Error,
-                TypeParseError,
-                "'x ? y : z' ternary operator syntax is not supported; \
-                use 'if x then y else z' instead"
-            );
-            let condition = antlr_child!(x, y, condition, 0, analyze_pattern_or, z)
-                .1
-                .unwrap_or_default();
-            let if_true = antlr_child!(x, y, if_true, 1, analyze_pattern_or, z)
-                .1
-                .unwrap_or_default();
-            let if_false = antlr_child!(x, y, if_false, 0, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let arguments = vec![condition, if_true, if_false];
-            let function = meta::Function::IfThenElse;
-            check_function(y, z, &function, &arguments);
-            Ok(meta::pattern::Value::Function(function, arguments))
-        }
-        PatternInvalidIfThenElseContextAll::ValidPatternContext(x) => {
-            Ok(antlr_hidden_child!(x, y, 0, analyze_pattern_or, z).unwrap_or_default())
-        }
-        PatternInvalidIfThenElseContextAll::Error(_) => Ok(meta::pattern::Value::Unresolved),
+) -> meta::Program {
+    // Note: the i-th `Eq`-assigned identifier pairs with the i-th right-hand
+    // expression. We index identifiers via `Identifier(i)` (which filters by
+    // token type) rather than `Identifier_all()`, which returns every terminal
+    // child regardless of token type in this antlr4rust runtime.
+    let expressions = x.expr_all();
+    let mut statements = Vec::with_capacity(expressions.len());
+    for (i, expression) in expressions.iter().enumerate() {
+        // The right-hand side is analyzed first so its bindings are captured
+        // before the left-hand binding name is introduced.
+        let rhs_expression = analyze_expr(expression, y, z);
+        let lhs_pattern = match x.Identifier(i) {
+            Some(name) => identifier_to_value(name.symbol.text.as_ref(), None, y, z),
+            None => meta::pattern::Value::Unresolved,
+        };
+        statements.push(meta::program::Statement {
+            lhs_pattern,
+            rhs_expression,
+        });
     }
-}
-
-/// Analyzes a pattern parse tree node.
-fn analyze_pattern(
-    x: &PatternContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::pattern::Value> {
-    Ok(antlr_hidden_child!(x, y, 0, analyze_pattern_invalid_if_then_else, z).unwrap_or_default())
-}
-
-/// Analyzes a statement parse tree node.
-fn analyze_statement(
-    x: &StatementContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::program::Statement> {
-    let statement = match x {
-        StatementContextAll::AssertContext(x) => {
-            let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "assert statements are not officially supported"
-            );
-            meta::program::Statement {
-                lhs_pattern: meta::pattern::Value::Boolean(Some(true)),
-                rhs_expression,
-            }
-        }
-        StatementContextAll::NormalContext(x) => {
-            let rhs_expression = antlr_child!(x, y, rhs, 1, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let lhs_pattern = antlr_child!(x, y, lhs, 0, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let lhs_supported = match &lhs_pattern {
-                meta::pattern::Value::Unresolved => true,
-                meta::pattern::Value::Binding(binding) => {
-                    !binding.inconsistent && binding.nullability.is_none()
-                }
-                _ => false,
-            };
-            if !lhs_supported {
-                diagnostic!(
-                    y, Error, TypeDerivationNotSupported,
-                    "only normal bindings are officially supported at the LHS of an assignment statement"
-                );
-            }
-            meta::program::Statement {
-                lhs_pattern,
-                rhs_expression,
-            }
-        }
-        StatementContextAll::MatchContext(x) => {
-            let rhs_expression = antlr_child!(x, y, rhs, 0, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            let lhs_pattern = antlr_child!(x, y, lhs, 1, analyze_pattern, z)
-                .1
-                .unwrap_or_default();
-            diagnostic!(
-                y,
-                Error,
-                TypeDerivationNotSupported,
-                "assert-match statements are not officially supported"
-            );
-            meta::program::Statement {
-                lhs_pattern,
-                rhs_expression,
-            }
-        }
-        StatementContextAll::Error(_) => return Ok(meta::program::Statement::default()),
+    let expression = match x.typeDef() {
+        Some(td) => analyze_type_def(&td, y, z),
+        None => meta::pattern::Value::Unresolved,
     };
-    if !statement.rhs_expression.can_evaluate() {
-        diagnostic!(
-            y,
-            Error,
-            TypeDerivationInvalid,
-            "right-hand side of pattern assignment can never be evaluated"
-        );
-    }
-    match (
-        statement.lhs_pattern.determine_type(),
-        statement.rhs_expression.determine_type(),
-    ) {
-        (meta::Type::Unresolved, _) => (),
-        (_, meta::Type::Unresolved) => (),
-        (lhs, rhs) => {
-            if lhs != rhs {
-                diagnostic!(
-                    y,
-                    Error,
-                    TypeDerivationInvalid,
-                    "pattern assignment can never match; lhs matches \
-                    only {lhs} while rhs returns {rhs}"
-                );
-            }
-        }
-    }
-    Ok(statement)
-}
-
-/// Analyzes a program parse tree node.
-fn analyze_program(
-    x: &ProgramContextAll,
-    y: &mut context::Context,
-    z: &mut AnalysisContext,
-) -> Result<meta::Program> {
-    let statements = antlr_children!(x, y, statement, analyze_statement, z)
-        .1
-        .into_iter()
-        .map(|x| x.unwrap_or_default())
-        .collect();
-    let expression = antlr_child!(x, y, pattern, 0, analyze_pattern, z)
-        .1
-        .unwrap_or_default();
-    if !expression.can_evaluate() {
-        diagnostic!(
-            y,
-            Error,
-            TypeDerivationInvalid,
-            "return pattern of program can never be evaluated"
-        );
-    }
-    Ok(meta::Program {
+    meta::Program {
         statements,
         expression,
-    })
+    }
 }
 
 /// Parse a string as just the class part of a data type.
@@ -1494,36 +1031,69 @@ pub fn parse_type(
     })
 }
 
-/// Parse a string as a meta-pattern.
+/// Parse a string as a meta-pattern. The grammar's `startRule` accepts a single
+/// expression, which covers both plain type patterns (e.g. `decimal<P, S>`) and
+/// derivation expressions.
 pub fn parse_pattern(
     x: &str,
     y: &mut context::Context,
     z: &mut AnalysisContext,
 ) -> Result<meta::pattern::Value> {
-    let x = antlr_parse!(x, y, startPattern)?;
-    let result = antlr_child!(x.as_ref(), y, pattern, 0, analyze_pattern, z)
-        .1
-        .unwrap_or_default();
-    Ok(result)
+    let root = antlr_parse!(x, y, startRule)?;
+    Ok(match root.expr() {
+        Some(expr) => analyze_expr(&expr, y, z),
+        None => meta::pattern::Value::Unresolved,
+    })
 }
 
-/// Parse a string as a meta-program.
+/// Parse a string as a meta-program. A multi-line definition becomes a program
+/// with assignment statements followed by the final type; any other expression
+/// becomes a program with no statements and that expression as its result.
 pub fn parse_program(
     x: &str,
     y: &mut context::Context,
     z: &mut AnalysisContext,
 ) -> Result<meta::Program> {
-    let x = antlr_parse!(x, y, startProgram)?;
-    let result = antlr_child!(x.as_ref(), y, program, 0, analyze_program, z)
-        .1
-        .unwrap_or_default();
-    Ok(result)
+    let root = antlr_parse!(x, y, startRule)?;
+    let program = match root.expr() {
+        Some(expr) => match expr.as_ref() {
+            ExprContextAll::MultilineDefinitionContext(multiline) => {
+                analyze_multiline(multiline, y, z)
+            }
+            _ => meta::Program {
+                statements: Vec::new(),
+                expression: analyze_expr(&expr, y, z),
+            },
+        },
+        None => meta::Program::default(),
+    };
+    if !program.expression.can_evaluate() {
+        diagnostic!(
+            y,
+            Error,
+            TypeDerivationInvalid,
+            "return pattern of program can never be evaluated"
+        );
+    }
+    Ok(program)
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::output::tree;
+
+    /// Declares the boilerplate locals (`$node`, `$state`, `$config`) and a
+    /// parsing context bound to `$ctx`, used as a diagnostic sink by the
+    /// derivation parser. Mirrors the setup inlined in [`test1`]/[`test2`].
+    macro_rules! test_context {
+        ($node:ident, $state:ident, $config:ident, $ctx:ident) => {
+            let mut $node = tree::Node::from(tree::NodeType::ProtoMessage("test"));
+            let mut $state = Default::default();
+            let $config = crate::Config::new();
+            let mut $ctx = context::Context::new("test", &mut $node, &mut $state, &$config);
+        };
+    }
 
     #[test]
     fn test1() {
@@ -1602,13 +1172,159 @@ mod test {
         let mut context = context::Context::new("test", &mut node, &mut state, &config);
         let mut analysis_context = AnalysisContext::new(None);
 
+        // The spec grammar (substrait-antlr) defines all binary operators in a
+        // single left-recursive alternative, so they share one precedence level
+        // and associate left-to-right -- there is no `*`-over-`+` precedence.
+        // `1 + 2 * 3 - 4 / 5` therefore evaluates as `((((1+2)*3)-4)/5) == 1`,
+        // not `7`. This differs from the validator's former bespoke grammar,
+        // which encoded conventional arithmetic precedence; see
+        // https://github.com/substrait-io/substrait-validator/issues/526.
         let program = parse_program(r#"1 + 2 * 3 - 4 / 5"#, &mut context, &mut analysis_context)
             .unwrap_or_default();
 
         let mut eval_context = meta::Context::default();
         assert_eq!(
             program.evaluate(&mut eval_context),
-            Ok(meta::Value::Integer(7))
+            Ok(meta::Value::Integer(1))
         );
+    }
+
+    // ----------------------------------------------------------------------
+    // Characterization tests.
+    //
+    // These pin the parse/evaluate behavior of the derivation vocabulary that
+    // actually appears in the bundled standard extensions
+    // (rs/src/resources/extensions/*.yaml), so the grammar can be swapped to
+    // the substrait-antlr crate without behavioral drift. They cover simple,
+    // nullable, and parameterized types, the `anyN` binding passthrough used by
+    // comparison functions, and the decimal arithmetic derivation programs.
+    // ----------------------------------------------------------------------
+
+    /// Simple and nullable scalar types round-trip through parse + evaluate.
+    #[test]
+    fn characterize_simple_and_nullable_types() {
+        test_context!(node, state, config, y);
+        let mut z = AnalysisContext::new(None);
+        for (input, expected) in [
+            ("i8", "i8"),
+            ("i16", "i16"),
+            ("i32", "i32"),
+            ("i64", "i64"),
+            ("fp32", "fp32"),
+            ("fp64", "fp64"),
+            ("boolean", "boolean"),
+            ("string", "string"),
+            ("date", "date"),
+            ("time", "time"),
+            ("timestamp", "timestamp"),
+            ("timestamp_tz", "timestamp_tz"),
+            ("interval_year", "interval_year"),
+            ("fp32?", "fp32?"),
+            ("i32?", "i32?"),
+            ("boolean?", "boolean?"),
+        ] {
+            let ty = parse_type(input, &mut y, &mut z)
+                .unwrap_or_else(|e| panic!("failed to parse {input:?}: {e}"));
+            assert_eq!(ty.to_string(), expected, "for input {input:?}");
+        }
+    }
+
+    /// Parameterized types with literal parameters round-trip.
+    #[test]
+    fn characterize_parameterized_literals() {
+        test_context!(node, state, config, y);
+        let mut z = AnalysisContext::new(None);
+        for (input, expected) in [
+            ("decimal<38,0>", "DECIMAL<38, 0>"),
+            ("decimal<10,2>", "DECIMAL<10, 2>"),
+            ("decimal?<10,2>", "DECIMAL?<10, 2>"),
+            ("varchar<5>", "VARCHAR<5>"),
+            ("fixedchar<3>", "FIXEDCHAR<3>"),
+        ] {
+            let ty = parse_type(input, &mut y, &mut z)
+                .unwrap_or_else(|e| panic!("failed to parse {input:?}: {e}"));
+            assert_eq!(ty.to_string(), expected, "for input {input:?}");
+        }
+    }
+
+    /// The `anyN` binding used by comparison/identity functions captures an
+    /// argument type during matching and is reproduced by the return program.
+    #[test]
+    fn characterize_any_binding_passthrough() {
+        test_context!(node, state, config, y);
+        let mut z = AnalysisContext::new(None);
+
+        // Models e.g. `min(any1) -> any1`: bind any1 to the argument, return it.
+        let arg = parse_pattern("any1", &mut y, &mut z).unwrap();
+        let ret = parse_program("any1", &mut y, &mut z).unwrap();
+        let bound = parse_type("i32", &mut y, &mut z).unwrap();
+
+        let mut c = meta::Context::default();
+        assert!(arg
+            .match_pattern_with_context(&mut c, &bound.into())
+            .unwrap());
+        assert_eq!(ret.evaluate(&mut c).unwrap().to_string(), "i32");
+    }
+
+    /// The decimal `multiply` return derivation, evaluated against concrete
+    /// argument types (companion to the `add` derivation in [`test1`]).
+    #[test]
+    fn characterize_decimal_multiply() {
+        test_context!(node, state, config, y);
+        let mut z = AnalysisContext::new(None);
+
+        let x_slot = parse_pattern("decimal<P1,S1>", &mut y, &mut z).unwrap();
+        let y_slot = parse_pattern("decimal<P2,S2>", &mut y, &mut z).unwrap();
+        let return_program = parse_program(
+            r#"init_scale = S1 + S2
+            init_prec = P1 + P2 + 1
+            min_scale = min(init_scale, 6)
+            delta = init_prec - 38
+            prec = min(init_prec, 38)
+            scale_after_borrow = max(init_scale - delta, min_scale)
+            scale = init_prec > 38 ? scale_after_borrow : init_scale
+            DECIMAL<prec, scale>"#,
+            &mut y,
+            &mut z,
+        )
+        .unwrap();
+
+        let x_binding = parse_type("decimal<20,10>", &mut y, &mut z).unwrap();
+        let y_binding = parse_type("decimal<10,5>", &mut y, &mut z).unwrap();
+
+        let mut c = meta::Context::default();
+        assert!(x_slot
+            .match_pattern_with_context(&mut c, &x_binding.into())
+            .unwrap());
+        assert!(y_slot
+            .match_pattern_with_context(&mut c, &y_binding.into())
+            .unwrap());
+        let result = return_program.evaluate(&mut c).unwrap();
+        assert_eq!(&result.to_string(), "DECIMAL<31, 15>");
+    }
+
+    /// A single-expression return program (the common case, e.g. `return: i64`)
+    /// evaluates to that concrete type with no statements.
+    #[test]
+    fn characterize_single_expression_return() {
+        test_context!(node, state, config, y);
+        let mut z = AnalysisContext::new(None);
+        let program = parse_program("i64", &mut y, &mut z).unwrap();
+        assert!(program.statements.is_empty());
+        let mut c = meta::Context::default();
+        assert_eq!(program.evaluate(&mut c).unwrap().to_string(), "i64");
+    }
+
+    /// Syntax that the validator's former (stale) grammar could not parse but
+    /// the spec grammar shipped in substrait-antlr handles: the user-defined
+    /// type sigil `u!` and function types `func<... -> ...>`. We only assert
+    /// that parsing succeeds here; full type-system support for `func` is a
+    /// tracked follow-up (the class currently resolves as unsupported).
+    #[test]
+    fn parses_user_defined_and_func_types() {
+        test_context!(node, state, config, y);
+        let mut z = AnalysisContext::new(None);
+        assert!(parse_pattern("u!geometry", &mut y, &mut z).is_ok());
+        assert!(parse_pattern("func<any1 -> any2>", &mut y, &mut z).is_ok());
     }
 }
