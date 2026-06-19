@@ -1421,18 +1421,18 @@ dependencies = [
 
 [[package]]
 name = "substrait-antlr"
-version = "0.87.0-alpha.2"
+version = "0.87.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbb29630c5bd6cc79eead4e37c1bee91eae2c49ac5cb796513726191efdb7dbd"
+checksum = "302e465c0964ebfa2e5bc094bc48c6ec6257942e7df6850576b865516538044a"
 dependencies = [
  "antlr4rust",
 ]
 
 [[package]]
 name = "substrait-extensions"
-version = "0.87.0-alpha.2"
+version = "0.87.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad14ff1c7e2644a2383a9e5cbd1cb108238bef87cd0c56bc8eeaa5c49bb22254"
+checksum = "dc12006d47c1b5562ee95d1cb143255c55b90f0f03c89a94a4b0d760627deea2"
 dependencies = [
  "heck",
  "include_dir",
