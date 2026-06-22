@@ -1331,9 +1331,9 @@ dependencies = [
 
 [[package]]
 name = "substrait-antlr"
-version = "0.87.0-alpha.1"
+version = "0.87.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "412d3308a9017b43bed05aefbe2edaa50f0771d7310f3c062689b1e5effa7977"
+checksum = "302e465c0964ebfa2e5bc094bc48c6ec6257942e7df6850576b865516538044a"
 dependencies = [
  "antlr4rust",
 ]
