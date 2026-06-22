@@ -16,7 +16,11 @@ from .substrait_validator import (
     get_version as _get_version,
     get_substrait_version as _get_substrait_version,
 )
-from .substrait.plan_pb2 import Plan
+
+# The core Substrait protobuf bindings come from the substrait-protobuf package
+# (imported under the top-level `substrait` namespace); the validator-specific
+# bindings are generated locally into this package by build.rs.
+from substrait.plan_pb2 import Plan
 from .substrait.validator.tree_pb2 import ParseResult, Diagnostic, Path
 
 __VERSION__ = _get_version()

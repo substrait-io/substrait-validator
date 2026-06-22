@@ -16,7 +16,14 @@ fn main() {
     // Directory that the proto files are stored in. If the
     // rs/src/resources/proto/substrait directory exists, we're building from
     // an sdist package, in which case the proto files should have been copied
-    // to a local directory.
+    // to a local directory; otherwise we're building from the git repository
+    // and read them from the validator's `proto` directory.
+    //
+    // Note that we only generate Python bindings for the validator-specific
+    // `substrait.validator` package here. The bindings for the core `substrait`
+    // and `substrait.extensions` packages come from the `substrait-protobuf`
+    // PyPI package (a runtime dependency), so we no longer need the Substrait
+    // submodule's protos -- nor bindings generated from them -- in this build.
     let input_paths = if std::path::Path::new("..")
         .join("rs")
         .join("src")
@@ -27,14 +34,7 @@ fn main() {
     {
         vec!["../rs/src/resources/proto"]
     } else {
-        assert!(
-            std::path::Path::new("..")
-                .join("substrait")
-                .join("proto")
-                .exists(),
-            "Could not find (git-root)/substrait/proto. Did you check out submodules?"
-        );
-        vec!["../proto", "../substrait/proto"]
+        vec!["../proto"]
     };
 
     // Ensure above path is relative to the Cargo.toml directory.
@@ -70,7 +70,12 @@ fn main() {
     let intermediate_path = workdir.join(intermediate_path);
     let output_path = workdir.join(output_path);
 
-    // Gather all .proto files.
+    // Gather the validator-specific .proto files. We deliberately only generate
+    // bindings for the `substrait.validator` package (under a `validator`
+    // directory); the core `substrait`/`substrait.extensions` bindings are
+    // provided by the substrait-protobuf dependency. Filtering on the path also
+    // keeps the build correct if a resource tree still contains stale copies of
+    // the core protos.
     let proto_files = input_paths
         .iter()
         .flat_map(|p| {
@@ -80,6 +85,9 @@ fn main() {
                 .filter(|e| {
                     e.path().extension() == Some(OsStr::new("proto"))
                         && e.metadata().unwrap().is_file()
+                        && e.path()
+                            .components()
+                            .any(|c| c.as_os_str() == OsStr::new("validator"))
                 })
                 .map(|e| dunce::canonicalize(e.into_path()).unwrap())
         })
@@ -148,18 +156,31 @@ fn main() {
                 .expect("intermediate file is not based in the expected directory"),
         );
 
-        // Determine the output directory.
-        let mut path = output_file.to_path_buf();
-        path.pop();
-
-        // Ensure that the directory exists, and create an __init__.py for it
-        // if we haven't already.
-        let mut path = output_file.to_path_buf();
-        path.pop();
-        if output_dirs.insert(path.clone()) {
-            fs::create_dir_all(&path).expect("failed to create output directory");
-            path.push("__init__.py");
-            fs::File::create(path).expect("failed to create __init__.py");
+        // Ensure that every intermediate package directory below the output
+        // root has an __init__.py, so the generated modules are importable as a
+        // regular package. We walk up from the file's directory to (but not
+        // including) output_path, which already has a hand-written __init__.py
+        // that must not be clobbered. This matters because the generated files
+        // now live only in the nested `substrait/validator` package, so the
+        // intermediate `substrait` directory would otherwise lack an
+        // __init__.py.
+        let mut dir = output_file.to_path_buf();
+        dir.pop();
+        let mut ancestors = vec![];
+        let mut cursor = dir.as_path();
+        while cursor != output_path && cursor.starts_with(&output_path) {
+            ancestors.push(cursor.to_path_buf());
+            match cursor.parent() {
+                Some(parent) => cursor = parent,
+                None => break,
+            }
+        }
+        for ancestor in ancestors.into_iter().rev() {
+            if output_dirs.insert(ancestor.clone()) {
+                fs::create_dir_all(&ancestor).expect("failed to create output directory");
+                fs::File::create(ancestor.join("__init__.py"))
+                    .expect("failed to create __init__.py");
+            }
         }
 
         // Copy and patch the file.
