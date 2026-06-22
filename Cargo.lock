@@ -1339,6 +1339,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrait-prost"
+version = "0.87.0-alpha.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8855e66140695a6b76ef2c0d091a9fe2de5286e9d2437324b091a1dc6ce9f7a2"
+dependencies = [
+ "prost",
+ "prost-build",
+ "prost-types",
+ "protobuf-src",
+ "walkdir",
+]
+
+[[package]]
 name = "substrait-validator"
 version = "0.1.4"
 dependencies = [
@@ -1365,6 +1378,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "substrait-antlr",
+ "substrait-prost",
  "substrait-validator-derive",
  "thiserror",
  "uriparse",
