@@ -40,6 +40,12 @@ heck = "0.5"
 # Used for dealing with deserializing the YAML extension files.
 serde_yaml = "0.9"
 
+# Provides the standard Substrait extension YAML files (resolved offline by URN)
+# and the extension-file JSON schema, generated and published from the spec by
+# substrait-packaging. Replaces the locally-bundled copies and the build-time
+# URN registry.
+substrait-extensions = "0.87.0-alpha.3"
+
 # The schema for the extension files uses jsonschema syntax. The rust crate for
 # schema validation with this format this uses serde_json types as input for
 # both the schema and the input, so we need to depend on that as well, even
@@ -56,7 +62,7 @@ regex = "1.12"
 # the spec's canonical grammar); antlr4rust is its runtime, used directly by our
 # analysis glue as well.
 antlr4rust = "0.5.2"
-substrait-antlr = "0.87.0-alpha.1"
+substrait-antlr = "0.87.0-alpha.3"
 
 # Used for checking URI syntax.
 uriparse = "0.6"
