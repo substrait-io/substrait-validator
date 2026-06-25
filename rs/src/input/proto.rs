@@ -317,7 +317,7 @@ mod prost_meta_tests {
     fn oneof_with_mixed_boxing() {
         // `rel::RelType` has both boxed (`Read(Box<ReadRel>)`) and unboxed
         // (`Set(SetRel)`) variants; both must report their member field name.
-        let read = substrait::rel::RelType::Read(Box::new(substrait::ReadRel::default()));
+        let read = substrait::rel::RelType::Read(Box::default());
         assert_eq!(read.proto_oneof_variant(), "read");
         let set = substrait::rel::RelType::Set(substrait::SetRel::default());
         assert_eq!(set.proto_oneof_variant(), "set");

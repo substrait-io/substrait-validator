@@ -1193,9 +1193,9 @@ mod test {
     // Characterization tests.
     //
     // These pin the parse/evaluate behavior of the derivation vocabulary that
-    // actually appears in the bundled standard extensions
-    // (rs/src/resources/extensions/*.yaml), so the grammar can be swapped to
-    // the substrait-antlr crate without behavioral drift. They cover simple,
+    // actually appears in the bundled standard extensions (the
+    // `substrait-extensions` crate), so the grammar can be swapped to the
+    // substrait-antlr crate without behavioral drift. They cover simple,
     // nullable, and parameterized types, the `anyN` binding passthrough used by
     // comparison functions, and the decimal arithmetic derivation programs.
     // ----------------------------------------------------------------------

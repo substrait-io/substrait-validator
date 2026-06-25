@@ -57,72 +57,6 @@ fn find_proto_files(proto_path: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
-/// Returns all YAML files in the given directory (non-recursive).
-fn find_yaml_files(dir: &Path) -> Vec<PathBuf> {
-    let mut files: Vec<PathBuf> = walkdir::WalkDir::new(dir)
-        .max_depth(1)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| {
-            let ext = e.path().extension();
-            (ext == Some(OsStr::new("yaml")) || ext == Some(OsStr::new("yml")))
-                && e.metadata().map(|m| m.is_file()).unwrap_or(false)
-        })
-        .map(|e| e.into_path())
-        .collect();
-    // Sort for deterministic output across builds.
-    files.sort();
-    files
-}
-
-/// Scans a YAML extension file for its top-level `urn:` field and returns its
-/// value. The standard extension files always declare this on a line of their
-/// own, so a simple line scan suffices and avoids pulling a YAML parser into
-/// the build dependencies.
-fn extract_urn(yaml_path: &Path) -> Option<String> {
-    let contents = fs::read_to_string(yaml_path).ok()?;
-    for line in contents.lines() {
-        let line = line.trim_end();
-        if let Some(rest) = line.strip_prefix("urn:") {
-            let urn = rest.trim().trim_matches(|c| c == '"' || c == '\'').trim();
-            if !urn.is_empty() {
-                return Some(urn.to_string());
-            }
-        }
-    }
-    None
-}
-
-/// Generates a Rust source file (in OUT_DIR) containing a static slice that
-/// maps each bundled standard extension URN to the bytes of its YAML file.
-/// This is included by the URN resolver to provide an offline, batteries-
-/// included registry for the `extension:io.substrait:*` extensions.
-fn generate_stdlib_registry(extensions_dir: &Path) -> Result<()> {
-    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
-    let dest = out_dir.join("stdlib_extension_registry.rs");
-
-    let mut entries = String::new();
-    for yaml_file in find_yaml_files(extensions_dir) {
-        println!("cargo:rerun-if-changed={}", yaml_file.display());
-        let Some(urn) = extract_urn(&yaml_file) else {
-            // Skip files without a recognizable urn field.
-            continue;
-        };
-        entries.push_str(&format!(
-            "    ({urn:?}, include_bytes!({path:?})),\n",
-            urn = urn,
-            path = yaml_file.display().to_string(),
-        ));
-    }
-
-    let source = format!(
-        "/// Maps standard extension URNs to the bytes of their bundled YAML \
-         file.\npub static STDLIB_EXTENSIONS: &[(&str, &[u8])] = &[\n{entries}];\n"
-    );
-    fs::write(&dest, source)?;
-    Ok(())
-}
-
 fn main() -> Result<()> {
     // Determine the directory of Cargo.toml for this crate.
     let manifest_dir =
@@ -142,22 +76,15 @@ fn main() -> Result<()> {
             "Could not find (git-root)/substrait/proto. Did you check out submodules?"
         );
 
-        // Synchronize the YAML extension file schema.
-        synchronize(
-            &substrait_git_dir,
-            &resource_dir,
-            &PathBuf::from("text/simple_extensions_schema.yaml"),
-        )?;
-
         // Synchronize the protobuf files from the main repository. Note that
         // the core Substrait protobuf files (the `substrait` and
         // `substrait.extensions` packages) are no longer *compiled* by this
         // crate: we consume their pre-generated types from the `substrait-prost`
         // crate and synthesize our introspection trait impls from its embedded
-        // descriptor (see generate_prost_meta). We still vendor the .proto files
-        // here, however, because the Python bindings (py/build.rs) generate
-        // their own protobuf modules from them, and sdist builds rely on this
-        // vendored copy.
+        // descriptor (see the prost_meta module). We still vendor the .proto
+        // files here, however, because the Python bindings (py/build.rs)
+        // generate their own protobuf modules from them, and sdist builds rely
+        // on this vendored copy.
         for proto_file in find_proto_files(&substrait_git_dir.join("proto")) {
             synchronize(
                 &substrait_git_dir,
@@ -175,18 +102,6 @@ fn main() -> Result<()> {
                 &resource_dir,
                 proto_file
                     .strip_prefix(&validator_git_dir)
-                    .expect("failed to strip prefix"),
-            )?;
-        }
-
-        // Synchronize the standard extension YAML files so they can be bundled
-        // into the validator and resolved offline by their URN.
-        for yaml_file in find_yaml_files(&substrait_git_dir.join("extensions")) {
-            synchronize(
-                &substrait_git_dir,
-                &resource_dir,
-                yaml_file
-                    .strip_prefix(&substrait_git_dir)
                     .expect("failed to strip prefix"),
             )?;
         }
@@ -217,12 +132,6 @@ fn main() -> Result<()> {
     #[cfg(feature = "protoc")]
     // Use vendored protobuf compiler if requested.
     std::env::set_var("PROTOC", protobuf_src::protoc());
-
-    // Generate the bundled standard-extension registry (URN -> YAML bytes)
-    // from the synchronized resource directory. This runs regardless of
-    // whether we're building from git, so that crate builds use the checked-in
-    // copies under src/resources/extensions.
-    generate_stdlib_registry(&PathBuf::from(&resource_dir).join("extensions"))?;
 
     // Compile the validator-specific protobuf files (the `substrait.validator`
     // package) using prost, applying our ProtoMeta derive to obtain the

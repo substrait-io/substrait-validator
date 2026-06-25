@@ -157,9 +157,9 @@ pub fn parse_urn<S: AsRef<str>>(
             once_cell::sync::Lazy::new(|| {
                 jsonschema::Validator::new(
                     &yaml::yaml_to_json(
-                        serde_yaml::from_str::<serde_yaml::Value>(include_str!(
-                            "../../../resources/text/simple_extensions_schema.yaml"
-                        ))
+                        serde_yaml::from_str::<serde_yaml::Value>(
+                            substrait_extensions::text::SIMPLE_EXTENSIONS_SCHEMA,
+                        )
                         .unwrap(),
                         &path::Path::default(),
                     )
