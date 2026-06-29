@@ -44,7 +44,7 @@ serde_yaml = "0.9"
 # and the extension-file JSON schema, generated and published from the spec by
 # substrait-packaging. Replaces the locally-bundled copies and the build-time
 # URN registry.
-substrait-extensions = "0.87.0-alpha.3"
+substrait-extensions = "0.95.0-alpha"
 
 # The schema for the extension files uses jsonschema syntax. The rust crate for
 # schema validation with this format this uses serde_json types as input for

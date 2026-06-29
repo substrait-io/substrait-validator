@@ -1439,9 +1439,9 @@ dependencies = [
 
 [[package]]
 name = "substrait-extensions"
-version = "0.87.0-alpha.3"
+version = "0.95.0-alpha"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc12006d47c1b5562ee95d1cb143255c55b90f0f03c89a94a4b0d760627deea2"
+checksum = "95d5d077e268f3c8f8f2ad6a26ebfe42d28e0bae0d75ecdce72dde7b43c8d7c3"
 dependencies = [
  "heck",
  "include_dir",
