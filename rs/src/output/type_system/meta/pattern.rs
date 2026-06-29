@@ -397,7 +397,7 @@ impl Pattern for Value {
 ///    `MIRROR` nullability behavior.
 ///
 /// Syntax: a `?` followed by any identifier.
-///    
+///
 /// ## Consistent bindings with nullability suffix
 ///
 /// (inconsistent = false, nullability = Some(pattern))
@@ -630,7 +630,7 @@ impl Describe for DataType {
     ) -> std::fmt::Result {
         let mut non_recursive = String::new();
         if let Some(class) = &self.class {
-            write!(&mut non_recursive, "{}", class)?;
+            write!(&mut non_recursive, "{class}")?;
         } else {
             write!(&mut non_recursive, "typename")?;
         }
@@ -641,7 +641,7 @@ impl Describe for DataType {
             x => write!(&mut non_recursive, "?{x}")?,
         }
         write!(&mut non_recursive, "{}", self.variation)?;
-        write!(f, "{}", non_recursive)?;
+        write!(f, "{non_recursive}")?;
         if let Some(parameters) = &self.parameters {
             write!(f, "<")?;
             util::string::describe_sequence(f, parameters, limit, 20, |f, param, _, limit| {

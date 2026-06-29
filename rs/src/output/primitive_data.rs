@@ -42,7 +42,7 @@ fn hexdump(f: &mut std::fmt::Formatter<'_>, x: &[u8]) -> std::fmt::Result {
         if i > 0 {
             write!(f, " ")?;
         }
-        write!(f, "{:02X}", b)?;
+        write!(f, "{b:02X}")?;
     }
     Ok(())
 }

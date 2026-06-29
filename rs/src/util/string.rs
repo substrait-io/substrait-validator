@@ -323,7 +323,7 @@ fn write_truncated_str(
         if quote {
             write!(f, "{}", as_quoted_string(&left_part))?;
         } else {
-            write!(f, "{}", left_part)?;
+            write!(f, "{left_part}")?;
         }
     }
     if let Some(n_right) = n_right {
@@ -333,7 +333,7 @@ fn write_truncated_str(
             if quote {
                 write!(f, "{}", as_quoted_string(&right_part))?;
             } else {
-                write!(f, "{}", right_part)?;
+                write!(f, "{right_part}")?;
             }
         }
     }
@@ -500,7 +500,7 @@ mod tests {
 
         for (input, expected) in test_cases {
             let output = test_describe_with_limit(input, Limit::new(3), describe_identifier);
-            assert_eq!(output, expected, "Failed for input: {}", input);
+            assert_eq!(output, expected, "Failed for input: {input}");
         }
     }
 
@@ -514,7 +514,7 @@ mod tests {
 
         for (input, expected) in test_cases {
             let output = test_describe_with_limit(input, Limit::new(3), describe_string);
-            assert_eq!(output, expected, "Failed for input: {}", input);
+            assert_eq!(output, expected, "Failed for input: {input}");
         }
     }
 }

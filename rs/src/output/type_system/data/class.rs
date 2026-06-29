@@ -26,7 +26,7 @@ pub trait ParameterInfo {
     /// if the name is not known.
     fn parameter_name_or_index(&self, index: usize) -> String {
         self.parameter_name(index)
-            .unwrap_or_else(|| format!("{}", index))
+            .unwrap_or_else(|| format!("{index}"))
     }
 
     /// Whether this type supports parameters. This is used to determine
@@ -338,8 +338,8 @@ impl ParameterInfo for Compound {
             (Compound::FixedBinary, 0) => Some(String::from("length")),
             (Compound::Decimal, 0) => Some(String::from("precision")),
             (Compound::Decimal, 1) => Some(String::from("scale")),
-            (Compound::Struct, i) => Some(format!("{}", i)),
-            (Compound::NamedStruct, i) => Some(format!("{}", i)),
+            (Compound::Struct, i) => Some(format!("{i}")),
+            (Compound::NamedStruct, i) => Some(format!("{i}")),
             (Compound::List, 0) => Some(String::from("element")),
             (Compound::Map, 0) => Some(String::from("key")),
             (Compound::Map, 1) => Some(String::from("value")),

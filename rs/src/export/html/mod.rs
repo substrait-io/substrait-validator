@@ -224,7 +224,7 @@ fn format_span<S: std::fmt::Display>(class: &'static str, text: S) -> String {
 
 /// Creates a span with the given class name.
 fn format_span_html<S: std::fmt::Display>(class: &'static str, html: S) -> String {
-    format!("<span class=\"{class}\">{}</span>", html)
+    format!("<span class=\"{class}\">{html}</span>")
 }
 
 /// Formats a diagnostic message box. path should be the node that the
@@ -242,7 +242,7 @@ fn format_diagnostic(
         if with_path {
             diag.to_string()
         } else {
-            format!("{:#}", diag)
+            format!("{diag:#}")
         },
     );
     let cause = if &diag.path == path {
@@ -452,7 +452,7 @@ fn format_data_type(prefix: &str, data_type: &data::Type) -> Vec<String> {
     let mut html = vec![];
 
     if data_type.parameters().is_empty() {
-        html.push(format_data_type_card(&format!("{prefix}: {:#}", data_type)));
+        html.push(format_data_type_card(&format!("{prefix}: {data_type:#}")));
     } else {
         html.push("<details class=\"data_type\">\n<summary>".to_string());
         html.push(format!("{prefix}: {}", html_escape(data_type.to_string())));
@@ -624,7 +624,7 @@ pub fn export<T: std::io::Write>(
 
     // Generate and write header.
     let font_awesome_b64 = general_purpose::STANDARD.encode(FONT_AWESOME);
-    write!(out, "{HEADER1}{}{HEADER2}", font_awesome_b64)?;
+    write!(out, "{HEADER1}{font_awesome_b64}{HEADER2}")?;
 
     // Emit metadata.
     writeln!(out, "<details class=\"relation_tree\" open=\"true\">")?;
