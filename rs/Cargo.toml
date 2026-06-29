@@ -62,7 +62,7 @@ regex = "1.12"
 # the spec's canonical grammar); antlr4rust is its runtime, used directly by our
 # analysis glue as well.
 antlr4rust = "0.5.2"
-substrait-antlr = "0.87.0-alpha.3"
+substrait-antlr = "0.95.0-alpha"
 
 # Used for checking URI syntax.
 uriparse = "0.6"
