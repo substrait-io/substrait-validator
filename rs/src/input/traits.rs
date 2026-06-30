@@ -129,11 +129,11 @@ impl<T: ProtoPrimitive> InputNode for T {
 
 impl InputNode for () {
     fn type_to_node() -> tree::Node {
-        tree::NodeType::ProtoMessage("google.protobuf.Empty").into()
+        tree::NodeType::ProtoMessage("google.protobuf.Empty".to_string()).into()
     }
 
     fn data_to_node(&self) -> tree::Node {
-        tree::NodeType::ProtoMessage("google.protobuf.Empty").into()
+        tree::NodeType::ProtoMessage("google.protobuf.Empty".to_string()).into()
     }
 
     fn oneof_variant(&self) -> Option<&'static str> {
@@ -167,7 +167,7 @@ mod tests {
                 class: tree::Class::Misc,
                 brief: None,
                 summary: None,
-                node_type: tree::NodeType::ProtoMessage("substrait.Plan"),
+                node_type: tree::NodeType::ProtoMessage("substrait.Plan".to_string()),
                 data_type: None,
                 data: vec![],
             }
@@ -180,7 +180,7 @@ mod tests {
                 class: tree::Class::Misc,
                 brief: None,
                 summary: None,
-                node_type: tree::NodeType::ProtoMessage("substrait.Plan"),
+                node_type: tree::NodeType::ProtoMessage("substrait.Plan".to_string()),
                 data_type: None,
                 data: vec![],
             }
@@ -210,7 +210,7 @@ mod tests {
                 class: tree::Class::Misc,
                 brief: None,
                 summary: None,
-                node_type: tree::NodeType::ProtoMessage("substrait.Rel"),
+                node_type: tree::NodeType::ProtoMessage("substrait.Rel".to_string()),
                 data_type: None,
                 data: vec![],
             }

@@ -33,9 +33,7 @@ pub fn field_descriptor_to_node(field: &prost_reflect::FieldDescriptor) -> tree:
     use prost_reflect::Kind;
     match field.kind() {
         Kind::Message(desc) => {
-            let name: &'static str =
-                Box::leak(desc.full_name().to_string().into_boxed_str());
-            tree::NodeType::ProtoMessage(name).into()
+            tree::NodeType::ProtoMessage(desc.full_name().to_string()).into()
         }
         Kind::Enum(desc) => {
             let type_name: &'static str =

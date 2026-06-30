@@ -109,13 +109,15 @@ fn proto_meta_derive_message(ast: &syn::DeriveInput) -> TokenStream {
 
         impl #impl_generics crate::input::traits::InputNode for #name #ty_generics #where_clause {
             fn type_to_node() -> crate::output::tree::Node {
-                use crate::input::traits::ProtoMessage;
-                crate::output::tree::NodeType::ProtoMessage(Self::proto_message_type()).into()
+                crate::output::tree::NodeType::ProtoMessage(
+                    <#name as ::prost::Name>::full_name()
+                ).into()
             }
 
             fn data_to_node(&self) -> crate::output::tree::Node {
-                use crate::input::traits::ProtoMessage;
-                crate::output::tree::NodeType::ProtoMessage(Self::proto_message_type()).into()
+                crate::output::tree::NodeType::ProtoMessage(
+                    <#name as ::prost::Name>::full_name()
+                ).into()
             }
 
             fn oneof_variant(&self) -> Option<&'static str> {
@@ -126,30 +128,7 @@ fn proto_meta_derive_message(ast: &syn::DeriveInput) -> TokenStream {
                 &self,
                 y: &mut crate::parse::context::Context<'_>,
             ) -> bool {
-                use ::prost_reflect::ReflectMessage;
-                let desc = self.descriptor();
-                let unparsed: ::std::vec::Vec<_> = desc
-                    .fields()
-                    .filter(|f| !y.field_parsed(f.name()))
-                    .collect();
-                if unparsed.is_empty() {
-                    return false;
-                }
-                let dynamic = self.transcode_to_dynamic();
-                let mut unknowns = false;
-                for field_desc in &unparsed {
-                    if !y.config.ignore_unknown_fields || dynamic.has_field(field_desc) {
-                        crate::parse::traversal::push_unknown_proto_field(
-                            y,
-                            field_desc.name(),
-                            crate::input::proto::field_descriptor_to_node(field_desc),
-                        );
-                        unknowns = true;
-                    } else {
-                        y.set_field_parsed(field_desc.name());
-                    }
-                }
-                unknowns
+                crate::parse::traversal::parse_proto_message_unknown(self, y)
             }
         }
     )
