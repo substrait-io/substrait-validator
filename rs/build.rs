@@ -131,8 +131,11 @@ fn main() -> Result<()> {
     let proto_files: Vec<_> = find_proto_files(&proto_path);
 
     // Compile the protobuf files using prost.
+    let out_dir = PathBuf::from(&env::var("OUT_DIR").expect("OUT_DIR not set"));
+
     let mut config = prost_build::Config::new();
     config.enable_type_names();
+    config.file_descriptor_set_path(out_dir.join("file_descriptor_set.bin"));
     config.type_attribute(".", "#[derive(::substrait_validator_derive::ProtoMeta)]");
     config.type_attribute(".", "#[allow(deprecated)]");
     config.disable_comments([

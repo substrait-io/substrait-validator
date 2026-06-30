@@ -17,6 +17,14 @@ use crate::output::primitive_data;
 
 use heck::ToUpperCamelCase;
 
+pub static DESCRIPTOR_POOL: once_cell::sync::Lazy<prost_reflect::DescriptorPool> =
+    once_cell::sync::Lazy::new(|| {
+        prost_reflect::DescriptorPool::decode(
+            include_bytes!(concat!(env!("OUT_DIR"), "/file_descriptor_set.bin")).as_ref(),
+        )
+        .expect("failed to decode descriptor pool")
+    });
+
 #[allow(
     clippy::large_enum_variant,
     clippy::derive_partial_eq_without_eq,
