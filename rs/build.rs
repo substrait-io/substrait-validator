@@ -132,6 +132,7 @@ fn main() -> Result<()> {
 
     // Compile the protobuf files using prost.
     let mut config = prost_build::Config::new();
+    config.enable_type_names();
     config.type_attribute(".", "#[derive(::substrait_validator_derive::ProtoMeta)]");
     config.type_attribute(".", "#[allow(deprecated)]");
     config.disable_comments([

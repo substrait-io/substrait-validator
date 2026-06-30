@@ -132,7 +132,6 @@ fn is_repeated(typ: &syn::Type) -> FieldType {
 
 fn proto_meta_derive_message(ast: &syn::DeriveInput, data: &syn::DataStruct) -> TokenStream {
     let name = &ast.ident;
-    let name_str = cook_ident(name);
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
     let parse_unknown_matches: Vec<_> = data
@@ -200,7 +199,7 @@ fn proto_meta_derive_message(ast: &syn::DeriveInput, data: &syn::DataStruct) -> 
             fn proto_message_type() -> &'static str {
                 use ::once_cell::sync::Lazy;
                 static TYPE_NAME: Lazy<::std::string::String> = Lazy::new(|| {
-                    crate::input::proto::cook_path(module_path!(), #name_str)
+                    <#name as ::prost::Name>::full_name()
                 });
                 &TYPE_NAME
             }
