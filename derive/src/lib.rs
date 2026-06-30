@@ -48,7 +48,7 @@ pub fn proto_meta(input: TokenStream) -> TokenStream {
 
 fn proto_meta_derive(ast: syn::DeriveInput) -> TokenStream {
     match ast.data {
-        syn::Data::Struct(ref struct_data) => proto_meta_derive_message(&ast, struct_data),
+        syn::Data::Struct(_) => proto_meta_derive_message(&ast),
         syn::Data::Enum(ref enum_data) => match enum_data.variants.iter().next().unwrap().fields {
             syn::Fields::Unit => {
                 for variant in enum_data.variants.iter() {
@@ -78,7 +78,7 @@ fn proto_meta_derive(ast: syn::DeriveInput) -> TokenStream {
     }
 }
 
-fn proto_meta_derive_message(ast: &syn::DeriveInput, _data: &syn::DataStruct) -> TokenStream {
+fn proto_meta_derive_message(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
