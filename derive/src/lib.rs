@@ -39,16 +39,6 @@ use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::quote;
 
-/// Converts a Rust identifier string generated via stringify!() to the
-/// original identifier by "cooking" raw identifiers.
-fn cook_ident(ident: &syn::Ident) -> String {
-    let ident = ident.to_string();
-    if let Some((_, keyword)) = ident.split_once('#') {
-        keyword.to_string()
-    } else {
-        ident
-    }
-}
 
 #[doc(hidden)]
 #[proc_macro_derive(ProtoMeta, attributes(proto_meta))]
@@ -175,7 +165,7 @@ fn proto_meta_derive_oneof(ast: &syn::DeriveInput, data: &syn::DataEnum) -> Toke
         .iter()
         .map(|variant| {
             let ident = &variant.ident;
-            let proto_name = cook_ident(ident).to_snake_case();
+            let proto_name = ident.to_string().to_snake_case();
             quote! { #name::#ident (_) => #proto_name }
         })
         .collect();
@@ -238,7 +228,7 @@ fn proto_meta_derive_oneof(ast: &syn::DeriveInput, data: &syn::DataEnum) -> Toke
 
 fn proto_meta_derive_enum(ast: &syn::DeriveInput, data: &syn::DataEnum) -> TokenStream {
     let name = &ast.ident;
-    let name_str = cook_ident(name);
+    let name_str = name.to_string();
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
     // Build a match from i32 discriminant to variant, used to look up
