@@ -35,7 +35,7 @@
 
 extern crate proc_macro;
 
-use heck::{ToShoutySnakeCase, ToSnakeCase};
+use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::quote;
 
@@ -308,49 +308,69 @@ fn proto_meta_derive_enum(ast: &syn::DeriveInput, data: &syn::DataEnum) -> Token
     let name_str = cook_ident(name);
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    let upper_name = name_str.to_shouty_snake_case();
-
-    let variant_names: Vec<_> = data
+    // Build a match from i32 discriminant to variant, used to look up
+    // descriptor values by number at runtime.
+    let i32_to_variant: Vec<_> = data
         .variants
         .iter()
         .map(|variant| {
             let ident = &variant.ident;
-            let proto_name = format!(
-                "{}_{}",
-                upper_name,
-                cook_ident(ident).to_shouty_snake_case()
-            );
-            (ident, proto_name)
+            quote! { #name::#ident => #name::#ident as i32 }
         })
         .collect();
-
-    let variant_matches: Vec<_> = variant_names
-        .iter()
-        .map(|(ident, proto_name)| {
-            quote! { #name::#ident => #proto_name }
-        })
-        .collect();
-
-    let (_, first_variant_name) = &variant_names[0];
 
     quote!(
         impl #impl_generics crate::input::traits::ProtoEnum for #name #ty_generics #where_clause {
             fn proto_enum_type() -> &'static str {
                 use ::once_cell::sync::Lazy;
                 static TYPE_NAME: Lazy<::std::string::String> = Lazy::new(|| {
-                    crate::input::proto::cook_path(module_path!(), #name_str)
+                    let cook_name = crate::input::proto::cook_path(module_path!(), #name_str);
+                    crate::input::proto::DESCRIPTOR_POOL
+                        .get_enum_by_name(&cook_name)
+                        .unwrap_or_else(|| panic!("enum {cook_name} not found in descriptor pool"))
+                        .full_name()
+                        .to_string()
                 });
                 &TYPE_NAME
             }
 
             fn proto_enum_default_variant() -> &'static str {
-                #first_variant_name
+                use ::once_cell::sync::Lazy;
+                static DEFAULT: Lazy<&'static str> = Lazy::new(|| {
+                    let type_name = <#name as crate::input::traits::ProtoEnum>::proto_enum_type();
+                    let s = crate::input::proto::DESCRIPTOR_POOL
+                        .get_enum_by_name(type_name)
+                        .unwrap_or_else(|| panic!("enum {type_name} not found in descriptor pool"))
+                        .default_value()
+                        .name()
+                        .to_string();
+                    ::std::boxed::Box::leak(s.into_boxed_str())
+                });
+                *DEFAULT
             }
 
             fn proto_enum_variant(&self) -> &'static str {
-                match self {
-                    #(#variant_matches),*
-                }
+                use ::once_cell::sync::Lazy;
+                static VARIANTS: Lazy<::std::collections::HashMap<i32, &'static str>> =
+                    Lazy::new(|| {
+                        let type_name =
+                            <#name as crate::input::traits::ProtoEnum>::proto_enum_type();
+                        crate::input::proto::DESCRIPTOR_POOL
+                            .get_enum_by_name(type_name)
+                            .unwrap_or_else(|| {
+                                panic!("enum {type_name} not found in descriptor pool")
+                            })
+                            .values()
+                            .map(|v| {
+                                let s = ::std::boxed::Box::leak(
+                                    v.name().to_string().into_boxed_str(),
+                                );
+                                (v.number(), s as &'static str)
+                            })
+                            .collect()
+                    });
+                let number = match self { #(#i32_to_variant),* };
+                VARIANTS[&number]
             }
 
             fn proto_enum_from_i32(x: i32) -> Option<Self> {
