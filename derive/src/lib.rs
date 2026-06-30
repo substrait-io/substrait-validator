@@ -88,111 +88,9 @@ fn proto_meta_derive(ast: syn::DeriveInput) -> TokenStream {
     }
 }
 
-enum FieldType {
-    Optional,
-    BoxedOptional,
-    Repeated,
-    Primitive,
-}
-
-fn is_repeated(typ: &syn::Type) -> FieldType {
-    if let syn::Type::Path(path) = typ {
-        if let Some(last) = path.path.segments.last() {
-            if last.ident == "Option" {
-                if let syn::PathArguments::AngleBracketed(ref args) = last.arguments {
-                    if let syn::GenericArgument::Type(syn::Type::Path(path2)) =
-                        args.args.first().unwrap()
-                    {
-                        if path2.path.segments.last().unwrap().ident == "Box" {
-                            return FieldType::BoxedOptional;
-                        } else {
-                            return FieldType::Optional;
-                        }
-                    }
-                }
-                panic!("Option without type argument?");
-            } else if last.ident == "Vec" {
-                if let syn::PathArguments::AngleBracketed(ref args) = last.arguments {
-                    if let syn::GenericArgument::Type(syn::Type::Path(path2)) =
-                        args.args.first().unwrap()
-                    {
-                        if path2.path.segments.last().unwrap().ident == "u8" {
-                            return FieldType::Primitive;
-                        } else {
-                            return FieldType::Repeated;
-                        }
-                    }
-                }
-                panic!("Vec without type argument?");
-            }
-        }
-    }
-    FieldType::Primitive
-}
-
-fn proto_meta_derive_message(ast: &syn::DeriveInput, data: &syn::DataStruct) -> TokenStream {
+fn proto_meta_derive_message(ast: &syn::DeriveInput, _data: &syn::DataStruct) -> TokenStream {
     let name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
-
-    let parse_unknown_matches: Vec<_> = data
-        .fields
-        .iter()
-        .map(|field| {
-            if let Some(ident) = &field.ident {
-                let ident_str = cook_ident(ident);
-                let action = match is_repeated(&field.ty) {
-                    FieldType::Optional => quote! {
-                        crate::parse::traversal::push_proto_field(
-                            y,
-                            &self.#ident.as_ref(),
-                            #ident_str,
-                            true,
-                            |_, _| Ok(()),
-                        );
-                    },
-                    FieldType::BoxedOptional => quote! {
-                        crate::parse::traversal::push_proto_field(
-                            y,
-                            &self.#ident,
-                            #ident_str,
-                            true,
-                            |_, _| Ok(()),
-                        );
-                    },
-                    FieldType::Repeated => quote! {
-                        crate::parse::traversal::push_proto_repeated_field(
-                            y,
-                            &self.#ident.as_ref(),
-                            #ident_str,
-                            true,
-                            |_, _| Ok(()),
-                            |_, _, _, _, _| (),
-                        );
-                    },
-                    FieldType::Primitive => quote! {
-                        use crate::input::traits::ProtoPrimitive;
-                        if !y.config.ignore_unknown_fields || !self.#ident.proto_primitive_is_default() {
-                            crate::parse::traversal::push_proto_field(
-                                y,
-                                &Some(&self.#ident),
-                                #ident_str,
-                                true,
-                                |_, _| Ok(()),
-                            );
-                        }
-                    },
-                };
-                quote! {
-                    if !y.field_parsed(#ident_str) {
-                        unknowns = true;
-                        #action
-                    }
-                }
-            } else {
-                panic!("protobuf message fields must have names");
-            }
-        })
-        .collect();
 
     quote!(
         impl #impl_generics crate::input::traits::ProtoMessage for #name #ty_generics #where_clause {
@@ -202,6 +100,20 @@ fn proto_meta_derive_message(ast: &syn::DeriveInput, data: &syn::DataStruct) -> 
                     <#name as ::prost::Name>::full_name()
                 });
                 &TYPE_NAME
+            }
+        }
+
+        impl #impl_generics ::prost_reflect::ReflectMessage for #name #ty_generics #where_clause {
+            fn descriptor(&self) -> ::prost_reflect::MessageDescriptor {
+                use ::once_cell::sync::Lazy;
+                static DESC: Lazy<::prost_reflect::MessageDescriptor> = Lazy::new(|| {
+                    let type_name =
+                        <#name as crate::input::traits::ProtoMessage>::proto_message_type();
+                    crate::input::proto::DESCRIPTOR_POOL
+                        .get_message_by_name(type_name)
+                        .unwrap_or_else(|| panic!("message {type_name} not in descriptor pool"))
+                });
+                DESC.clone()
             }
         }
 
@@ -224,8 +136,29 @@ fn proto_meta_derive_message(ast: &syn::DeriveInput, data: &syn::DataStruct) -> 
                 &self,
                 y: &mut crate::parse::context::Context<'_>,
             ) -> bool {
+                use ::prost_reflect::ReflectMessage;
+                let desc = self.descriptor();
+                let unparsed: ::std::vec::Vec<_> = desc
+                    .fields()
+                    .filter(|f| !y.field_parsed(f.name()))
+                    .collect();
+                if unparsed.is_empty() {
+                    return false;
+                }
+                let dynamic = self.transcode_to_dynamic();
                 let mut unknowns = false;
-                #(#parse_unknown_matches)*
+                for field_desc in &unparsed {
+                    if !y.config.ignore_unknown_fields || dynamic.has_field(field_desc) {
+                        crate::parse::traversal::push_unknown_proto_field(
+                            y,
+                            field_desc.name(),
+                            crate::input::proto::field_descriptor_to_node(field_desc),
+                        );
+                        unknowns = true;
+                    } else {
+                        y.set_field_parsed(field_desc.name());
+                    }
+                }
                 unknowns
             }
         }

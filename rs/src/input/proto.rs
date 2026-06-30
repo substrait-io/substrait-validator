@@ -14,6 +14,7 @@
 
 use crate::input::traits;
 use crate::output::primitive_data;
+use crate::output::tree;
 
 use heck::ToUpperCamelCase;
 
@@ -24,6 +25,92 @@ pub static DESCRIPTOR_POOL: once_cell::sync::Lazy<prost_reflect::DescriptorPool>
         )
         .expect("failed to decode descriptor pool")
     });
+
+/// Creates a tree node representing an unknown field of the given descriptor.
+/// Used by parse_unknown implementations to push unrecognized fields into the
+/// output tree without access to the typed Rust field value.
+pub fn field_descriptor_to_node(field: &prost_reflect::FieldDescriptor) -> tree::Node {
+    use prost_reflect::Kind;
+    match field.kind() {
+        Kind::Message(desc) => {
+            let name: &'static str =
+                Box::leak(desc.full_name().to_string().into_boxed_str());
+            tree::NodeType::ProtoMessage(name).into()
+        }
+        Kind::Enum(desc) => {
+            let type_name: &'static str =
+                Box::leak(desc.full_name().to_string().into_boxed_str());
+            let default_variant: &'static str =
+                Box::leak(desc.default_value().name().to_string().into_boxed_str());
+            tree::NodeType::ProtoPrimitive(
+                type_name,
+                primitive_data::PrimitiveData::Enum(default_variant),
+            )
+            .into()
+        }
+        Kind::Bool => tree::NodeType::ProtoPrimitive(
+            "bool",
+            primitive_data::PrimitiveData::Bool(false),
+        )
+        .into(),
+        Kind::Int32 | Kind::Sint32 | Kind::Sfixed32 => tree::NodeType::ProtoPrimitive(
+            match field.kind() {
+                Kind::Sint32 => "sint32",
+                Kind::Sfixed32 => "sfixed32",
+                _ => "int32",
+            },
+            primitive_data::PrimitiveData::Signed(0),
+        )
+        .into(),
+        Kind::Int64 | Kind::Sint64 | Kind::Sfixed64 => tree::NodeType::ProtoPrimitive(
+            match field.kind() {
+                Kind::Sint64 => "sint64",
+                Kind::Sfixed64 => "sfixed64",
+                _ => "int64",
+            },
+            primitive_data::PrimitiveData::Signed(0),
+        )
+        .into(),
+        Kind::Uint32 | Kind::Fixed32 => tree::NodeType::ProtoPrimitive(
+            if matches!(field.kind(), Kind::Fixed32) {
+                "fixed32"
+            } else {
+                "uint32"
+            },
+            primitive_data::PrimitiveData::Unsigned(0),
+        )
+        .into(),
+        Kind::Uint64 | Kind::Fixed64 => tree::NodeType::ProtoPrimitive(
+            if matches!(field.kind(), Kind::Fixed64) {
+                "fixed64"
+            } else {
+                "uint64"
+            },
+            primitive_data::PrimitiveData::Unsigned(0),
+        )
+        .into(),
+        Kind::Float => tree::NodeType::ProtoPrimitive(
+            "float",
+            primitive_data::PrimitiveData::Float(0.0),
+        )
+        .into(),
+        Kind::Double => tree::NodeType::ProtoPrimitive(
+            "double",
+            primitive_data::PrimitiveData::Float(0.0),
+        )
+        .into(),
+        Kind::String => tree::NodeType::ProtoPrimitive(
+            "string",
+            primitive_data::PrimitiveData::String(String::new()),
+        )
+        .into(),
+        Kind::Bytes => tree::NodeType::ProtoPrimitive(
+            "bytes",
+            primitive_data::PrimitiveData::Bytes(vec![]),
+        )
+        .into(),
+    }
+}
 
 #[allow(
     clippy::large_enum_variant,

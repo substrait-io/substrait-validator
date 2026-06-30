@@ -29,7 +29,7 @@ prost-types = "0.14.4"
 
 # prost-reflect provides runtime access to the embedded file descriptor set,
 # used for authoritative enum type names and variant names.
-prost-reflect = "0.16"
+prost-reflect = { version = "0.16", features = ["derive"] }
 
 # Prost doesn't generate any introspection stuff, so we hack that stuff in with
 # our own procedural macros.

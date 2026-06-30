@@ -231,6 +231,24 @@ macro_rules! proto_boxed_field {
     };
 }
 
+/// Push a single unrecognized field node, used by parse_unknown
+/// implementations that enumerate fields via the descriptor pool rather than
+/// direct struct field access.
+pub fn push_unknown_proto_field(
+    context: &mut context::Context,
+    field_name: &str,
+    node: tree::Node,
+) {
+    if !context.set_field_parsed(field_name) {
+        panic!("field {field_name} was parsed multiple times");
+    }
+    context.push(tree::NodeData::Child(tree::Child {
+        path_element: path::PathElement::Field(field_name.to_string()),
+        node: std::sync::Arc::new(node),
+        recognized: false,
+    }));
+}
+
 /// Parse and push a protobuf optional field.
 pub fn push_proto_field<TF, TR, FP>(
     context: &mut context::Context,
