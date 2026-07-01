@@ -1029,6 +1029,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost-reflect"
+version = "0.16.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "590aa145fee8f7a26b5a6055365e7c5e89a5c1caae9869de76ec0ee73181a2f9"
+dependencies = [
+ "prost",
+ "prost-reflect-derive",
+ "prost-types",
+]
+
+[[package]]
+name = "prost-reflect-build"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8214ae2c30bbac390db0134d08300e770ef89b6d4e5abf855e8d300eded87e28"
+dependencies = [
+ "prost-build",
+ "prost-reflect",
+]
+
+[[package]]
+name = "prost-reflect-derive"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b6d90e29fa6c0d13c2c19ba5e4b3fb0efbf5975d27bcf4e260b7b15455bcabe"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "prost-types"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1430,18 +1462,18 @@ dependencies = [
 
 [[package]]
 name = "substrait-antlr"
-version = "0.87.0-alpha.3"
+version = "0.87.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "302e465c0964ebfa2e5bc094bc48c6ec6257942e7df6850576b865516538044a"
+checksum = "a9c9d17aa616c370464d816ead4d5f58e7b99c35eac30c025b85a5bd67bba970"
 dependencies = [
  "antlr4rust",
 ]
 
 [[package]]
 name = "substrait-extensions"
-version = "0.87.0-alpha.3"
+version = "0.87.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc12006d47c1b5562ee95d1cb143255c55b90f0f03c89a94a4b0d760627deea2"
+checksum = "135f6b5fe5d768dcffce9384a5e0e3aa94238598c3cf34cff25946b4fa807b68"
 dependencies = [
  "heck",
  "include_dir",
@@ -1454,6 +1486,21 @@ dependencies = [
  "serde_yaml",
  "syn",
  "typify",
+ "walkdir",
+]
+
+[[package]]
+name = "substrait-prost"
+version = "0.87.0-alpha.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d22c4f631a150e151358a60048efd407f25be577ebec2c22ee3984ec70cd77f"
+dependencies = [
+ "prost",
+ "prost-build",
+ "prost-reflect",
+ "prost-reflect-build",
+ "prost-types",
+ "protobuf-src",
  "walkdir",
 ]
 
@@ -1475,6 +1522,7 @@ dependencies = [
  "percent-encoding",
  "prost",
  "prost-build",
+ "prost-reflect",
  "prost-types",
  "protobuf-src",
  "regex",
@@ -1485,6 +1533,7 @@ dependencies = [
  "strum_macros",
  "substrait-antlr",
  "substrait-extensions",
+ "substrait-prost",
  "substrait-validator-derive",
  "thiserror",
  "uriparse",

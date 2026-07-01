@@ -18,8 +18,10 @@ private_docs = []
 
 # Build and vendor protoc from source. This is useful to have a consistent
 # version of protoc across platforms/build systems. In particular, docs.rs uses
-# it.
-protoc = ["dep:protobuf-src"]
+# it. We forward this to substrait-prost as well: its build script compiles its
+# vendored protos and so needs protoc too, and a sibling crate's build script
+# does not inherit the PROTOC environment variable we set for our own.
+protoc = ["dep:protobuf-src", "substrait-prost/protoc"]
 
 [dependencies]
 
@@ -27,8 +29,23 @@ protoc = ["dep:protobuf-src"]
 prost = "0.14.4"
 prost-types = "0.14.4"
 
-# Prost doesn't generate any introspection stuff, so we hack that stuff in with
-# our own procedural macros.
+# Pre-generated prost bindings for the canonical Substrait protobuf definitions
+# (the `substrait` and `substrait.extensions` packages). We consume these types
+# instead of compiling the core protobuf files ourselves. The `embed-descriptor`
+# feature exposes the protobuf FileDescriptorSet, and the `reflect` feature adds
+# `prost::Name` + `prost_reflect::ReflectMessage` impls to the generated types,
+# which the validator consumes to introspect these foreign types at runtime.
+substrait-prost = { version = "=0.87.0-alpha.4", features = ["embed-descriptor", "reflect"] }
+
+# Runtime protobuf reflection. substrait-prost's types carry `ReflectMessage`
+# (via its `reflect` feature); we use the trait, `DynamicMessage`, and the
+# descriptor pool to enumerate fields for unknown-field detection. Must resolve
+# to the same 0.16.x as substrait-prost so the `ReflectMessage` trait matches.
+prost-reflect = "0.16"
+
+# The validator-specific `substrait.validator` protobuf package is not provided
+# by substrait-prost, so it is still generated locally with our own procedural
+# macros (the ProtoMeta derive), which now emit reflection-based introspection.
 substrait-validator-derive = { workspace = true }
 
 # Google/protobuf has a funny idea about case conventions (it converts them all
@@ -44,7 +61,7 @@ serde_yaml = "0.9"
 # and the extension-file JSON schema, generated and published from the spec by
 # substrait-packaging. Replaces the locally-bundled copies and the build-time
 # URN registry.
-substrait-extensions = "0.87.0-alpha.3"
+substrait-extensions = "0.87.0-alpha.4"
 
 # The schema for the extension files uses jsonschema syntax. The rust crate for
 # schema validation with this format this uses serde_json types as input for
@@ -62,7 +79,7 @@ regex = "1.12"
 # the spec's canonical grammar); antlr4rust is its runtime, used directly by our
 # analysis glue as well.
 antlr4rust = "0.5.2"
-substrait-antlr = "0.87.0-alpha.3"
+substrait-antlr = "0.87.0-alpha.4"
 
 # Used for checking URI syntax.
 uriparse = "0.6"
@@ -100,8 +117,19 @@ semver = "1.0"
 
 [build-dependencies]
 
-# Used for generating Rust structs from the protobuf definitions.
+# Used for generating Rust structs from the validator-specific protobuf
+# definitions (the `substrait.validator` package).
 prost-build = "0.14.4"
+
+# Read at build time to decode substrait-prost's embedded FileDescriptorSet, from
+# which we generate the introspection trait impls for the substrait-prost types.
+substrait-prost = { version = "=0.87.0-alpha.4", features = ["embed-descriptor"] }
+prost = "0.14.4"
+prost-types = "0.14.4"
+
+# Case conversion for reproducing prost's Rust identifier naming (module paths,
+# field names, enum variants) from the protobuf descriptor.
+heck = "0.5"
 
 # Used in the 'protoc' feature.
 protobuf-src = { version = "2.1", optional = true }
