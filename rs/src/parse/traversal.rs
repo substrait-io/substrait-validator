@@ -231,6 +231,24 @@ macro_rules! proto_boxed_field {
     };
 }
 
+/// Push a single unrecognized field node, used by parse_unknown
+/// implementations that enumerate fields via the descriptor pool rather than
+/// direct struct field access.
+pub fn push_unknown_proto_field(
+    context: &mut context::Context,
+    field_name: &str,
+    node: tree::Node,
+) {
+    if !context.set_field_parsed(field_name) {
+        panic!("field {field_name} was parsed multiple times");
+    }
+    context.push(tree::NodeData::Child(tree::Child {
+        path_element: path::PathElement::Field(field_name.to_string()),
+        node: std::sync::Arc::new(node),
+        recognized: false,
+    }));
+}
+
 /// Parse and push a protobuf optional field.
 pub fn push_proto_field<TF, TR, FP>(
     context: &mut context::Context,
@@ -576,6 +594,42 @@ where
 // Protobuf root message handling
 //=============================================================================
 
+/// Enumerates all fields not yet marked as parsed and pushes them as
+/// unrecognized child nodes. Returns whether any such nodes were added.
+/// Used by `InputNode::parse_unknown` implementations for message types, and
+/// by `validate` / `parse_proto` directly.
+pub fn parse_proto_message_unknown<T>(
+    input: &T,
+    context: &mut context::Context,
+) -> bool
+where
+    T: prost_reflect::ReflectMessage + prost::Message,
+{
+    let desc = input.descriptor();
+    let unparsed: std::vec::Vec<_> = desc
+        .fields()
+        .filter(|f| !context.field_parsed(f.name()))
+        .collect();
+    if unparsed.is_empty() {
+        return false;
+    }
+    let dynamic = input.transcode_to_dynamic();
+    let mut unknowns = false;
+    for field_desc in &unparsed {
+        if !context.config.ignore_unknown_fields || dynamic.has_field(field_desc) {
+            push_unknown_proto_field(
+                context,
+                field_desc.name(),
+                crate::input::proto::field_descriptor_to_node(field_desc),
+            );
+            unknowns = true;
+        } else {
+            context.set_field_parsed(field_desc.name());
+        }
+    }
+    unknowns
+}
+
 /// Parses a serialized protobuf message using the given root parse function,
 /// initial state, and configuration.
 pub fn parse_proto<T, F, B>(
@@ -586,7 +640,7 @@ pub fn parse_proto<T, F, B>(
     config: &config::Config,
 ) -> diagnostic::Result<parse_result::ParseResult>
 where
-    T: prost::Message + InputNode + Default,
+    T: prost::Message + prost::Name + prost_reflect::ReflectMessage + Default,
     F: FnOnce(&T, &mut context::Context),
     B: prost::bytes::Buf,
 {
@@ -608,11 +662,11 @@ pub fn validate<T, F>(
     config: &config::Config,
 ) -> parse_result::ParseResult
 where
-    T: prost::Message + InputNode + Default,
+    T: prost::Message + prost::Name + prost_reflect::ReflectMessage + Default,
     F: FnOnce(&T, &mut context::Context),
 {
     // Create the root node.
-    let mut root = input.data_to_node();
+    let mut root = tree::NodeType::ProtoMessage(<T as prost::Name>::full_name()).into();
 
     // Create the root context.
     let mut context = context::Context::new(root_name, &mut root, state, config);
@@ -623,7 +677,27 @@ where
     // Handle any fields not handled by the provided parse function.
     // Only generate a warning diagnostic for unhandled children if the
     // parse function succeeded.
-    handle_unknown_children(input, &mut context, true);
+    if parse_proto_message_unknown(input, &mut context) {
+        let mut fields = vec![];
+        for data in context.node_data().iter() {
+            if let tree::NodeData::Child(child) = data {
+                if !child.recognized {
+                    fields.push(child.path_element.to_string_without_dot());
+                }
+            }
+        }
+        if !fields.is_empty() {
+            let fields: String =
+                itertools::Itertools::intersperse(fields.into_iter(), ", ".to_string())
+                    .collect();
+            diagnostic!(
+                &mut context,
+                Warning,
+                NotYetImplemented,
+                "the following child nodes were not recognized by the validator: {fields}"
+            );
+        }
+    }
 
     parse_result::ParseResult { root }
 }
