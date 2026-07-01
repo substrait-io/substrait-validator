@@ -188,6 +188,137 @@ fn handle_unknown_children<T: InputNode>(
     }
 }
 
+/// Pushes a single unrecognized field as an unrecognized child node. Used by
+/// [`parse_proto_message_unknown`], which enumerates fields via the descriptor
+/// pool rather than by direct struct-field access, so it has only a field
+/// descriptor (not a typed Rust value) to build the node from.
+pub fn push_unknown_proto_field(
+    context: &mut context::Context,
+    field_key: &str,
+    path_element: path::PathElement,
+    node: tree::Node,
+) {
+    if !context.set_field_parsed(field_key) {
+        panic!("field {field_key} was parsed multiple times");
+    }
+    context.push(tree::NodeData::Child(tree::Child {
+        path_element,
+        node: Arc::new(node),
+        recognized: false,
+    }));
+}
+
+/// Enumerates the parts of a protobuf message that have not yet been marked as
+/// parsed and pushes each as an unrecognized child node, returning whether any
+/// were added. This replaces the per-field code the `ProtoMeta` derive and the
+/// `prost_meta` generator used to emit: instead of matching on the Rust struct's
+/// fields, it walks the message's descriptor via `prost-reflect` and detects
+/// presence through a [`prost_reflect::DynamicMessage`]. It is called from the
+/// `InputNode::parse_unknown` impls generated for message types.
+///
+/// The unit of enumeration mirrors how the parse code marks fields as handled
+/// (via [`context::Context::set_field_parsed`]): a real (non-synthetic) oneof is
+/// a single unit keyed by the oneof's name — because prost renders a oneof as
+/// one Rust field and the validator marks it under that name — while every other
+/// field (including the synthetic oneofs prost renders for proto3 `optional`) is
+/// its own unit keyed by its field name. Names are snake_cased to match the Rust
+/// identifiers the parse macros mark.
+pub fn parse_proto_message_unknown<T>(input: &T, context: &mut context::Context) -> bool
+where
+    T: prost_reflect::ReflectMessage + prost::Message,
+{
+    use heck::ToSnakeCase;
+
+    enum Unit {
+        /// A regular field or a proto3-optional (synthetic-oneof) field.
+        Field(prost_reflect::FieldDescriptor),
+        /// A real oneof, handled as a whole under the oneof's name.
+        Oneof(prost_reflect::OneofDescriptor),
+    }
+
+    let descriptor = input.descriptor();
+    // Collect unparsed units, deduplicating by key: if a field name and a oneof
+    // name (or two fields) collapse to the same snake_case key, only the first
+    // is enumerated. This keeps `push_unknown_proto_field`'s "parsed once"
+    // invariant intact instead of panicking on the duplicate.
+    let mut units: Vec<(String, Unit)> = vec![];
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for field in descriptor.fields() {
+        // Members of a real oneof are covered by the oneof pass below.
+        if field
+            .containing_oneof()
+            .is_some_and(|oneof| !oneof.is_synthetic())
+        {
+            continue;
+        }
+        let key = field.name().to_snake_case();
+        if !context.field_parsed(&key) && seen.insert(key.clone()) {
+            units.push((key, Unit::Field(field)));
+        }
+    }
+    for oneof in descriptor.oneofs() {
+        if oneof.is_synthetic() {
+            continue;
+        }
+        let key = oneof.name().to_snake_case();
+        if !context.field_parsed(&key) && seen.insert(key.clone()) {
+            units.push((key, Unit::Oneof(oneof)));
+        }
+    }
+    if units.is_empty() {
+        return false;
+    }
+
+    // Transcode once for presence detection (a real oneof is populated iff one
+    // of its members is set).
+    let dynamic = input.transcode_to_dynamic();
+    let mut unknowns = false;
+    for (key, unit) in units {
+        // A bare (non-repeated, non-proto3-optional) scalar/enum has implicit
+        // presence: report it even when absent unless unknown fields are being
+        // ignored. Message, repeated, proto3-optional and oneof units are only
+        // reported when actually populated. This mirrors the four field shapes
+        // the old generator distinguished (Primitive vs Optional/Boxed/Repeated).
+        let (field, present) = match &unit {
+            Unit::Field(field) => (field.clone(), dynamic.has_field(field)),
+            Unit::Oneof(oneof) => match oneof.fields().find(|f| dynamic.has_field(f)) {
+                Some(active) => (active, true),
+                // Empty oneof: nothing to report; mark handled and move on.
+                None => {
+                    context.set_field_parsed(&key);
+                    continue;
+                }
+            },
+        };
+        let bare_scalar = matches!(&unit, Unit::Field(f)
+            if !f.is_list()
+                && !matches!(f.kind(), prost_reflect::Kind::Message(_))
+                && !f.field_descriptor_proto().proto3_optional());
+
+        if present || (bare_scalar && !context.config.ignore_unknown_fields) {
+            // A real oneof is addressed through its selected variant (matching
+            // the `Variant` path element the typed traversal produced), whereas
+            // a plain field is addressed directly.
+            let path_element = match unit {
+                Unit::Oneof(_) => {
+                    path::PathElement::Variant(key.clone(), field.name().to_snake_case())
+                }
+                Unit::Field(_) => path::PathElement::Field(key.clone()),
+            };
+            push_unknown_proto_field(
+                context,
+                &key,
+                path_element,
+                crate::input::proto::field_descriptor_to_node(&field),
+            );
+            unknowns = true;
+        } else {
+            context.set_field_parsed(&key);
+        }
+    }
+    unknowns
+}
+
 //=============================================================================
 // Protobuf optional field handling
 //=============================================================================

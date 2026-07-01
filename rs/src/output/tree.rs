@@ -181,7 +181,7 @@ pub enum NodeType {
     /// The associated node represents a protobuf message of the given type
     /// (full protobuf path). The contents of the message are described using
     /// Field, RepeatedField, and OneOfField.
-    ProtoMessage(&'static str),
+    ProtoMessage(String),
 
     /// The associated node represents a protobuf primitive value of the given
     /// type and with the given data.

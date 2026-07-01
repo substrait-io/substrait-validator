@@ -140,11 +140,18 @@ fn main() -> Result<()> {
     // validator protos can import each other and the google/protobuf
     // well-known types (which prost-build provides); they do not import any
     // core `substrait` protos.
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
     let proto_path = PathBuf::from(&resource_dir).join("proto");
     let validator_proto_files = find_proto_files(&proto_path.join("substrait/validator"));
     let mut config = prost_build::Config::new();
     config.type_attribute(".", "#[derive(::substrait_validator_derive::ProtoMeta)]");
     config.type_attribute(".", "#[allow(deprecated)]");
+    // `enable_type_names` gives the validator types `prost::Name` impls (so the
+    // ProtoMeta derive can obtain authoritative type names), and the descriptor
+    // set is embedded so the derive's `ReflectMessage`/`ProtoEnum` impls can
+    // resolve their descriptors at runtime (see `proto::DESCRIPTOR_POOL`).
+    config.enable_type_names();
+    config.file_descriptor_set_path(out_dir.join("file_descriptor_set.bin"));
     config.compile_protos(&validator_proto_files, &[&proto_path.display().to_string()])?;
 
     // Inform cargo that changes to the .proto files require a rerun.
@@ -153,12 +160,12 @@ fn main() -> Result<()> {
     }
 
     // Generate the introspection trait impls (InputNode/ProtoMessage/
-    // ProtoOneOf/ProtoEnum) for the substrait-prost types by decoding that
-    // crate's embedded FileDescriptorSet. This mirrors what the ProtoMeta
-    // derive macro produces for locally-generated types, but targets the
-    // foreign substrait-prost types (legal by the orphan rule, as the traits
-    // are local to this crate).
-    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    // ProtoOneOf/ProtoEnum) for the foreign substrait-prost types by walking
+    // that crate's embedded FileDescriptorSet for the type names and structure.
+    // The impls are thin: unknown-field handling defers to runtime reflection
+    // (parse_proto_message_unknown), so this generator no longer reconstructs
+    // prost's field boxing/naming. Emitting impls for the foreign types is
+    // legal by the orphan rule, as the traits are local to this crate.
     let meta_source = prost_meta::generate(substrait_prost::FILE_DESCRIPTOR_SET);
     fs::write(out_dir.join("substrait_prost_meta.rs"), meta_source)?;
 
@@ -169,27 +176,24 @@ fn main() -> Result<()> {
 /// (`InputNode`/`ProtoMessage`/`ProtoOneOf`/`ProtoEnum`) for the `substrait`
 /// and `substrait.extensions` types provided by the `substrait-prost` crate.
 ///
-/// substrait-prost ships plain `prost`-generated types without our `ProtoMeta`
-/// derive, and a derive cannot be applied to a foreign crate's types. So we
-/// reconstruct exactly what the derive would have emitted, but from the
-/// protobuf [`FileDescriptorSet`](prost_types::FileDescriptorSet) that
-/// substrait-prost embeds (via its `embed-descriptor` feature). The emitted
-/// impls target the foreign `::substrait_prost::*` types, which is legal
-/// because the traits are local to this crate (the orphan rule).
-///
-/// The hardest part is reproducing prost's code-generation decisions from the
-/// descriptor alone — in particular which singular message fields prost wraps
-/// in `Box` to break recursive cycles, and how prost names Rust modules,
-/// fields, and enum variants. Getting any of these wrong is a hard compile
-/// error in the generated file, never a silent behavioral difference.
+/// substrait-prost ships plain `prost`-generated types; a derive cannot be
+/// applied to a foreign crate's types, so we emit these impls here instead
+/// (legal by the orphan rule, as the traits are local to this crate). We walk
+/// the [`FileDescriptorSet`](prost_types::FileDescriptorSet) that substrait-prost
+/// embeds only to learn the set of types, their protobuf names, and their
+/// oneof/enum variants; the emitted impls are uniform boilerplate that defers
+/// unknown-field handling to runtime reflection
+/// (`crate::parse::traversal::parse_proto_message_unknown`), which leans on the
+/// `prost::Name` + `prost_reflect::ReflectMessage` impls substrait-prost's
+/// `reflect` feature provides. Consequently no reconstruction of prost's field
+/// boxing is needed; the only prost naming rules reproduced here are the
+/// module/variant identifier casing used to *name* each target type.
 mod prost_meta {
     use heck::{ToSnakeCase, ToUpperCamelCase};
     use prost::Message;
-    use prost_types::field_descriptor_proto::{Label, Type};
     use prost_types::{
         DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorSet,
     };
-    use std::collections::{HashMap, HashSet};
     use std::fmt::Write;
 
     /// Rust keywords that prost escapes as raw identifiers (`r#ident`) when a
@@ -229,96 +233,11 @@ mod prost_meta {
         }
     }
 
-    /// A fully-qualified protobuf name with a leading dot, e.g.
-    /// `.substrait.Type.List`. Matches the form used in descriptors'
-    /// `type_name` fields.
-    type Fqn = String;
-
-    /// Collected information about every message in the descriptor set, used to
-    /// compute prost's boxing decisions and to emit impls.
-    struct Schema<'a> {
-        /// Maps a message FQN to its descriptor.
-        messages: HashMap<Fqn, &'a DescriptorProto>,
-        /// Adjacency for the message-reference graph: an edge `M -> T` exists
-        /// for every singular (non-repeated) message-typed field of `M`,
-        /// including oneof members. Mirrors prost's MessageGraph.
-        edges: HashMap<Fqn, Vec<Fqn>>,
-    }
-
-    impl<'a> Schema<'a> {
-        /// Returns whether there is a directed path `from -> ... -> to` in the
-        /// message-reference graph. prost boxes a singular message field of
-        /// type `T` in message `M` exactly when `is_nested(T, M)` holds.
-        fn is_nested(&self, from: &str, to: &str) -> bool {
-            let mut stack = vec![from.to_string()];
-            let mut seen = HashSet::new();
-            while let Some(node) = stack.pop() {
-                if node == to {
-                    return true;
-                }
-                if !seen.insert(node.clone()) {
-                    continue;
-                }
-                if let Some(next) = self.edges.get(&node) {
-                    stack.extend(next.iter().cloned());
-                }
-            }
-            false
-        }
-    }
-
-    /// Whether a field is a singular (non-repeated) message/group field. Oneof
-    /// members count; map entries and repeated fields do not.
-    fn is_singular_message(field: &FieldDescriptorProto) -> bool {
-        field.label() != Label::Repeated && matches!(field.r#type(), Type::Message | Type::Group)
-    }
-
-    /// Recursively records a message and its nested messages into the schema,
-    /// adding graph edges for singular message fields.
-    fn collect_message<'a>(schema: &mut Schema<'a>, msg: &'a DescriptorProto, fqn_prefix: &str) {
-        let fqn = format!("{fqn_prefix}.{}", msg.name());
-        // Map-entry messages are synthetic; Substrait does not use protobuf
-        // maps, but skip them defensively so they never enter the graph.
-        if msg
-            .options
-            .as_ref()
-            .and_then(|o| o.map_entry)
-            .unwrap_or(false)
-        {
-            return;
-        }
-        let targets: Vec<Fqn> = msg
-            .field
-            .iter()
-            .filter(|f| is_singular_message(f))
-            .map(|f| f.type_name().to_string())
-            .collect();
-        schema.edges.insert(fqn.clone(), targets);
-        schema.messages.insert(fqn.clone(), msg);
-        for nested in &msg.nested_type {
-            collect_message(schema, nested, &fqn);
-        }
-    }
-
     /// Entry point: produces the full generated Rust source.
     pub fn generate(descriptor_bytes: &[u8]) -> String {
         let fds = FileDescriptorSet::decode(descriptor_bytes)
             .expect("failed to decode substrait-prost FileDescriptorSet");
 
-        // Pass 1: collect all messages and the reference graph.
-        let mut schema = Schema {
-            messages: HashMap::new(),
-            edges: HashMap::new(),
-        };
-        for file in &fds.file {
-            let pkg = file.package();
-            let prefix = format!(".{pkg}");
-            for msg in &file.message_type {
-                collect_message(&mut schema, msg, &prefix);
-            }
-        }
-
-        // Pass 2: emit impls for the substrait + substrait.extensions packages.
         let mut out = String::new();
         // Note: this file is `include!`d inside a module already annotated with
         // `#[allow(deprecated)]` (for the deprecated `from_i32`), so no inner
@@ -340,7 +259,7 @@ mod prost_meta {
             };
             let fqn_prefix = format!(".{pkg}");
             for msg in &file.message_type {
-                emit_message(&mut out, &schema, msg, &base, &fqn_prefix);
+                emit_message(&mut out, msg, &base, &fqn_prefix);
             }
             for en in &file.enum_type {
                 emit_enum(&mut out, en, &base, &fqn_prefix);
@@ -354,13 +273,7 @@ mod prost_meta {
     /// * `mod_path` is the Rust path of the module containing this message's
     ///   type (e.g. `::substrait_prost` or `::substrait_prost::r#type`).
     /// * `fqn_prefix` is the protobuf FQN of the containing scope.
-    fn emit_message(
-        out: &mut String,
-        schema: &Schema,
-        msg: &DescriptorProto,
-        mod_path: &str,
-        fqn_prefix: &str,
-    ) {
+    fn emit_message(out: &mut String, msg: &DescriptorProto, mod_path: &str, fqn_prefix: &str) {
         if msg
             .options
             .as_ref()
@@ -376,7 +289,7 @@ mod prost_meta {
         // The module that holds this message's nested types and oneof enums.
         let child_mod = format!("{mod_path}::{}", escape(&name.to_snake_case()));
 
-        emit_message_impls(out, schema, msg, &type_path, proto_type, &fqn);
+        emit_message_impls(out, &type_path, proto_type);
 
         // Emit oneof enum impls (real oneofs only; synthetic proto3-optional
         // oneofs do not produce a generated enum).
@@ -395,7 +308,7 @@ mod prost_meta {
 
         // Recurse into nested messages.
         for nested in &msg.nested_type {
-            emit_message(out, schema, nested, &child_mod, &fqn);
+            emit_message(out, nested, &child_mod, &fqn);
         }
     }
 
@@ -408,57 +321,11 @@ mod prost_meta {
             .any(|f| f.oneof_index == Some(idx as i32) && f.proto3_optional())
     }
 
-    /// Emits the `ProtoMessage` and `InputNode` impls for a message, mirroring
-    /// `proto_meta_derive_message` in the derive crate.
-    fn emit_message_impls(
-        out: &mut String,
-        schema: &Schema,
-        msg: &DescriptorProto,
-        type_path: &str,
-        proto_type: &str,
-        fqn: &str,
-    ) {
-        let mut arms = String::new();
-        let mut emitted_oneofs = HashSet::new();
-        for field in &msg.field {
-            if field.proto3_optional() {
-                // proto3 optional scalar/message -> Option<T>.
-                push_field_arm(&mut arms, &field_name(field), FieldKind::Optional);
-            } else if let Some(idx) = field.oneof_index {
-                // Member of a real oneof: emit one grouped arm at the position
-                // of the first member, named after the oneof.
-                if is_synthetic_oneof(msg, idx as usize) {
-                    push_field_arm(&mut arms, &field_name(field), FieldKind::Optional);
-                } else if emitted_oneofs.insert(idx) {
-                    let oneof = &msg.oneof_decl[idx as usize];
-                    push_field_arm(
-                        &mut arms,
-                        &oneof.name().to_snake_case(),
-                        FieldKind::Optional,
-                    );
-                }
-            } else {
-                push_field_arm(
-                    &mut arms,
-                    &field_name(field),
-                    classify_field(schema, field, fqn),
-                );
-            }
-        }
-
-        // A message with no traversable fields can never have unknown
-        // subtrees, so emit a body that does not trip unused-variable lints.
-        let parse_unknown_body = if arms.is_empty() {
-            "        fn parse_unknown(&self, _y: &mut crate::parse::context::Context<'_>) -> bool { false }\n".to_string()
-        } else {
-            format!(
-                "        fn parse_unknown(&self, y: &mut crate::parse::context::Context<'_>) -> bool {{\n\
-                 \x20           let mut unknowns = false;\n{arms}\
-                 \x20           unknowns\n\
-                 \x20       }}\n",
-            )
-        };
-
+    /// Emits the `ProtoMessage` and `InputNode` impls for a message. The
+    /// `parse_unknown` body defers to `parse_proto_message_unknown`, which
+    /// enumerates unrecognized fields at runtime via `prost-reflect`, so no
+    /// per-field code (and no boxing analysis) is emitted here.
+    fn emit_message_impls(out: &mut String, type_path: &str, proto_type: &str) {
         let _ = write!(
             out,
             "impl crate::input::traits::ProtoMessage for {type_path} {{\n\
@@ -466,87 +333,16 @@ mod prost_meta {
              }}\n\
              impl crate::input::traits::InputNode for {type_path} {{\n\
              \x20   fn type_to_node() -> crate::output::tree::Node {{\n\
-             \x20       use crate::input::traits::ProtoMessage;\n\
-             \x20       crate::output::tree::NodeType::ProtoMessage(Self::proto_message_type()).into()\n\
+             \x20       crate::output::tree::NodeType::ProtoMessage({proto_type:?}.to_string()).into()\n\
              \x20   }}\n\
              \x20   fn data_to_node(&self) -> crate::output::tree::Node {{\n\
-             \x20       use crate::input::traits::ProtoMessage;\n\
-             \x20       crate::output::tree::NodeType::ProtoMessage(Self::proto_message_type()).into()\n\
+             \x20       crate::output::tree::NodeType::ProtoMessage({proto_type:?}.to_string()).into()\n\
              \x20   }}\n\
              \x20   fn oneof_variant(&self) -> Option<&'static str> {{ None }}\n\
-             {parse_unknown_body}\
+             \x20   fn parse_unknown(&self, y: &mut crate::parse::context::Context<'_>) -> bool {{\n\
+             \x20       crate::parse::traversal::parse_proto_message_unknown(self, y)\n\
+             \x20   }}\n\
              }}\n",
-        );
-    }
-
-    /// The kind of `parse_unknown` action to emit for a struct field, matching
-    /// the four cases of the derive's `is_repeated` classification.
-    enum FieldKind {
-        /// `Option<T>` — emitted with `.as_ref()`.
-        Optional,
-        /// `Option<Box<T>>` — emitted without `.as_ref()`.
-        Boxed,
-        /// `Vec<T>` (repeated, non-bytes).
-        Repeated,
-        /// A bare scalar/enum/bytes value.
-        Primitive,
-    }
-
-    /// Classifies a non-oneof, non-proto3-optional field into prost's field
-    /// shape, mirroring `is_repeated` in the derive crate plus the boxing rule.
-    fn classify_field(
-        schema: &Schema,
-        field: &FieldDescriptorProto,
-        container_fqn: &str,
-    ) -> FieldKind {
-        if field.label() == Label::Repeated {
-            return FieldKind::Repeated;
-        }
-        if matches!(field.r#type(), Type::Message | Type::Group) {
-            if schema.is_nested(field.type_name(), container_fqn) {
-                FieldKind::Boxed
-            } else {
-                FieldKind::Optional
-            }
-        } else {
-            // Scalars (including bytes -> Vec<u8>) and enums (i32) have implicit
-            // presence in proto3 and are bare values.
-            FieldKind::Primitive
-        }
-    }
-
-    /// The field-name string used both for `field_parsed` and as the node
-    /// label, matching `cook_ident(stringify!(ident))` in the derive: prost's
-    /// snake_case Rust ident with any raw-identifier prefix stripped.
-    fn field_name(field: &FieldDescriptorProto) -> String {
-        field.name().to_snake_case()
-    }
-
-    /// Appends one guarded `parse_unknown` block for a field.
-    fn push_field_arm(arms: &mut String, name: &str, kind: FieldKind) {
-        let ident = escape(name);
-        let action = match kind {
-            FieldKind::Optional => format!(
-                "            crate::parse::traversal::push_proto_field(y, &self.{ident}.as_ref(), {name:?}, true, |_, _| Ok(()));\n",
-            ),
-            FieldKind::Boxed => format!(
-                "            crate::parse::traversal::push_proto_field(y, &self.{ident}, {name:?}, true, |_, _| Ok(()));\n",
-            ),
-            FieldKind::Repeated => format!(
-                "            crate::parse::traversal::push_proto_repeated_field(y, &self.{ident}.as_ref(), {name:?}, true, |_, _| Ok(()), |_, _, _, _, _| ());\n",
-            ),
-            FieldKind::Primitive => format!(
-                "            {{\n\
-                 \x20               use crate::input::traits::ProtoPrimitive;\n\
-                 \x20               if !y.config.ignore_unknown_fields || !self.{ident}.proto_primitive_is_default() {{\n\
-                 \x20                   crate::parse::traversal::push_proto_field(y, &Some(&self.{ident}), {name:?}, true, |_, _| Ok(()));\n\
-                 \x20               }}\n\
-                 \x20           }}\n",
-            ),
-        };
-        let _ = write!(
-            arms,
-            "        if !y.field_parsed({name:?}) {{\n            unknowns = true;\n{action}        }}\n",
         );
     }
 
