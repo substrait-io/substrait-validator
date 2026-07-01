@@ -189,7 +189,7 @@ fn handle_unknown_children<T: InputNode>(
 }
 
 /// Pushes a single unrecognized field as an unrecognized child node. Used by
-/// [`parse_proto_message_unknown`], which enumerates fields via the descriptor
+/// `parse_proto_message_unknown`, which enumerates fields via the descriptor
 /// pool rather than by direct struct-field access, so it has only a field
 /// descriptor (not a typed Rust value) to build the node from.
 pub fn push_unknown_proto_field(
