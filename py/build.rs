@@ -22,8 +22,7 @@ fn main() {
     // Note that we only generate Python bindings for the validator-specific
     // `substrait.validator` package here. The bindings for the core `substrait`
     // and `substrait.extensions` packages come from the `substrait-protobuf`
-    // PyPI package (a runtime dependency), so we no longer need the Substrait
-    // submodule's protos -- nor bindings generated from them -- in this build.
+    // PyPI package (a runtime dependency).
     let input_paths = if std::path::Path::new("..")
         .join("rs")
         .join("src")
@@ -74,8 +73,8 @@ fn main() {
     // bindings for the `substrait.validator` package (under a `validator`
     // directory); the core `substrait`/`substrait.extensions` bindings are
     // provided by the substrait-protobuf dependency. Filtering on the path also
-    // keeps the build correct if a resource tree still contains stale copies of
-    // the core protos.
+    // keeps the build correct if a resource tree contains copies of the core
+    // protos.
     let proto_files = input_paths
         .iter()
         .flat_map(|p| {
@@ -161,7 +160,7 @@ fn main() {
         // regular package. We walk up from the file's directory to (but not
         // including) output_path, which already has a hand-written __init__.py
         // that must not be clobbered. This matters because the generated files
-        // now live only in the nested `substrait/validator` package, so the
+        // live only in the nested `substrait/validator` package, so the
         // intermediate `substrait` directory would otherwise lack an
         // __init__.py.
         let mut dir = output_file.to_path_buf();
