@@ -92,7 +92,16 @@ jobs:
         run: python3 -m pip install dist/substrait_validator-*.tar.gz
       - name: Install generated wheel
         if: ${{ matrix.type == 'wheel' }}
-        run: python3 -m pip install --no-index --find-links=dist substrait-validator
+        # --force-reinstall is required: the editable install above already
+        # satisfies the `substrait-validator` requirement, so pip skips the
+        # wheel and the tests below silently exercise the source tree instead of
+        # the built artifact. --no-deps stops --force-reinstall from also
+        # reinstalling the dependencies, which --no-index cannot resolve. Match
+        # the wheel by name rather than a dist/*.whl glob, which the Windows
+        # runner's shell does not expand.
+        run: >
+          python3 -m pip install --force-reinstall --no-deps
+          --no-index --find-links=dist substrait-validator
       - name: Test
         working-directory: py/tests
         run: python3 -m pytest

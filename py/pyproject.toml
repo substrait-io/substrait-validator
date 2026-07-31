@@ -15,7 +15,17 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["protobuf >3.19.3,<7", "click >= 8", "pyyaml >= 6", "jdot >= 0.5"]
+dependencies = [
+    # Pre-generated Python bindings for the core Substrait protobuf definitions
+    # (imported under the top-level `substrait` namespace). Pinned to match the
+    # Substrait version this validator targets, mirroring the Rust side's pin of
+    # substrait-prost.
+    "substrait-protobuf == 0.87.0",
+    "protobuf >=5,<7",
+    "click >= 8",
+    "pyyaml >= 6",
+    "jdot >= 0.5",
+]
 
 [project.optional-dependencies]
 test = ["pytest < 10.0.0", "toml >= 0.10.2"]
@@ -30,3 +40,16 @@ substrait-validator = "substrait_validator:cli"
 [tool.maturin]
 python-source = "."
 python-packages = ["substrait_validator", "tests"]
+
+# build.rs generates the `substrait.validator` bindings into
+# substrait_validator/substrait/, which .gitignore excludes because they are
+# build output. maturin honors .gitignore when it collects python-source files
+# (it only does so inside a git checkout, which is why sdist builds are
+# unaffected), so without an explicit include the wheel ships without them and
+# `import substrait_validator` fails. Keep these paths narrow: a wider glob over
+# substrait/ would also pick up core bindings left behind by an older build tree
+# and shadow the ones substrait-protobuf provides.
+include = [
+    { path = "substrait_validator/substrait/__init__.py", format = "wheel" },
+    { path = "substrait_validator/substrait/validator/**/*.py", format = "wheel" },
+]
