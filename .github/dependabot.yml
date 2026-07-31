@@ -13,6 +13,10 @@ updates:
         applies-to: version-updates
         patterns:
           - "prost*"
+      substrait:
+        applies-to: version-updates
+        patterns:
+          - "substrait*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -23,3 +27,8 @@ updates:
     directory: "/py"
     schedule:
       interval: "daily"
+    groups:
+      substrait:
+        applies-to: version-updates
+        patterns:
+          - "substrait*"

@@ -1088,7 +1088,7 @@ mod test {
     /// derivation parser. Mirrors the setup inlined in [`test1`]/[`test2`].
     macro_rules! test_context {
         ($node:ident, $state:ident, $config:ident, $ctx:ident) => {
-            let mut $node = tree::Node::from(tree::NodeType::ProtoMessage("test"));
+            let mut $node = tree::Node::from(tree::NodeType::ProtoMessage("test".to_string()));
             let mut $state = Default::default();
             let $config = crate::Config::new();
             let mut $ctx = context::Context::new("test", &mut $node, &mut $state, &$config);
@@ -1099,7 +1099,7 @@ mod test {
     fn test1() {
         // Boilerplate to get a parsing context (only used here as a sink for
         // diagnostics).
-        let mut root = tree::Node::from(tree::NodeType::ProtoMessage("test"));
+        let mut root = tree::Node::from(tree::NodeType::ProtoMessage("test".to_string()));
         let mut state = Default::default();
         let config = crate::Config::new();
         let mut context = context::Context::new("test", &mut root, &mut state, &config);
@@ -1166,7 +1166,7 @@ mod test {
 
     #[test]
     fn test2() {
-        let mut node = tree::Node::from(tree::NodeType::ProtoMessage("test"));
+        let mut node = tree::Node::from(tree::NodeType::ProtoMessage("test".to_string()));
         let mut state = Default::default();
         let config = crate::Config::new();
         let mut context = context::Context::new("test", &mut node, &mut state, &config);
@@ -1193,9 +1193,9 @@ mod test {
     // Characterization tests.
     //
     // These pin the parse/evaluate behavior of the derivation vocabulary that
-    // actually appears in the bundled standard extensions
-    // (rs/src/resources/extensions/*.yaml), so the grammar can be swapped to
-    // the substrait-antlr crate without behavioral drift. They cover simple,
+    // actually appears in the bundled standard extensions (the
+    // `substrait-extensions` crate), so the grammar can be swapped to the
+    // substrait-antlr crate without behavioral drift. They cover simple,
     // nullable, and parameterized types, the `anyN` binding passthrough used by
     // comparison functions, and the decimal arithmetic derivation programs.
     // ----------------------------------------------------------------------

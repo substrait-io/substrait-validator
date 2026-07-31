@@ -553,7 +553,7 @@ pub fn main() {
             if let Some(previous) = names.insert(&desc.name, &test_case.path) {
                 println!(
                     "Warning: duplicate test name {}: {} and {}",
-                    &desc.name,
+                    desc.name,
                     test_case.path.display(),
                     previous.display()
                 );
