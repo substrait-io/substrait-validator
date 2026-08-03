@@ -92,7 +92,7 @@ thiserror = "2.0"
 strum = "0.28"
 strum_macros = "0.28"
 num-traits = "0.2"
-num-derive = "0.4"
+num-derive = "0.5"
 
 # For intersperse().
 itertools = "0.15"
