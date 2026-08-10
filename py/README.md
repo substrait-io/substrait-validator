@@ -31,7 +31,6 @@ user@host:~$ maturin sdist
 
 Some hints if you run into issues:
 
- - This project relies on submodules, so you need to check those out first.
  - Out-of-tree builds are not supported, so you may need to beat pip into
    submission if you're using an old version or it otherwise insists on
    building from a temp directory.
@@ -44,7 +43,10 @@ You can build wheels and source distributions using
 when building from the repository, [`build.rs`](build.rs) reuses the proto files
 that the `rs` crate copies to `src/resources`. When building from an sdist
 package, the proto files are included in a `local_dependencies` directory and
-used from there.
+used from there. Only the validator's own `substrait.validator` protobuf package
+is generated here; the bindings for the core Substrait packages come from the
+[`substrait-protobuf`](https://pypi.org/project/substrait-protobuf/) package,
+which is a runtime dependency.
 
 ## Running tests
 

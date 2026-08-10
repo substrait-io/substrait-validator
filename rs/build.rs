@@ -45,6 +45,78 @@ fn synchronize(src_tree: &Path, dest_tree: &Path, path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Returns the version that the given package is resolved to in the given
+/// Cargo.lock contents, if it appears there.
+///
+/// The lockfile is scanned rather than parsed as TOML to avoid a build
+/// dependency on a TOML parser; this relies only on cargo emitting `name`
+/// before `version` within each `[[package]]` stanza, which it has always
+/// done.
+fn locked_package_version(lock: &str, package: &str) -> Option<String> {
+    let mut in_package = false;
+    for line in lock.lines() {
+        let line = line.trim();
+        if let Some(name) = line.strip_prefix("name = ") {
+            in_package = name.trim_matches('"') == package;
+        } else if in_package {
+            if let Some(version) = line.strip_prefix("version = ") {
+                return Some(version.trim_matches('"').to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Determines the version of the Substrait specification that this build
+/// targets, which is the version of the `substrait-*` crates that provide the
+/// specification's protobuf definitions, extension files, and grammar.
+///
+/// These crates are published from the specification with matching version
+/// numbers, so they must be pinned to the same version; disagreement would
+/// mean the validator checks plans against a mixture of specification
+/// versions, so it is treated as an error.
+fn substrait_version(lock_path: &Path) -> Result<String> {
+    const SPEC_CRATES: &[&str] = &["substrait-prost", "substrait-extensions", "substrait-antlr"];
+    println!("cargo:rerun-if-changed={}", lock_path.display());
+    let lock = fs::read_to_string(lock_path)?;
+    let versions = SPEC_CRATES
+        .iter()
+        .map(|package| {
+            locked_package_version(&lock, package).ok_or_else(|| {
+                Error::other(format!(
+                    "package {package} not found in {}",
+                    lock_path.display()
+                ))
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    if versions.iter().any(|version| version != &versions[0]) {
+        let pins = SPEC_CRATES
+            .iter()
+            .zip(&versions)
+            .map(|(package, version)| format!("{package} {version}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(Error::other(format!(
+            "the crates providing the Substrait specification must all be \
+             pinned to the same version, but found {pins}"
+        )));
+    }
+    Ok(versions.into_iter().next().expect("no spec crates"))
+}
+
+/// Writes contents to the file at path, unless it already has those contents.
+///
+/// Used for files that live in the source tree: rewriting them unconditionally
+/// would update their modification time on every build, needlessly
+/// invalidating anything that depends on them.
+fn write_if_changed(path: &Path, contents: &str) -> Result<()> {
+    if fs::read_to_string(path).ok().as_deref() != Some(contents) {
+        fs::write(path, contents)?;
+    }
+    Ok(())
+}
+
 /// Returns all protobuf files in the given directory.
 fn find_proto_files(proto_path: &Path) -> Vec<PathBuf> {
     walkdir::WalkDir::new(proto_path)
@@ -68,34 +140,15 @@ fn main() -> Result<()> {
     // directory with the rest of the repository.
     if manifest_dir.join("in-git-repo").exists() {
         let validator_git_dir = manifest_dir.join("..");
-        let substrait_git_dir = validator_git_dir.join("substrait");
 
-        // Give a proper error message if submodules aren't checked out.
-        assert!(
-            substrait_git_dir.join("proto").exists(),
-            "Could not find (git-root)/substrait/proto. Did you check out submodules?"
-        );
-
-        // Synchronize the protobuf files from the main repository. Note that
-        // the core Substrait protobuf files (the `substrait` and
-        // `substrait.extensions` packages) are no longer *compiled* by this
-        // crate: we consume their pre-generated types from the `substrait-prost`
-        // crate and synthesize our introspection trait impls from its embedded
-        // descriptor (see the prost_meta module). We still vendor the .proto
-        // files here, however, because the Python bindings (py/build.rs)
-        // generate their own protobuf modules from them, and sdist builds rely
-        // on this vendored copy.
-        for proto_file in find_proto_files(&substrait_git_dir.join("proto")) {
-            synchronize(
-                &substrait_git_dir,
-                &resource_dir,
-                proto_file
-                    .strip_prefix(&substrait_git_dir)
-                    .expect("failed to strip prefix"),
-            )?;
-        }
-
-        // Synchronize the validator-specific protobuf files.
+        // Synchronize the validator-specific protobuf files (the
+        // `substrait.validator` package) from the repository root into
+        // src/resources, so that they are shipped with this crate. The core
+        // Substrait protobuf files are neither compiled nor vendored here: we
+        // consume their pre-generated types from the `substrait-prost` crate
+        // and synthesize our introspection trait impls from its embedded
+        // descriptor (see the prost_meta module), and the Python bindings take
+        // theirs from the `substrait-protobuf` package.
         for proto_file in find_proto_files(&validator_git_dir.join("proto")) {
             synchronize(
                 &validator_git_dir,
@@ -106,27 +159,16 @@ fn main() -> Result<()> {
             )?;
         }
 
-        // Try to determine Substrait submodule version and write it to a
-        // resource file. This can fail for various reasons at various stages
-        // of the various build/distribution methods, so the generated file
-        // is also checked in; this pretty much just makes it hard to forget
-        // to update it.
-        let substrait_version = std::process::Command::new("git")
-            .args(["describe", "--dirty", "--tags"])
-            .current_dir(&substrait_git_dir)
-            .output();
-        if let Ok(substrait_version) = substrait_version {
-            if substrait_version.status.success() {
-                let substrait_version = String::from_utf8_lossy(&substrait_version.stdout)
-                    .trim()
-                    .to_string();
-                let substrait_version = substrait_version
-                    .strip_prefix('v')
-                    .unwrap_or(&substrait_version);
-                fs::write(resource_dir.join("substrait-version"), substrait_version)
-                    .expect("failed to write substrait submodule version file");
-            }
-        }
+        // Write the version of the Substrait specification that this build
+        // targets to a resource file, taking it from the resolved version of
+        // the crates that provide the specification. The generated file is
+        // also checked in, because build scripts do not run during packaging:
+        // whatever this write produces is what `cargo package` ships (see the
+        // release process in the crate documentation).
+        write_if_changed(
+            &resource_dir.join("substrait-version"),
+            &substrait_version(&validator_git_dir.join("Cargo.lock"))?,
+        )?;
     }
 
     #[cfg(feature = "protoc")]

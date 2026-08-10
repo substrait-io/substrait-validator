@@ -106,36 +106,47 @@ registered via [`Config::add_urn_resolver()`], or remapped to a known URN with
 
 ## Build process
 
-The build process for the crates and Python module also involves some
-not-so-obvious magic, to do with shipping the Substrait protobuf and YAML
-schema as appropriate. The problem is that Cargo and Python's packaging logic
-require that all files shipped with the package be located within the package
-source tree, which is not the case here due to the common submodule and proto
-directories.
+The build process for the crates and Python module involves some not-so-obvious
+magic, to do with shipping the validator's own protobuf files as appropriate.
+The problem is that Cargo and Python's packaging logic require that all files
+shipped with the package be located within the package source tree, while the
+`substrait.validator` protobuf package lives in the repository-root `proto`
+directory, shared with the other language bindings.
+
+Everything the Substrait specification itself defines is instead consumed from
+crates published from the specification: the protobuf types come from
+[`substrait-prost`](https://docs.rs/substrait-prost), the standard extension
+files and their schema from
+[`substrait-extensions`](https://docs.rs/substrait-extensions), and the type
+derivation grammar from [`substrait-antlr`](https://docs.rs/substrait-antlr).
+These are pinned to the same version, which is the Substrait version reported
+by [`substrait_version()`].
 
 ### Rust
 
 If the [`in-git-repo` file](https://github.com/substrait-io/\
 substrait-validator/blob/main/rs/in-git-repo) exists, the
 [build.rs file for this crate](https://github.com/substrait-io/\
-substrait-validator/blob/main/rs/build.rs) will copy the proto and schema files
-from their respective source locations into `src/resources`, thus keeping them
-in sync. The `in-git-repo` file is not included in the crate manifest, so this
-step is skipped when the crate is compiled after being downloaded from
-crates.io. Note however, that in order to release this crate, it must always
-first be built: the only time during the packaging process when build.rs is
-called is already on the user's machine, so the resource files won't be
-synchronized by `cargo package`.
+substrait-validator/blob/main/rs/build.rs) will copy the validator's proto
+files into `src/resources` and record the pinned Substrait version there, thus
+keeping them in sync. The `in-git-repo` file is not included in the crate
+manifest, so this step is skipped when the crate is compiled after being
+downloaded from crates.io. Note however, that in order to release this crate,
+it must always first be built: the only time during the packaging process when
+build.rs is called is already on the user's machine, so the resource files
+won't be synchronized by `cargo package`.
 
 ### Python
 
 For Python packaging, the proto files are handled by the Python package's
 [build.rs](https://github.com/substrait-io/substrait-validator/blob/\
-main/py/build.rs). When building from the repository, it reads proto files
-directly from `proto/` and `substrait/proto/`. When building from a source
-distribution, the proto files are included from this crate (which contains
-the proto files in `src/resources`), ensuring they are available during the
-build process without requiring manual synchronization steps.
+main/py/build.rs). When building from the repository, it reads the validator's
+proto files directly from `proto/`. When building from a source distribution,
+they are included from this crate (which contains them in `src/resources`),
+ensuring they are available during the build process without requiring manual
+synchronization steps. The Python bindings for the core Substrait protobuf
+packages come from the `substrait-protobuf` package on PyPI, published from the
+specification like the crates above.
 
 ### Protobuf
 

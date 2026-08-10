@@ -1673,8 +1673,6 @@ name = "test-runner"
 version = "0.1.4"
 dependencies = [
  "glob",
- "prost-build",
- "protobuf-src",
  "rayon",
  "serde",
  "serde_json",
