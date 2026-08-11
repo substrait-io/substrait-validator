@@ -22,13 +22,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-      - name: Fetch Substrait submodule tags
-        working-directory: substrait
-        run: |
-          git fetch --recurse-submodules=no origin +refs/tags/*:refs/tags/*
-          git describe --dirty --tags
       - name: Install latest protoc
         uses: arduino/setup-protoc@v3
         with:

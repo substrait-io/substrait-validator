@@ -1,4 +1,3 @@
-substrait/
 *.test
 *.test.html
 *.test.*.yaml

@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Check
@@ -28,8 +26,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v7
         with:
@@ -62,8 +58,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Rustfmt
@@ -74,8 +68,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -88,8 +80,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Doc
@@ -103,14 +93,7 @@ jobs:
     environment: VALIDATOR_RELEASE
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
-      - name: Fetch Substrait submodule tags
-        working-directory: substrait
-        run: |
-          git fetch --recurse-submodules=no origin +refs/tags/*:refs/tags/*
-          git describe --dirty --tags
       - name: Local build to populate resource files
         working-directory: rs
         run: cargo build --features protoc

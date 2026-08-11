@@ -2,8 +2,9 @@
 
 import substrait_validator as sv
 import pytest
-import subprocess
+import importlib.metadata
 import os
+import re
 import toml
 from data import BASIC_PLAN, BASIC_YAML
 
@@ -174,23 +175,25 @@ def test_resolver_callback():
         )
 
 
+def release_segment(version):
+    """Returns the major.minor.patch prefix of a version string, dropping any
+    pre-release suffix. Used to compare versions across PEP 440 and semver,
+    which spell pre-releases differently (`0.1.0a2` versus `0.1.0-alpha.2`)."""
+    match = re.match(r"\d+\.\d+\.\d+", version)
+    assert match is not None, f"not a version: {version}"
+    return match.group(0)
+
+
 def test_version():
     """Tests whether version retrieval works and returns the right versions."""
-    substrait_version = (
-        subprocess.run(
-            ["git", "describe", "--dirty", "--tags"],
-            check=True,
-            capture_output=True,
-            cwd=os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "../../substrait"
-            ),
-        )
-        .stdout.decode("utf-8")
-        .strip()
+    # The validator is built against the Substrait specification as published
+    # by the substrait-* crates, while these bindings take their protobuf
+    # bindings from the substrait-protobuf package published from the same
+    # specification version. If those disagree, the validator would be
+    # checking plans built from protobuf definitions it was not built for.
+    assert release_segment(sv.substrait_version()) == release_segment(
+        importlib.metadata.version("substrait-protobuf")
     )
-    if substrait_version.startswith("v"):
-        substrait_version = substrait_version[1:]
-    assert sv.substrait_version() == substrait_version
 
     with open(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), "../pyproject.toml"),

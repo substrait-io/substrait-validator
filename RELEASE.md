@@ -16,8 +16,7 @@ important:
  - `rs/Cargo.toml` and its references as dependencies in `py/Cargo.toml`,
    `c/Cargo.toml`, and `tests/Cargo.toml`, as well as in `rs/README.md` for
    the Cargo dependency copypasta: these must be kept in sync and incremented
-   when the `substrait-validator` sources, the protobuf files, OR the YAML
-   schema files are updated.
+   when the `substrait-validator` sources or the protobuf files are updated.
  - `py/Cargo.toml` and `py/pyproject.toml`: must be kept in sync, and must be
    incremented whenever the `substrait-validator` crate is updated OR the
    Python bindings are modified.
@@ -31,7 +30,14 @@ to regenerate it (using the same tool) if you change a file that includes the
 version number.
 
 Relation of `substrait-validator` crate version to the Substrait specification
-version is TBD.
+version is TBD. The specification version that the validator targets is not a
+version number to maintain by hand: it is the version that the `substrait-prost`,
+`substrait-extensions`, and `substrait-antlr` dependencies of `rs/Cargo.toml`
+are pinned to (they must all be pinned to the same version), and the build
+script records it in `rs/src/resources/substrait-version` for
+`substrait_validator::substrait_version()` to report. When bumping those, also
+bump `substrait-protobuf` in `py/pyproject.toml` to match, which the Python
+test suite checks.
 
 Pushing to crates.io
 --------------------
@@ -71,8 +77,8 @@ CI to use the appropriate environment.
 
  - Update version numbers (see section above).
  - Remove the `rs/src/resources` directory, if one exists.
- - Run `cargo build` to recreate above directory using the protobuf and schema
-   files from outside the validator folder.
+ - Run `cargo build` to recreate above directory using the protobuf files from
+   outside the validator folder.
  - Run `maturin sdist` to build the source distribution.
  - Run `maturin build` in the appropriate environments to build binary
    distributions.
