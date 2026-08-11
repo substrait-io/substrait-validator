@@ -162,8 +162,7 @@ plan:
                     aggregate:
                       common:
                         direct: {}
-                      groupings:
-                      - groupingExpressions:
+                      groupingExpressions:
                         - selection:
                             directReference:
                               structField:
@@ -199,6 +198,8 @@ plan:
                               structField:
                                 field: 6
                             rootReference: {}
+                      groupings:
+                      - expressionReferences: [0, 1, 2, 3, 4, 5, 6]
                       input:
                         project:
                           common:

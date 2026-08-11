@@ -58,7 +58,8 @@ fn parse_rel_type(x: &substrait::rel::RelType, y: &mut context::Context) -> diag
         | substrait::rel::RelType::NestedLoopJoin(_)
         | substrait::rel::RelType::Window(_)
         | substrait::rel::RelType::Exchange(_)
-        | substrait::rel::RelType::Expand(_) => {
+        | substrait::rel::RelType::Expand(_)
+        | substrait::rel::RelType::TopN(_) => {
             diagnostic!(
                 y,
                 Warning,

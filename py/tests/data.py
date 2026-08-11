@@ -702,70 +702,41 @@ COMPLEX_PLAN = """
                           }]
                         }
                       },
-                      "groupings": [{
-                        "groupingExpressions": [{
-                          "selection": {
-                            "directReference": {
-                              "structField": {
-                                "field": 0
-                              }
-                            },
-                            "rootReference": {
+                      "groupingExpressions": [{
+                        "selection": {
+                          "directReference": {
+                            "structField": {
+                              "field": 0
                             }
+                          },
+                          "rootReference": {
                           }
-                        }, {
-                          "selection": {
-                            "directReference": {
-                              "structField": {
-                                "field": 1
-                              }
-                            },
-                            "rootReference": {
-                            }
-                          }
-                        }, {
-                          "selection": {
-                            "directReference": {
-                              "structField": {
-                                "field": 2
-                              }
-                            },
-                            "rootReference": {
-                            }
-                          }
-                        }]
+                        }
                       }, {
-                        "groupingExpressions": [{
-                          "selection": {
-                            "directReference": {
-                              "structField": {
-                                "field": 0
-                              }
-                            },
-                            "rootReference": {
+                        "selection": {
+                          "directReference": {
+                            "structField": {
+                              "field": 1
                             }
+                          },
+                          "rootReference": {
                           }
-                        }, {
-                          "selection": {
-                            "directReference": {
-                              "structField": {
-                                "field": 1
-                              }
-                            },
-                            "rootReference": {
+                        }
+                      }, {
+                        "selection": {
+                          "directReference": {
+                            "structField": {
+                              "field": 2
                             }
+                          },
+                          "rootReference": {
                           }
-                        }, {
-                          "selection": {
-                            "directReference": {
-                              "structField": {
-                                "field": 2
-                              }
-                            },
-                            "rootReference": {
-                            }
-                          }
-                        }]
+                        }
+                      }],
+                      "groupings": [{
+                        "expressionReferences": [0, 1, 2]
+                      }, {
+                        "expressionReferences": [0, 1, 2]
                       }],
                       "measures": [{
                         "measure": {

@@ -1,4 +1,4 @@
-name: aggregate-single-set-one-expr
+name: aggregate-reference-out-of-range
 plan:
   __test: [ level: i ]
   version: { producer: validator-test }
@@ -18,9 +18,11 @@ plan:
               names:
               - test
         groupingExpressions:
-          - selection:
-              rootReference: {}
-              directReference: { structField: { field: 0 } }
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 0 } }
         groupings:
-        - expressionReferences: [0]
+        - expressionReferences: [0, 1]
+          "expressionReferences.1__test":
+          - diag: { level: e, code: 5003, msg: "*reference 1 is out of range*" }
         __test: [ type: "STRUCT<string>" ]

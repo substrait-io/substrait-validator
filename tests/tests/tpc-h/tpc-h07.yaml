@@ -108,8 +108,7 @@ plan:
                   - 1
                   - 2
                   - 3
-              groupings:
-              - groupingExpressions:
+              groupingExpressions:
                 - selection:
                     directReference:
                       structField:
@@ -125,6 +124,8 @@ plan:
                       structField:
                         field: 2
                     rootReference: {}
+              groupings:
+              - expressionReferences: [0, 1, 2]
               input:
                 project:
                   common:
