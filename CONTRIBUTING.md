@@ -13,6 +13,8 @@ Contributions are welcome! Here are some ways you can help:
 
 All contributions should be licensed under Apache 2.0. We use SPDX license headers to minimize clutter. CI will ensure that all files have such a header.
 
+Substrait also requires all contributors to sign the [Contributor License Agreement (CLA)](https://cla-assistant.io/substrait-io/substrait) before their contributions can be merged. A GitHub app checks this on every pull request and guides new contributors through signing it.
+
 ## Development dependencies
 
 Here's a (probably non-exhaustive) list of things you may want to have installed to develop for the validator.
