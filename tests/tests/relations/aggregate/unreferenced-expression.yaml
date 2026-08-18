@@ -1,4 +1,4 @@
-name: aggregate-single-set-one-expr
+name: aggregate-unreferenced-expression
 plan:
   __test: [ level: i ]
   version: { producer: validator-test }
@@ -18,9 +18,14 @@ plan:
               names:
               - test
         groupingExpressions:
-          - selection:
-              rootReference: {}
-              directReference: { structField: { field: 0 } }
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 0 } }
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 1 } }
         groupings:
         - expressionReferences: [0]
-        __test: [ type: "STRUCT<string>" ]
+        __test:
+        - diag: { level: e, code: 5003, msg: "*grouping expression 1 is not referred to by any grouping set*" }
+        - type: "STRUCT<string, fp32?>"

@@ -1505,18 +1505,18 @@ dependencies = [
 
 [[package]]
 name = "substrait-antlr"
-version = "0.87.0"
+version = "0.88.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e3af983e030dc0f5e4c4b7d4af9531f907ae368d4710f010b4ee37c690b3c57"
+checksum = "57536e01af48ba3be8512e7ed869ca22520d58b74b810ed40d054fbaea32d75c"
 dependencies = [
  "antlr4rust",
 ]
 
 [[package]]
 name = "substrait-extensions"
-version = "0.87.0"
+version = "0.88.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73dfa39674c1af4b7951dc7a5c353c8be24593b395faac61ca82594a27b0cc44"
+checksum = "99e1f71ceb5798c5c45690d500f4aff167ccfad9818bf6e471c4b5970733f97d"
 dependencies = [
  "heck",
  "include_dir",
@@ -1534,9 +1534,9 @@ dependencies = [
 
 [[package]]
 name = "substrait-prost"
-version = "0.87.0"
+version = "0.88.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aba90370eb71dc6e439c92f0e82c86afe44a42842b4d113a92693775a856f76"
+checksum = "d2f30bb3e45c6ef165fbf208d1bd905d97b20983f30551567005febc2adfc653"
 dependencies = [
  "prost",
  "prost-build",

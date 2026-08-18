@@ -78,12 +78,13 @@ plan:
                   outputMapping:
                   - 0
                   - 1
-              groupings:
-              - groupingExpressions:
+              groupingExpressions:
                 - selection:
                     directReference:
                       structField: {}
                     rootReference: {}
+              groupings:
+              - expressionReferences: [0]
               input:
                 project:
                   common:
