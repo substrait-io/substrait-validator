@@ -38,4 +38,5 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v7
+      - run: npm install @commitlint/config-conventional
       - run: npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
