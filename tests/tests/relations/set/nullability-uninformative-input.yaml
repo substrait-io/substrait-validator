@@ -25,5 +25,24 @@ plan:
             __test: [ type: "!" ]
         op: SET_OP_UNION_ALL
         __test: [ type: "STRUCT<i32>" ]
+  # The same in the primary position: with no nullability to start from, the
+  # field stays nullable rather than being declared free of nulls.
+  - rel:
+      set:
+        inputs:
+        - extensionLeaf:
+            detail:
+              '@type': substrait.Plan
+            __test: [ type: "!" ]
+        - read:
+            namedTable: { names: [secondary] }
+            baseSchema:
+              names: [a]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i32: { nullability: NULLABILITY_NULLABLE }
+        op: SET_OP_MINUS_PRIMARY
+        __test: [ type: "STRUCT<i32?>" ]
   expectedTypeUrls:
   - substrait.Plan

@@ -102,8 +102,15 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
             .then(|| field.nullable())
         };
         let mut inputs = in_types.iter();
-        let primary = inputs.next().and_then(vote).unwrap_or(false);
-        let mut nullabilities = inputs.filter_map(vote).peekable();
+        let mut nullabilities = in_types.iter().skip(1).filter_map(vote).peekable();
+        let primary = match inputs.next().and_then(vote) {
+            Some(nullable) => nullable,
+            // Every operation below takes the primary's nullability as its
+            // starting point, so without one there is no evidence either way.
+            // Publish the field as nullable, as this relation did before it
+            // derived nullability at all, rather than claiming nulls are absent.
+            None => return true,
+        };
         match derived {
             SetOp::Unspecified
             | SetOp::MinusPrimary
