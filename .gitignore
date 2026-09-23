@@ -8,3 +8,6 @@ gen
 **/*.rs.bk
 *.iml
 dist
+
+# commitlint toolchain (see package.json)
+node_modules/
