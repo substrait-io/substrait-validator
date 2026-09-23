@@ -90,19 +90,29 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
     // Set inputs may differ in field nullability. Derive it according to the
     // operation after checking the remaining type information above.
     schema = map_field_nullability(&schema, |index| {
-        let mut nullabilities = in_types.iter().map(|input| {
-            input.index_struct(index).is_none_or(|field| {
-                // An unresolved field cannot prove that nulls are absent.
-                field.is_unresolved() || field.nullable()
-            })
-        });
-        let primary = nullabilities.next().unwrap_or(true);
+        // An absent or unresolved field says nothing about nulls, so it does not
+        // vote: counting it as nullable would publish a type no input supports.
+        let vote = |input: &data::Type| {
+            input
+                .index_struct(index)
+                .filter(|field| !field.is_unresolved())
+                .map(|field| field.nullable())
+        };
+        let mut inputs = in_types.iter();
+        let primary = inputs.next().and_then(vote).unwrap_or(false);
+        let mut nullabilities = inputs.filter_map(vote).peekable();
         match op {
             SetOp::Unspecified
             | SetOp::MinusPrimary
             | SetOp::MinusPrimaryAll
             | SetOp::MinusMultiset => primary,
-            SetOp::IntersectionPrimary => primary && nullabilities.any(|nullable| nullable),
+            // The diagnostic above for too few inputs is not fatal, so there may
+            // be no informative secondary input: fall back to the primary rather
+            // than narrowing the field to required on no evidence.
+            SetOp::IntersectionPrimary => {
+                primary
+                    && (nullabilities.peek().is_none() || nullabilities.any(|nullable| nullable))
+            }
             SetOp::IntersectionMultiset | SetOp::IntersectionMultisetAll => {
                 primary && nullabilities.all(|nullable| nullable)
             }
