@@ -23,8 +23,8 @@ plan:
               struct:
                 nullability: NULLABILITY_REQUIRED
                 types:
-                - i32: { nullability: NULLABILITY_REQUIRED }
-                - string: { nullability: NULLABILITY_REQUIRED }
+                - i32: { nullability: NULLABILITY_NULLABLE }
+                - string: { nullability: NULLABILITY_NULLABLE }
             namedTable:
               names:
               - test2
@@ -32,3 +32,6 @@ plan:
         __test:
         - diag: { level: e, code: 4005, msg: "*i32 vs. string on parameter path 0*" }
         - diag: { level: e, code: 4005, msg: "*string vs. i32 on parameter path 1*" }
+        # A field the comparison rejected says nothing about nulls, so it does not
+        # vote: the published type stays the one the comparison derived.
+        - type: "STRUCT<string, i32>"
