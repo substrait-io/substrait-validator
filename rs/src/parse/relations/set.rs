@@ -11,6 +11,7 @@
 use std::sync::Arc;
 
 use crate::input::proto::substrait;
+use crate::input::traits::ProtoEnum;
 use crate::output::diagnostic;
 use crate::output::type_system::data;
 use crate::parse::context;
@@ -82,33 +83,35 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
         );
     }
 
-    // Check set operation.
-    let op = proto_required_enum_field!(x, y, op, SetOp)
-        .1
-        .unwrap_or_default();
-
     // Set inputs may differ in field nullability. Derive it according to the
-    // operation after checking the remaining type information above.
+    // operation, reading the operation before the field is parsed so that this
+    // node's data keeps the order every other relation has.
+    let derived = SetOp::proto_enum_from_i32(x.op).unwrap_or_default();
+    let compared = schema.clone();
     schema = map_field_nullability(&schema, |index| {
-        // An absent or unresolved field says nothing about nulls, so it does not
-        // vote: counting it as nullable would publish a type no input supports.
+        // A field votes only when it agrees with the schema the comparison
+        // derived, ignoring nullability. An absent, unresolved or mismatched
+        // field carries no nullability information, and counting it as nullable
+        // would publish a type no input supports.
         let vote = |input: &data::Type| {
-            input
-                .index_struct(index)
-                .filter(|field| !field.is_unresolved())
-                .map(|field| field.nullable())
+            let field = input.index_struct(index)?;
+            let compared_field = compared.index_struct(index)?;
+            (!field.is_unresolved()
+                && !compared_field.is_unresolved()
+                && field.override_nullable(false) == compared_field.override_nullable(false))
+            .then(|| field.nullable())
         };
         let mut inputs = in_types.iter();
         let primary = inputs.next().and_then(vote).unwrap_or(false);
         let mut nullabilities = inputs.filter_map(vote).peekable();
-        match op {
+        match derived {
             SetOp::Unspecified
             | SetOp::MinusPrimary
             | SetOp::MinusPrimaryAll
             | SetOp::MinusMultiset => primary,
-            // The diagnostic above for too few inputs is not fatal, so there may
-            // be no informative secondary input: fall back to the primary rather
-            // than narrowing the field to required on no evidence.
+            // The diagnostic for too few inputs is not fatal, so there may be no
+            // informative secondary input: fall back to the primary rather than
+            // narrowing the field to required on no evidence.
             SetOp::IntersectionPrimary => {
                 primary
                     && (nullabilities.peek().is_none() || nullabilities.any(|nullable| nullable))
@@ -123,6 +126,10 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
     });
     y.set_schema(schema);
 
+    // Check set operation.
+    let op = proto_required_enum_field!(x, y, op, SetOp)
+        .1
+        .unwrap_or_default();
     let op = match (op, in_types.len() > 2) {
         (SetOp::Unspecified, _) => Operation::Invalid,
         (SetOp::MinusPrimary, true) => Operation::SubtractByUnion,

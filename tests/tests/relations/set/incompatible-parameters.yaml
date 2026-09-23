@@ -43,7 +43,7 @@ plan:
         __test:
         - diag: { level: e, code: 4005, msg: "*12 vs. 10 on parameter path 0.precision*" }
         - diag: { level: e, code: 4005, msg: "*3 vs. 2 on parameter path 0.scale*" }
-        - diag: { level: e, code: 4008, msg: "*nullable vs. required on parameter path 1*" }
+        - diag: { level: e, code: 4008, msg: "*nullable vs. required on parameter path 1.element*" }
         - diag: { level: e, code: 4005, msg: "*2 parameter(s) vs. 1 parameter(s) on parameter path 2*" }
   - rel:
       set:
@@ -67,3 +67,34 @@ plan:
         op: SET_OP_UNION_ALL
         __test:
         - diag: { level: e, code: 4005, msg: "*2 parameter(s) vs. 1 parameter(s)*" }
+  # Key and value are the one nested position the accepted cases never differ on,
+  # so pin that a map still has to agree there.
+  - rel:
+      set:
+        inputs:
+        - read:
+            namedTable: { names: [primary] }
+            baseSchema:
+              names: [a]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - map:
+                    nullability: NULLABILITY_REQUIRED
+                    key: { string: { nullability: NULLABILITY_REQUIRED } }
+                    value: { i32: { nullability: NULLABILITY_REQUIRED } }
+        - read:
+            namedTable: { names: [secondary] }
+            baseSchema:
+              names: [z]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - map:
+                    nullability: NULLABILITY_REQUIRED
+                    key: { string: { nullability: NULLABILITY_NULLABLE } }
+                    value: { i32: { nullability: NULLABILITY_NULLABLE } }
+        op: SET_OP_UNION_ALL
+        __test:
+        - diag: { level: e, code: 4008, msg: "*nullable vs. required on parameter path 0.key*" }
+        - diag: { level: e, code: 4008, msg: "*nullable vs. required on parameter path 0.value*" }
