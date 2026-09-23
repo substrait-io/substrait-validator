@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use crate::input::proto::substrait;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::types;
 
@@ -26,12 +27,41 @@ enum Operation {
     Merge,
 }
 
+/// Changes the nullability of the fields in a schema, preserving nested types.
+fn map_field_nullability(
+    schema: &data::Type,
+    mut nullable: impl FnMut(usize) -> bool,
+) -> data::Type {
+    if !schema.is_struct() {
+        return schema.clone();
+    }
+    let parameters = schema
+        .parameters()
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(index, parameter)| {
+            parameter
+                .map(|value| value.map_data_type(|field| field.override_nullable(nullable(index))))
+        })
+        .collect();
+    data::new_type(
+        schema.class().clone(),
+        schema.nullable(),
+        schema.variation().clone(),
+        parameters,
+    )
+    .expect("changing field nullability must preserve a valid schema")
+}
+
 /// Parse set relation.
 pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnostic::Result<()> {
     use substrait::set_rel::SetOp;
 
     // Parse inputs.
-    let in_types: Vec<_> = handle_rel_inputs!(x, y).collect();
+    let in_types: Vec<_> = handle_rel_inputs!(x, y)
+        .map(|schema| schema.strip_field_names())
+        .collect();
 
     // Check inputs and derive schema.
     if in_types.len() < 2 {
@@ -46,17 +76,43 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
     for in_type in in_types.iter() {
         schema = types::assert_equal(
             y,
-            &in_type.strip_field_names(),
+            &map_field_nullability(in_type, |_| false),
             &schema,
             "all set inputs must have matching schemas",
         );
     }
-    y.set_schema(schema);
 
     // Check set operation.
     let op = proto_required_enum_field!(x, y, op, SetOp)
         .1
         .unwrap_or_default();
+
+    // Set inputs may differ in field nullability. Derive it according to the
+    // operation after checking the remaining type information above.
+    schema = map_field_nullability(&schema, |index| {
+        let mut nullabilities = in_types.iter().map(|input| {
+            input.index_struct(index).is_none_or(|field| {
+                // An unresolved field cannot prove that nulls are absent.
+                field.is_unresolved() || field.nullable()
+            })
+        });
+        let primary = nullabilities.next().unwrap_or(true);
+        match op {
+            SetOp::Unspecified
+            | SetOp::MinusPrimary
+            | SetOp::MinusPrimaryAll
+            | SetOp::MinusMultiset => primary,
+            SetOp::IntersectionPrimary => primary && nullabilities.any(|nullable| nullable),
+            SetOp::IntersectionMultiset | SetOp::IntersectionMultisetAll => {
+                primary && nullabilities.all(|nullable| nullable)
+            }
+            SetOp::UnionDistinct | SetOp::UnionAll => {
+                primary || nullabilities.any(|nullable| nullable)
+            }
+        }
+    });
+    y.set_schema(schema);
+
     let op = match (op, in_types.len() > 2) {
         (SetOp::Unspecified, _) => Operation::Invalid,
         (SetOp::MinusPrimary, true) => Operation::SubtractByUnion,

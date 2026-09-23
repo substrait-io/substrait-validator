@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+---
+name: set-incompatible-parameters
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  # Top-level nullability may differ; decimal parameters and nested types must match.
+  - rel:
+      set:
+        inputs:
+        - read:
+            namedTable: { names: [primary] }
+            baseSchema:
+              names: [a, b, c, d]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - decimal: { precision: 10, scale: 2, nullability: NULLABILITY_REQUIRED }
+                - list:
+                    nullability: NULLABILITY_REQUIRED
+                    type: { i64: { nullability: NULLABILITY_REQUIRED } }
+                - struct:
+                    nullability: NULLABILITY_REQUIRED
+                    types: [ { string: { nullability: NULLABILITY_REQUIRED } } ]
+        - read:
+            namedTable: { names: [secondary] }
+            baseSchema:
+              names: [v, w, x, y, z]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - decimal: { precision: 12, scale: 3, nullability: NULLABILITY_NULLABLE }
+                - list:
+                    nullability: NULLABILITY_NULLABLE
+                    type: { i64: { nullability: NULLABILITY_NULLABLE } }
+                - struct:
+                    nullability: NULLABILITY_NULLABLE
+                    types:
+                    - string: { nullability: NULLABILITY_REQUIRED }
+                    - i32: { nullability: NULLABILITY_REQUIRED }
+        op: SET_OP_UNION_ALL
+        __test:
+        - diag: { level: e, code: 4005, msg: "*12 vs. 10 on parameter path 0.precision*" }
+        - diag: { level: e, code: 4005, msg: "*3 vs. 2 on parameter path 0.scale*" }
+        - diag: { level: e, code: 4008, msg: "*nullable vs. required on parameter path 1*" }
+        - diag: { level: e, code: 4005, msg: "*2 parameter(s) vs. 1 parameter(s) on parameter path 2*" }
+  - rel:
+      set:
+        inputs:
+        - read:
+            namedTable: { names: [primary] }
+            baseSchema:
+              names: [a]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types: [ { i64: { nullability: NULLABILITY_REQUIRED } } ]
+        - read:
+            namedTable: { names: [secondary] }
+            baseSchema:
+              names: [b, c]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i64: { nullability: NULLABILITY_NULLABLE }
+                - i64: { nullability: NULLABILITY_NULLABLE }
+        op: SET_OP_UNION_ALL
+        __test:
+        - diag: { level: e, code: 4005, msg: "*2 parameter(s) vs. 1 parameter(s)*" }
