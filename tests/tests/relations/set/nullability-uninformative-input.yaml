@@ -44,5 +44,24 @@ plan:
                 - i32: { nullability: NULLABILITY_NULLABLE }
         op: SET_OP_MINUS_PRIMARY
         __test: [ type: "STRUCT<i32?>" ]
+  # An uninformative primary with required secondaries: the field stays required,
+  # because no input declares it nullable.
+  - rel:
+      set:
+        inputs:
+        - extensionLeaf:
+            detail:
+              '@type': substrait.Plan
+            __test: [ type: "!" ]
+        - read:
+            namedTable: { names: [secondary] }
+            baseSchema:
+              names: [a]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i32: { nullability: NULLABILITY_REQUIRED }
+        op: SET_OP_UNION_ALL
+        __test: [ type: "STRUCT<i32>" ]
   expectedTypeUrls:
   - substrait.Plan

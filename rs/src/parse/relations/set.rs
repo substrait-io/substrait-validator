@@ -106,10 +106,9 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
         let primary = match inputs.next().and_then(vote) {
             Some(nullable) => nullable,
             // Every operation below takes the primary's nullability as its
-            // starting point, so without one there is no evidence either way.
-            // Publish the field as nullable, as this relation did before it
-            // derived nullability at all, rather than claiming nulls are absent.
-            None => return true,
+            // starting point, so without one fall back to the informative
+            // secondary inputs rather than claiming either way.
+            None => return nullabilities.any(|nullable| nullable),
         };
         match derived {
             SetOp::Unspecified
