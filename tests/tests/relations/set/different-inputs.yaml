@@ -23,8 +23,8 @@ plan:
               struct:
                 nullability: NULLABILITY_REQUIRED
                 types:
-                - i32: { nullability: NULLABILITY_NULLABLE }
-                - string: { nullability: NULLABILITY_NULLABLE }
+                - i32: { nullability: NULLABILITY_REQUIRED }
+                - string: { nullability: NULLABILITY_REQUIRED }
             namedTable:
               names:
               - test2
