@@ -23,6 +23,17 @@ updates:
     schedule:
       interval: "daily"
 
+  # Keeps the pinned commitlint toolchain in package.json / package-lock.json
+  # current; it is only used to lint PR titles and commit messages.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      commitlint:
+        patterns:
+          - "@commitlint/*"
+
   - package-ecosystem: "pip"
     directory: "/py"
     schedule:

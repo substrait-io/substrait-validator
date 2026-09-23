@@ -35,13 +35,23 @@ jobs:
       # validated.
       - uses: actions/checkout@v7
         with:
+          # Do not leave the workflow token in .git/config: npm ci runs
+          # third-party package code in this same workspace.
+          persist-credentials: false
           sparse-checkout: |
             commitlint.config.js
+            package.json
+            package-lock.json
+            .npmrc
           sparse-checkout-cone-mode: false
-      - run: npm install @commitlint/config-conventional
+      # npm ci installs exactly the tree recorded in package-lock.json, so
+      # neither a new commitlint release nor a compromised transitive dependency
+      # can change what runs here. --ignore-scripts also blocks install hooks.
+      - run: npm ci --ignore-scripts
       - id: commitlint
         continue-on-error: true
-        run: npx commitlint --verbose <<< "$COMMIT_MSG"
+        # --no-install so this can only run the pinned local CLI, never fetch one.
+        run: npx --no-install commitlint --verbose <<< "$COMMIT_MSG"
         env:
           COMMIT_MSG: >
             ${{ github.event.pull_request.title }}
