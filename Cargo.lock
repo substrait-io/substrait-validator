@@ -1141,6 +1141,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "regress"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32eef8b209c3c1c15dbad02c1f30f9539f00dc7253e0cbcdaae442a50a09d7c1"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "rustix"
 version = "0.38.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1261,7 +1270,6 @@ version = "1.0.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14"
 dependencies = [
- "indexmap",
  "itoa",
  "memchr",
  "serde",
@@ -1344,24 +1352,24 @@ dependencies = [
 
 [[package]]
 name = "substrait-antlr"
-version = "0.87.0"
+version = "0.103.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e3af983e030dc0f5e4c4b7d4af9531f907ae368d4710f010b4ee37c690b3c57"
+checksum = "d294be9665622d56498989339e5f0b1e065d5362513815202c7e81b96a7bf82b"
 dependencies = [
  "antlr4rust",
 ]
 
 [[package]]
 name = "substrait-extensions"
-version = "0.87.0"
+version = "0.103.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73dfa39674c1af4b7951dc7a5c353c8be24593b395faac61ca82594a27b0cc44"
+checksum = "2bed772f69a140ae9c79cd9f8e3315c446972eda784d4c01c0aae629c9f13752"
 dependencies = [
  "heck",
  "include_dir",
  "indexmap",
  "prettyplease 0.3.0",
- "regress",
+ "regress 0.12.0",
  "schemars",
  "serde",
  "serde_json",
@@ -1373,9 +1381,9 @@ dependencies = [
 
 [[package]]
 name = "substrait-prost"
-version = "0.87.0"
+version = "0.103.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aba90370eb71dc6e439c92f0e82c86afe44a42842b4d113a92693775a856f76"
+checksum = "442d09097aa22424ff581a6fbaf63007e712810e10bddec46844089a15546aad"
 dependencies = [
  "prost",
  "prost-build",
@@ -1593,7 +1601,7 @@ dependencies = [
  "log",
  "proc-macro2",
  "quote",
- "regress",
+ "regress 0.11.1",
  "schemars",
  "semver",
  "serde",
