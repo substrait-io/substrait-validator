@@ -1,0 +1,23 @@
+name: read-virtual-expressions-emit
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      read:
+        common:
+          emit:
+            outputMapping: [1]
+        baseSchema:
+          names: [word, value]
+          struct:
+            nullability: NULLABILITY_REQUIRED
+            types:
+            - string: { nullability: NULLABILITY_REQUIRED }
+            - i32: { nullability: NULLABILITY_NULLABLE }
+        virtualTable:
+          expressions:
+          - fields:
+            - literal: { string: one, nullable: false }
+            - literal: { i32: 1, nullable: true }
+        __test: [ type: "STRUCT<i32?>" ]
