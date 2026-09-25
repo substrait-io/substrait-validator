@@ -1,0 +1,23 @@
+name: read-virtual-expressions
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      read:
+        baseSchema:
+          names: [word, value]
+          struct:
+            nullability: NULLABILITY_REQUIRED
+            types:
+            - string: { nullability: NULLABILITY_REQUIRED }
+            - i32: { nullability: NULLABILITY_NULLABLE }
+        virtualTable:
+          expressions:
+          - fields:
+            - literal: { string: one, nullable: false }
+            - literal: { i32: 1, nullable: true }
+          - fields:
+            - literal: { string: two, nullable: false }
+            - literal: { "null": { i32: { nullability: NULLABILITY_NULLABLE } } }
+        __test: [ type: "NSTRUCT<word: string, value: i32?>" ]
