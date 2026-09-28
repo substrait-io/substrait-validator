@@ -1,4 +1,4 @@
-name: read-virtual-expressions
+name: read-virtual-expressions-field-count-mismatch
 plan:
   __test: [ level: i ]
   version: { producer: validator-test }
@@ -19,7 +19,5 @@ plan:
             - literal: { i32: 1, nullable: true }
           - fields:
             - literal: { string: two, nullable: false }
-            - literal: { "null": { i32: { nullability: NULLABILITY_NULLABLE } } }
-          expressions.0__test: [ type: "STRUCT<string, i32?>" ]
-          expressions.1__test: [ type: "STRUCT<string, i32?>" ]
+            __test: [ diag: { level: e, code: 4005, msg: "*1 parameter(s) vs. 2 parameter(s)*" } ]
         __test: [ type: "NSTRUCT<word: string, value: i32?>" ]

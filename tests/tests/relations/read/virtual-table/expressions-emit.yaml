@@ -20,4 +20,5 @@ plan:
           - fields:
             - literal: { string: one, nullable: false }
             - literal: { i32: 1, nullable: true }
+          expressions.0__test: [ type: "STRUCT<string, i32?>" ]
         __test: [ type: "STRUCT<i32?>" ]

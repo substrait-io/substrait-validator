@@ -15,4 +15,5 @@ plan:
           expressions:
           - fields:
             - literal: { i32: 1, nullable: false }
+          expressions.0__test: [ type: "STRUCT<i32>" ]
         __test: [ type: "NSTRUCT<x: i32>" ]

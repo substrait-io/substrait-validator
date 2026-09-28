@@ -69,19 +69,22 @@ fn parse_virtual_table(
     })
 }
 
+/// Parse one row of a virtual table's expressions, and set its type.
+///
+/// The row is an unnamed struct: the names of its fields come from the read's
+/// base_schema. It is never nullable, because VirtualTable.expressions holds
+/// the bare Expression.Nested.Struct, which has no nullable field.
 fn parse_nested_struct(
     x: &substrait::expression::nested::Struct,
     y: &mut context::Context,
-) -> diagnostic::Result<data::Type> {
-    let mut field_types = vec![];
-    proto_repeated_field!(x, y, fields, |x, y| {
-        let result = expressions::parse_expression(x, y);
-        field_types.push(y.data_type());
-        result
-    });
-    let data_type = data::new_struct(field_types, false);
-    y.set_data_type(data_type.clone());
-    Ok(data_type)
+) -> diagnostic::Result<()> {
+    let field_types = proto_repeated_field!(x, y, fields, expressions::parse_expression)
+        .0
+        .iter()
+        .map(|n| n.data_type())
+        .collect::<Vec<_>>();
+    y.set_data_type(data::new_struct(field_types, false));
+    Ok(())
 }
 
 /// Parse file entry. Returns whether this matches multiple files.
