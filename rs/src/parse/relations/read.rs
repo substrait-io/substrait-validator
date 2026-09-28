@@ -51,9 +51,14 @@ fn parse_virtual_table(
     });
 
     proto_repeated_field!(x, y, expressions, |x, y| {
-        let dt = parse_nested_struct(x, y);
-        data_type = dt.unwrap();
-        Ok(())
+        let result = parse_nested_struct(x, y);
+        data_type = types::assert_equal(
+            y,
+            &y.data_type(),
+            &data_type,
+            "virtual table rows must have the same type",
+        );
+        result
     });
 
     // Describe the node.
@@ -64,22 +69,22 @@ fn parse_virtual_table(
     })
 }
 
+/// Parse one row of a virtual table's expressions, and set its type.
+///
+/// The row is an unnamed struct: the names of its fields come from the read's
+/// base_schema. It is never nullable, because VirtualTable.expressions holds
+/// the bare Expression.Nested.Struct, which has no nullable field.
 fn parse_nested_struct(
     x: &substrait::expression::nested::Struct,
     y: &mut context::Context,
-) -> diagnostic::Result<data::Type> {
-    let mut data_type: data::Type = Arc::default();
-    proto_repeated_field!(x, y, fields, |x, y| {
-        let result = expressions::parse_expression(x, y);
-        data_type = types::assert_equal(
-            y,
-            &y.data_type(),
-            &data_type,
-            "virtual table rows must have the same type",
-        );
-        result
-    });
-    Ok(data_type)
+) -> diagnostic::Result<()> {
+    let field_types = proto_repeated_field!(x, y, fields, expressions::parse_expression)
+        .0
+        .iter()
+        .map(|n| n.data_type())
+        .collect::<Vec<_>>();
+    y.set_data_type(data::new_struct(field_types, false));
+    Ok(())
 }
 
 /// Parse file entry. Returns whether this matches multiple files.
