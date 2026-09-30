@@ -47,49 +47,37 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         .1
         .unwrap_or_default();
 
-    // Determine whether the join can null the left and/or right side, and
-    // whether the right side is returned at all.
-    let (left_nullable, right_nullable) = match join_type {
-        JoinType::Unspecified => (false, Some(false)),
-        JoinType::Inner => (false, Some(false)),
-        JoinType::Outer => (true, Some(true)),
-        JoinType::Left => (false, Some(true)),
-        JoinType::Right => (true, Some(false)),
-        JoinType::LeftSemi => (false, None),
-        JoinType::LeftAnti => (false, None),
-        JoinType::LeftSingle => (false, Some(true)),
-        // TODO: Implement the following join types. I don't understand this
-        // code or these types well enough to do so.
-        JoinType::RightSemi
-        | JoinType::RightAnti
-        | JoinType::RightSingle
-        | JoinType::LeftMark
-        | JoinType::RightMark => {
-            diagnostic!(y, Warning, NotYetImplemented, "{:?} joins", join_type);
-            handle_rel_common!(x, y);
-
-            // Handle the advanced extension field.
-            handle_advanced_extension!(x, y);
-
-            // Keep going; this node is not correct, but we can continue to validate.
-            return Ok(());
-        }
+    // Determine which inputs the join returns, whether it can null them, and
+    // whether it appends a mark column. A semi or anti join returns one side
+    // only, and a mark join returns one side followed by a nullable boolean.
+    let (left_nullable, right_nullable, mark) = match join_type {
+        JoinType::Unspecified => (Some(false), Some(false), false),
+        JoinType::Inner => (Some(false), Some(false), false),
+        JoinType::Outer => (Some(true), Some(true), false),
+        JoinType::Left => (Some(false), Some(true), false),
+        JoinType::Right => (Some(true), Some(false), false),
+        JoinType::LeftSemi => (Some(false), None, false),
+        JoinType::RightSemi => (None, Some(false), false),
+        JoinType::LeftAnti => (Some(false), None, false),
+        JoinType::RightAnti => (None, Some(false), false),
+        JoinType::LeftSingle => (Some(false), Some(true), false),
+        JoinType::RightSingle => (Some(true), Some(false), false),
+        JoinType::LeftMark => (Some(false), None, true),
+        JoinType::RightMark => (None, Some(false), true),
     };
 
     // Derive final schema.
     if let (Some(left_fields), Some(right_fields)) = (left.unwrap_struct(), right.unwrap_struct()) {
-        let mut fields = Vec::with_capacity(left_fields.len() + right_fields.len());
-        if left_nullable {
-            fields.extend(left_fields.into_iter().map(|x| x.make_nullable()))
-        } else {
-            fields.extend(left_fields)
-        }
-        if let Some(right_nullable) = right_nullable {
-            if right_nullable {
-                fields.extend(right_fields.into_iter().map(|x| x.make_nullable()))
-            } else {
-                fields.extend(right_fields)
+        let mut fields = Vec::with_capacity(left_fields.len() + right_fields.len() + 1);
+        for (side, nullable) in [(left_fields, left_nullable), (right_fields, right_nullable)] {
+            match nullable {
+                Some(true) => fields.extend(side.into_iter().map(|x| x.make_nullable())),
+                Some(false) => fields.extend(side),
+                None => {}
             }
+        }
+        if mark {
+            fields.push(data::new_predicate_with_nullability(true));
         }
         let schema = data::new_struct(fields, false);
         y.set_schema(schema);
@@ -118,13 +106,16 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
         (JoinType::LeftAnti, false) => "Left anti",
         (JoinType::LeftSingle, true) => "Filtered left single",
         (JoinType::LeftSingle, false) => "Left single",
-        // TODO: Implement the following join types. I don't understand these
-        // types well enough to do so.
-        (JoinType::RightSemi, _) => todo!(),
-        (JoinType::RightAnti, _) => todo!(),
-        (JoinType::RightSingle, _) => todo!(),
-        (JoinType::LeftMark, _) => todo!(),
-        (JoinType::RightMark, _) => todo!(),
+        (JoinType::RightSemi, true) => "Filtered right semi",
+        (JoinType::RightSemi, false) => "Right semi",
+        (JoinType::RightAnti, true) => "Filtered right anti",
+        (JoinType::RightAnti, false) => "Right anti",
+        (JoinType::RightSingle, true) => "Filtered right single",
+        (JoinType::RightSingle, false) => "Right single",
+        (JoinType::LeftMark, true) => "Filtered left mark",
+        (JoinType::LeftMark, false) => "Left mark",
+        (JoinType::RightMark, true) => "Filtered right mark",
+        (JoinType::RightMark, false) => "Right mark",
     };
     describe!(y, Relation, "{prefix} join by {join_expression}");
     summary!(y, "{prefix} join by {join_expression:#}.");
@@ -207,17 +198,17 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                 }
                 JoinType::LeftMark => "Returns one record for each record from the left input. \
                                     Appends one additional “mark” column to the output of the join. \
-                                    The new column will be listed after all columns from both sides \
-                                    and will be of type nullable boolean. If there is at least one \
-                                    join partner in the right input where the join condition evaluates \
+                                    The new column will be listed after all columns from the left \
+                                    side and will be of type nullable boolean. If there is at least \
+                                    one join partner in the right input where the join condition evaluates \
                                     to true then the mark column will be set to true. Otherwise, if \
                                     there is at least one join partner in the right input where the \
                                     join condition evaluates to NULL then the mark column will be set \
                                     to NULL. Otherwise the mark column will be set to false.".to_string(),
                 JoinType::RightMark => "Returns records from the right input. Appends one additional \
                                     “mark” column to the output of the join. The new column will be \
-                                    listed after all columns from both sides and will be of type \
-                                    nullable boolean. If there is at least one join partner in the \
+                                    listed after all columns from the right side and will be of \
+                                    type nullable boolean. If there is at least one join partner in the \
                                     left input where the join condition evaluates to true then the \
                                     mark column will be set to true. Otherwise, if there is at least \
                                     one join partner in the left input where the join condition \
