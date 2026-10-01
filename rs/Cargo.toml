@@ -78,7 +78,7 @@ regex = "1.12"
 # substrait-antlr crate (published from substrait-io/substrait-packaging from
 # the spec's canonical grammar); antlr4rust is its runtime, used directly by our
 # analysis glue as well.
-antlr4rust = "0.5.2"
+antlr4rust = "0.6.0"
 substrait-antlr = "0.87.0"
 
 # Used for checking URI syntax.
