@@ -182,8 +182,7 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                                     expression yields true. If the expression never yields true for \
                                     a left input, the fields corresponding to the right input are \
                                     set to null. If the expression yields true for a left row and \
-                                    multiple right rows, this may return the first pair encountered \
-                                    or throw an error."
+                                    multiple right rows, it is a runtime error."
                         .to_string()
                 }
                 JoinType::RightSingle => {
@@ -192,8 +191,7 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                                     expression yields true. If the expression never yields true for \
                                     a right input, the fields corresponding to the left input are \
                                     set to null. If the expression yields true for a right row and \
-                                    multiple left rows, this may return the first pair encountered \
-                                    or throw an error."
+                                    multiple left rows, it is a runtime error."
                         .to_string()
                 }
                 JoinType::LeftMark => "Returns one record for each record from the left input. \
@@ -205,8 +203,8 @@ pub fn parse_join_rel(x: &substrait::JoinRel, y: &mut context::Context) -> diagn
                                     there is at least one join partner in the right input where the \
                                     join condition evaluates to NULL then the mark column will be set \
                                     to NULL. Otherwise the mark column will be set to false.".to_string(),
-                JoinType::RightMark => "Returns records from the right input. Appends one additional \
-                                    “mark” column to the output of the join. The new column will be \
+                JoinType::RightMark => "Returns one record for each record from the right input. \
+                                    Appends one additional “mark” column to the output of the join. The new column will be \
                                     listed after all columns from the right side and will be of \
                                     type nullable boolean. If there is at least one join partner in the \
                                     left input where the join condition evaluates to true then the \
