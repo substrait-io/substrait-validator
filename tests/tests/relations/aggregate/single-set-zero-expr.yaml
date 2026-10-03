@@ -18,6 +18,6 @@ plan:
               names:
               - test
         groupings:
-        - groupingExpressions: []
+        - expressionReferences: []
         __test:
         - diag: { level: e, code: 5003, msg: "*must have at least one grouping expression or measure*" }
