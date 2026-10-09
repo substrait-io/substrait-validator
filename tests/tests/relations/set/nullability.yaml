@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: Apache-2.0
+---
+name: set-nullability
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  # The three-input output type derivation example from the specification.
+  - rel:
+      set:
+        inputs: &inputs
+        - read:
+            namedTable: { names: [primary] }
+            baseSchema:
+              names: [a, b, c, d, e, f, g, h]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i64: &required { nullability: NULLABILITY_REQUIRED }
+                - i64: *required
+                - i64: *required
+                - i64: *required
+                - i64: &nullable { nullability: NULLABILITY_NULLABLE }
+                - i64: *nullable
+                - i64: *nullable
+                - i64: *nullable
+        - read:
+            namedTable: { names: [secondary1] }
+            baseSchema:
+              names: [i, j, k, l, m, n, o, p]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i64: *required
+                - i64: *required
+                - i64: *nullable
+                - i64: *nullable
+                - i64: *required
+                - i64: *required
+                - i64: *nullable
+                - i64: *nullable
+        - read:
+            namedTable: { names: [secondary2] }
+            baseSchema:
+              names: [q, r, s, t, u, v, w, x]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i64: *required
+                - i64: *nullable
+                - i64: *required
+                - i64: *nullable
+                - i64: *required
+                - i64: *nullable
+                - i64: *required
+                - i64: *nullable
+        op: SET_OP_MINUS_PRIMARY
+        __test: [ type: "STRUCT<i64, i64, i64, i64, i64?, i64?, i64?, i64?>" ]
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_MINUS_PRIMARY_ALL
+        __test:
+        - type: "STRUCT<i64, i64, i64, i64, i64?, i64?, i64?, i64?>"
+        - diag: { level: w, code: 1, msg: "*MinusPrimaryAll not yet supported*" }
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_MINUS_MULTISET
+        __test: [ type: "STRUCT<i64, i64, i64, i64, i64?, i64?, i64?, i64?>" ]
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_INTERSECTION_PRIMARY
+        __test: [ type: "STRUCT<i64, i64, i64, i64, i64, i64?, i64?, i64?>" ]
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_INTERSECTION_MULTISET
+        __test: [ type: "STRUCT<i64, i64, i64, i64, i64, i64, i64, i64?>" ]
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_INTERSECTION_MULTISET_ALL
+        __test:
+        - type: "STRUCT<i64, i64, i64, i64, i64, i64, i64, i64?>"
+        - diag: { level: w, code: 1, msg: "*IntersectionMultisetAll not yet supported*" }
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_UNION_DISTINCT
+        __test: [ type: "STRUCT<i64, i64?, i64?, i64?, i64?, i64?, i64?, i64?>" ]
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_UNION_ALL
+        __test: [ type: "STRUCT<i64, i64?, i64?, i64?, i64?, i64?, i64?, i64?>" ]
+  # Emit must apply to the derived schema, including order and duplicates.
+  - rel:
+      set:
+        inputs: *inputs
+        op: SET_OP_UNION_ALL
+        common:
+          emit: { outputMapping: [7, 0, 1, 1] }
+        __test: [ type: "STRUCT<i64?, i64, i64?, i64?>" ]

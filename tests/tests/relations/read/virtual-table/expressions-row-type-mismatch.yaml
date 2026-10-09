@@ -1,0 +1,24 @@
+name: read-virtual-expressions-row-type-mismatch
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      read:
+        baseSchema:
+          names: [word, value]
+          struct:
+            nullability: NULLABILITY_REQUIRED
+            types:
+            - string: { nullability: NULLABILITY_REQUIRED }
+            - i32: { nullability: NULLABILITY_NULLABLE }
+        virtualTable:
+          expressions:
+          - fields:
+            - literal: { string: one, nullable: false }
+            - literal: { i32: 1, nullable: true }
+          - fields:
+            - literal: { varChar: { value: two, length: 25 }, nullable: false }
+            - literal: { i32: 2, nullable: true }
+            __test: [ diag: { level: e, code: 4005, msg: "*VARCHAR vs. string on parameter path 0*" } ]
+        __test: [ type: "NSTRUCT<word: string, value: i32?>" ]
