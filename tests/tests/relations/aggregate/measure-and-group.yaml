@@ -34,11 +34,12 @@ plan:
             namedTable:
               names:
               - test
-        groupings:
-        - groupingExpressions:
+        groupingExpressions:
           - selection:
               rootReference: {}
               directReference: { structField: { field: 0 } }
+        groupings:
+        - expressionReferences: [0]
         measures:
         - measure:
             functionReference: 1

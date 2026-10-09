@@ -23,7 +23,7 @@ enum LiteralValue {
     /// May be used only for booleans.
     Boolean(bool),
 
-    /// May be used only for I8, I16, I32, I64, Timestamp, TimestampTz, Date, and Time.
+    /// May be used only for I8, I16, I32, I64, and Date.
     Integer(i64),
 
     /// May be used only for Fp32 and Fp64.
@@ -157,21 +157,12 @@ impl Describe for Literal {
                 data::Class::Simple(data::class::Simple::I16) => write!(f, "{i}i16"),
                 data::Class::Simple(data::class::Simple::I32) => write!(f, "{i}i32"),
                 data::Class::Simple(data::class::Simple::I64) => write!(f, "{i}i64"),
-                data::Class::Simple(data::class::Simple::Timestamp) => {
-                    write!(f, "{}", to_date_time_str(*i, "%Y-%m-%d %H:%M:%S%.6f"))
-                }
-                data::Class::Simple(data::class::Simple::TimestampTz) => {
-                    write!(f, "{} UTC", to_date_time_str(*i, "%Y-%m-%d %H:%M:%S%.6f"))
-                }
                 data::Class::Simple(data::class::Simple::Date) => {
                     write!(
                         f,
                         "{}",
                         to_date_time_str(i.saturating_mul(24 * 60 * 60 * 1_000_000), "%Y-%m-%d")
                     )
-                }
-                data::Class::Simple(data::class::Simple::Time) => {
-                    write!(f, "{}", to_date_time_str(*i, "%H:%M:%S%.6f"))
                 }
                 _ => write!(f, "{i}"),
             },
@@ -485,82 +476,6 @@ fn parse_binary(
     )
 }
 
-/// Parses a timestamp literal.
-fn parse_timestamp(
-    x: &i64,
-    y: &mut context::Context,
-    nullable: bool,
-    variations: Option<extension::simple::type_variation::ResolutionResult>,
-) -> diagnostic::Result<Literal> {
-    let dt = to_date_time(*x)?;
-    if dt
-        < chrono::NaiveDate::from_ymd_opt(1000, 1, 1)
-            .unwrap()
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-        || dt
-            >= chrono::NaiveDate::from_ymd_opt(10000, 1, 1)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap()
-    {
-        diagnostic!(
-            y,
-            Error,
-            ExpressionIllegalLiteralValue,
-            "timestamp out of range 1000-01-01 to 9999-12-31"
-        );
-    }
-    Literal::new_simple(
-        LiteralValue::Integer(*x),
-        data::class::Simple::Timestamp,
-        nullable,
-        extensions::simple::resolve_variation_by_class(
-            y,
-            variations,
-            &data::Class::Simple(data::class::Simple::Timestamp),
-        ),
-    )
-}
-
-/// Parses a UTC timestamp literal.
-fn parse_timestamp_tz(
-    x: &i64,
-    y: &mut context::Context,
-    nullable: bool,
-    variations: Option<extension::simple::type_variation::ResolutionResult>,
-) -> diagnostic::Result<Literal> {
-    let dt = to_date_time(*x)?;
-    if dt
-        < chrono::NaiveDate::from_ymd_opt(1000, 1, 1)
-            .unwrap()
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-        || dt
-            >= chrono::NaiveDate::from_ymd_opt(10000, 1, 1)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap()
-    {
-        diagnostic!(
-            y,
-            Error,
-            ExpressionIllegalLiteralValue,
-            "timestamp out of range 1000-01-01 UTC to 9999-12-31 UTC"
-        );
-    }
-    Literal::new_simple(
-        LiteralValue::Integer(*x),
-        data::class::Simple::TimestampTz,
-        nullable,
-        extensions::simple::resolve_variation_by_class(
-            y,
-            variations,
-            &data::Class::Simple(data::class::Simple::TimestampTz),
-        ),
-    )
-}
-
 /// Parses a date literal.
 fn parse_date(
     x: &i32,
@@ -595,33 +510,6 @@ fn parse_date(
             y,
             variations,
             &data::Class::Simple(data::class::Simple::Date),
-        ),
-    )
-}
-
-/// Parses a time literal.
-fn parse_time(
-    x: &i64,
-    y: &mut context::Context,
-    nullable: bool,
-    variations: Option<extension::simple::type_variation::ResolutionResult>,
-) -> diagnostic::Result<Literal> {
-    if *x < 0 || *x >= 24 * 60 * 60 * 1_000_000 {
-        diagnostic!(
-            y,
-            Error,
-            ExpressionIllegalLiteralValue,
-            "time of day out of range 00:00:00.000000 to 23:59:59.999999"
-        );
-    }
-    Literal::new_simple(
-        LiteralValue::Integer(*x),
-        data::class::Simple::Time,
-        nullable,
-        extensions::simple::resolve_variation_by_class(
-            y,
-            variations,
-            &data::Class::Simple(data::class::Simple::Time),
         ),
     )
 }
@@ -1170,10 +1058,7 @@ fn parse_literal_type(
         LiteralType::Fp64(x) => parse_fp64(x, y, nullable, variations),
         LiteralType::String(x) => parse_string(x, y, nullable, variations),
         LiteralType::Binary(x) => parse_binary(x, y, nullable, variations),
-        LiteralType::Timestamp(x) => parse_timestamp(x, y, nullable, variations),
-        LiteralType::TimestampTz(x) => parse_timestamp_tz(x, y, nullable, variations),
         LiteralType::Date(x) => parse_date(x, y, nullable, variations),
-        LiteralType::Time(x) => parse_time(x, y, nullable, variations),
         LiteralType::IntervalYearToMonth(x) => {
             parse_interval_year_to_month(x, y, nullable, variations)
         }
