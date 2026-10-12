@@ -21,7 +21,7 @@ dependencies = [
     # Substrait version this validator targets, mirroring the Rust side's pin of
     # substrait-prost.
     "substrait-protobuf == 0.87.0",
-    "protobuf >=5,<7",
+    "protobuf >=5,<8",
     "click >= 8",
     "pyyaml >= 6",
     "jdot >= 0.5",
