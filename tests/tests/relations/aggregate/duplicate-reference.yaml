@@ -1,0 +1,31 @@
+name: aggregate-duplicate-reference
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      aggregate:
+        input:
+          read:
+            baseSchema:
+              names: [a, b]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - string: { nullability: NULLABILITY_REQUIRED }
+                - fp32: { nullability: NULLABILITY_REQUIRED }
+            namedTable:
+              names:
+              - test
+        groupingExpressions:
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 0 } }
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 1 } }
+        groupings:
+        - expressionReferences: [0, 0, 1]
+          "expressionReferences.1__test":
+          - diag: { level: w, code: 7007, msg: "*expression 0 is already part of this grouping set*" }
+        __test: [ type: "STRUCT<string, fp32>" ]

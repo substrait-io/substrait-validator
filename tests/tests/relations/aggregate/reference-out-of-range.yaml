@@ -1,0 +1,28 @@
+name: aggregate-reference-out-of-range
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      aggregate:
+        input:
+          read:
+            baseSchema:
+              names: [a, b]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - string: { nullability: NULLABILITY_REQUIRED }
+                - fp32: { nullability: NULLABILITY_REQUIRED }
+            namedTable:
+              names:
+              - test
+        groupingExpressions:
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 0 } }
+        groupings:
+        - expressionReferences: [0, 1]
+          "expressionReferences.1__test":
+          - diag: { level: e, code: 5003, msg: "*reference 1 is out of range*" }
+        __test: [ type: "STRUCT<string>" ]

@@ -17,12 +17,13 @@ plan:
             namedTable:
               names:
               - test
-        groupings:
-        - groupingExpressions:
+        groupingExpressions:
           - selection:
               rootReference: {}
               directReference: { structField: { field: 1 } }
           - selection:
               rootReference: {}
               directReference: { structField: { field: 0 } }
+        groupings:
+        - expressionReferences: [0, 1]
         __test: [ type: "STRUCT<fp32, string>" ]

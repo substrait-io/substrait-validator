@@ -42,12 +42,18 @@ message DataType {
     SIMPLE_FP64 = 11;
     SIMPLE_STRING = 12;
     SIMPLE_BINARY = 13;
-    SIMPLE_TIMESTAMP = 14;
+
+    // Removed from substrait.Type in Substrait 0.88.0, along with the
+    // timestamp, time, and timestamp_tz types themselves. Retained here (and
+    // never emitted) so that the numbering of the remaining values, and thus
+    // the validator's output format, stays stable.
+    SIMPLE_TIMESTAMP = 14 [deprecated = true];
+    SIMPLE_TIME = 17 [deprecated = true];
+    SIMPLE_TIMESTAMP_TZ = 29 [deprecated = true];
+
     SIMPLE_DATE = 16;
-    SIMPLE_TIME = 17;
     SIMPLE_INTERVAL_YEAR = 19;
     SIMPLE_INTERVAL_DAY = 20;
-    SIMPLE_TIMESTAMP_TZ = 29;
     SIMPLE_UUID = 32;
   }
 
