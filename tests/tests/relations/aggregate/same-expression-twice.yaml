@@ -1,0 +1,31 @@
+name: aggregate-same-expression-twice
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      aggregate:
+        input:
+          read:
+            baseSchema:
+              names: [a, b]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - string: { nullability: NULLABILITY_REQUIRED }
+                - fp32: { nullability: NULLABILITY_REQUIRED }
+            namedTable:
+              names:
+              - test
+        groupingExpressions:
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 0 } }
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 0 } }
+          __test:
+          - diag: { level: w, code: 7007, msg: "*expression 1 is identical to grouping expression 0*" }
+        groupings:
+        - expressionReferences: [0, 1]
+        __test: [ type: "STRUCT<string, string>" ]

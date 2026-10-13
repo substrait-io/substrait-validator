@@ -230,6 +230,58 @@ fn parse_proto<B: prost::bytes::Buf + Clone>(buffer: B) -> ParsedProtoResult {
     }
 }
 
+/// Returns the path and number of each field in the encoded plan that the
+/// Substrait descriptor does not define. prost drops these silently when
+/// decoding, for example fields that are reserved in the targeted version.
+fn find_unknown_fields<B: prost::bytes::Buf>(buffer: B) -> Vec<(Vec<path::PathElement>, u32)> {
+    use prost_reflect::ReflectMessage;
+    let descriptor = proto::substrait::Plan::default().descriptor();
+    let mut found = vec![];
+    if let Ok(plan) = prost_reflect::DynamicMessage::decode(descriptor, buffer) {
+        collect_unknown_fields(&plan, &mut vec![], &mut found);
+    }
+    found
+}
+
+/// Recursive helper for find_unknown_fields.
+fn collect_unknown_fields(
+    message: &prost_reflect::DynamicMessage,
+    elements: &mut Vec<path::PathElement>,
+    found: &mut Vec<(Vec<path::PathElement>, u32)>,
+) {
+    use prost_reflect::Value;
+    found.extend(
+        message
+            .unknown_fields()
+            .map(|f| (elements.clone(), f.number())),
+    );
+    for (field, value) in message.fields() {
+        let name = field.name().to_string();
+        match value {
+            Value::Message(child) => {
+                elements.push(
+                    match field.containing_oneof().filter(|o| !o.is_synthetic()) {
+                        Some(oneof) => path::PathElement::Variant(oneof.name().to_string(), name),
+                        None => path::PathElement::Field(name),
+                    },
+                );
+                collect_unknown_fields(child, elements, found);
+                elements.pop();
+            }
+            Value::List(items) => {
+                for (index, item) in items.iter().enumerate() {
+                    if let Value::Message(child) = item {
+                        elements.push(path::PathElement::Repeated(name.clone(), index));
+                        collect_unknown_fields(child, elements, found);
+                        elements.pop();
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 /// Parses the given [`proto::substrait::Plan`] message, validates it, and
 /// returns the parse tree with diagnostic results.
 pub fn parse<B: prost::bytes::Buf + Clone>(
@@ -238,12 +290,33 @@ pub fn parse<B: prost::bytes::Buf + Clone>(
 ) -> parse_result::ParseResult {
     let mut state = context::State::default();
 
-    let (err1, err2) = match parse_proto(buffer) {
+    let (err1, err2) = match parse_proto(buffer.clone()) {
         ParsedProtoResult::Parsed(ref plan) => {
+            let unknown_fields = find_unknown_fields(buffer);
             return traversal::validate::<proto::substrait::Plan, _>(
                 plan,
                 "plan",
-                plan::parse_plan,
+                |plan, ctx| {
+                    plan::parse_plan(plan, ctx);
+
+                    // Report the fields that prost dropped while decoding.
+                    // These are attached to the root node, but carry the path
+                    // of the message that contained them.
+                    for (elements, number) in unknown_fields {
+                        ctx.push_diagnostic(diagnostic::RawDiagnostic {
+                            cause: cause!(
+                                ProtoUnknownField,
+                                "field {number} is not defined in this version of \
+                                Substrait, and was ignored"
+                            ),
+                            level: diagnostic::Level::Warning,
+                            path: path::PathBuf {
+                                root: "plan",
+                                elements,
+                            },
+                        });
+                    }
+                },
                 &mut state,
                 config,
             );
@@ -321,4 +394,66 @@ pub fn validate(
         &mut state,
         config,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Just enough of the pre-0.88 schema to encode an aggregate whose grouping
+    // set uses the removed `Grouping.grouping_expressions` field (number 1).
+    #[derive(Clone, PartialEq, prost::Message)]
+    struct OldPlan {
+        #[prost(message, repeated, tag = "3")]
+        relations: Vec<OldPlanRel>,
+    }
+
+    #[derive(Clone, PartialEq, prost::Message)]
+    struct OldPlanRel {
+        #[prost(message, optional, tag = "1")]
+        rel: Option<OldRel>,
+    }
+
+    #[derive(Clone, PartialEq, prost::Message)]
+    struct OldRel {
+        #[prost(message, optional, tag = "4")]
+        aggregate: Option<OldAggregateRel>,
+    }
+
+    #[derive(Clone, PartialEq, prost::Message)]
+    struct OldAggregateRel {
+        #[prost(message, repeated, tag = "3")]
+        groupings: Vec<OldGrouping>,
+    }
+
+    #[derive(Clone, PartialEq, prost::Message)]
+    struct OldGrouping {
+        #[prost(message, repeated, tag = "1")]
+        grouping_expressions: Vec<proto::substrait::Expression>,
+    }
+
+    #[test]
+    fn test_unknown_fields_are_reported() {
+        let plan = OldPlan {
+            relations: vec![OldPlanRel {
+                rel: Some(OldRel {
+                    aggregate: Some(OldAggregateRel {
+                        groupings: vec![OldGrouping {
+                            grouping_expressions: vec![Default::default()],
+                        }],
+                    }),
+                }),
+            }],
+        };
+        let result = parse(plan.encode_to_vec().as_slice(), &config::Config::new());
+        let unknown = result
+            .iter_diagnostics()
+            .filter(|d| d.cause.classification == diagnostic::Classification::ProtoUnknownField)
+            .map(|d| d.path.to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            unknown,
+            vec!["plan.relations[0].rel_type<rel>.rel_type<aggregate>.groupings[0]"]
+        );
+    }
 }

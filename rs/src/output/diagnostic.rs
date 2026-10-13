@@ -192,6 +192,9 @@ pub enum Classification {
     #[strum(props(Description = "missing required protobuf field"))]
     ProtoMissingField = 1002,
 
+    #[strum(props(Description = "unknown protobuf field"))]
+    ProtoUnknownField = 1003,
+
     #[strum(props(Description = "encountered a protobuf \"any\""))]
     ProtoAny = 1004,
 
