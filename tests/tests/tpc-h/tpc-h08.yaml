@@ -131,13 +131,14 @@ plan:
                       - 0
                       - 1
                       - 2
-                  groupings:
-                  - groupingExpressions:
+                  groupingExpressions:
                     - selection:
                         directReference:
                           structField:
                             field: 0
                         rootReference: {}
+                  groupings:
+                  - expressionReferences: [0]
                   input:
                     project:
                       common:

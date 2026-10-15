@@ -11,7 +11,9 @@
 use std::sync::Arc;
 
 use crate::input::proto::substrait;
+use crate::input::traits::ProtoEnum;
 use crate::output::diagnostic;
+use crate::output::type_system::data;
 use crate::parse::context;
 use crate::parse::types;
 
@@ -26,12 +28,41 @@ enum Operation {
     Merge,
 }
 
+/// Changes the nullability of the fields in a schema, preserving nested types.
+fn map_field_nullability(
+    schema: &data::Type,
+    mut nullable: impl FnMut(usize) -> bool,
+) -> data::Type {
+    if !schema.is_struct() {
+        return schema.clone();
+    }
+    let parameters = schema
+        .parameters()
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(index, parameter)| {
+            parameter
+                .map(|value| value.map_data_type(|field| field.override_nullable(nullable(index))))
+        })
+        .collect();
+    data::new_type(
+        schema.class().clone(),
+        schema.nullable(),
+        schema.variation().clone(),
+        parameters,
+    )
+    .expect("changing field nullability must preserve a valid schema")
+}
+
 /// Parse set relation.
 pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnostic::Result<()> {
     use substrait::set_rel::SetOp;
 
     // Parse inputs.
-    let in_types: Vec<_> = handle_rel_inputs!(x, y).collect();
+    let in_types: Vec<_> = handle_rel_inputs!(x, y)
+        .map(|schema| schema.strip_field_names())
+        .collect();
 
     // Check inputs and derive schema.
     if in_types.len() < 2 {
@@ -46,11 +77,59 @@ pub fn parse_set_rel(x: &substrait::SetRel, y: &mut context::Context) -> diagnos
     for in_type in in_types.iter() {
         schema = types::assert_equal(
             y,
-            &in_type.strip_field_names(),
+            &map_field_nullability(in_type, |_| false),
             &schema,
             "all set inputs must have matching schemas",
         );
     }
+
+    // Set inputs may differ in field nullability. Derive it according to the
+    // operation, reading the operation before the field is parsed so that this
+    // node's data keeps the order every other relation has.
+    let derived = SetOp::proto_enum_from_i32(x.op).unwrap_or_default();
+    let compared = schema.clone();
+    schema = map_field_nullability(&schema, |index| {
+        // A field votes only when it agrees with the schema the comparison
+        // derived, ignoring nullability. An absent, unresolved or mismatched
+        // field carries no nullability information, and counting it as nullable
+        // would publish a type no input supports.
+        let vote = |input: &data::Type| {
+            let field = input.index_struct(index)?;
+            let compared_field = compared.index_struct(index)?;
+            (!field.is_unresolved()
+                && !compared_field.is_unresolved()
+                && field.override_nullable(false) == compared_field.override_nullable(false))
+            .then(|| field.nullable())
+        };
+        let mut inputs = in_types.iter();
+        let mut nullabilities = in_types.iter().skip(1).filter_map(vote).peekable();
+        let primary = match inputs.next().and_then(vote) {
+            Some(nullable) => nullable,
+            // Every operation below takes the primary's nullability as its
+            // starting point, so without one fall back to the informative
+            // secondary inputs rather than claiming either way.
+            None => return nullabilities.any(|nullable| nullable),
+        };
+        match derived {
+            SetOp::Unspecified
+            | SetOp::MinusPrimary
+            | SetOp::MinusPrimaryAll
+            | SetOp::MinusMultiset => primary,
+            // The diagnostic for too few inputs is not fatal, so there may be no
+            // informative secondary input: fall back to the primary rather than
+            // narrowing the field to required on no evidence.
+            SetOp::IntersectionPrimary => {
+                primary
+                    && (nullabilities.peek().is_none() || nullabilities.any(|nullable| nullable))
+            }
+            SetOp::IntersectionMultiset | SetOp::IntersectionMultisetAll => {
+                primary && nullabilities.all(|nullable| nullable)
+            }
+            SetOp::UnionDistinct | SetOp::UnionAll => {
+                primary || nullabilities.any(|nullable| nullable)
+            }
+        }
+    });
     y.set_schema(schema);
 
     // Check set operation.

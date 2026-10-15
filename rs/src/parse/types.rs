@@ -133,22 +133,9 @@ pub fn parse_binary(
     parse_simple_type!(x, y, Binary)
 }
 
-/// Parses a timestamp type.
-pub fn parse_timestamp(
-    x: &substrait::r#type::Timestamp,
-    y: &mut context::Context,
-) -> diagnostic::Result<()> {
-    parse_simple_type!(x, y, Timestamp)
-}
-
 /// Parses a date type.
 pub fn parse_date(x: &substrait::r#type::Date, y: &mut context::Context) -> diagnostic::Result<()> {
     parse_simple_type!(x, y, Date)
-}
-
-/// Parses a time type.
-pub fn parse_time(x: &substrait::r#type::Time, y: &mut context::Context) -> diagnostic::Result<()> {
-    parse_simple_type!(x, y, Time)
 }
 
 /// Parses a interval-year type.
@@ -165,14 +152,6 @@ pub fn parse_interval_day(
     y: &mut context::Context,
 ) -> diagnostic::Result<()> {
     parse_simple_type!(x, y, IntervalDay)
-}
-
-/// Parses a timestamp-tz type.
-pub fn parse_timestamp_tz(
-    x: &substrait::r#type::TimestampTz,
-    y: &mut context::Context,
-) -> diagnostic::Result<()> {
-    parse_simple_type!(x, y, TimestampTz)
 }
 
 /// Parses a UUID type.
@@ -578,12 +557,9 @@ pub fn parse_type_kind(
         substrait::r#type::Kind::Fp64(x) => parse_fp64(x, y),
         substrait::r#type::Kind::String(x) => parse_string(x, y),
         substrait::r#type::Kind::Binary(x) => parse_binary(x, y),
-        substrait::r#type::Kind::Timestamp(x) => parse_timestamp(x, y),
         substrait::r#type::Kind::Date(x) => parse_date(x, y),
-        substrait::r#type::Kind::Time(x) => parse_time(x, y),
         substrait::r#type::Kind::IntervalYear(x) => parse_interval_year(x, y),
         substrait::r#type::Kind::IntervalDay(x) => parse_interval_day(x, y),
-        substrait::r#type::Kind::TimestampTz(x) => parse_timestamp_tz(x, y),
         substrait::r#type::Kind::Uuid(x) => parse_uuid(x, y),
         substrait::r#type::Kind::FixedChar(x) => parse_fixed_char(x, y),
         substrait::r#type::Kind::Varchar(x) => parse_var_char(x, y),
@@ -683,27 +659,6 @@ fn describe_type(y: &mut context::Context, data_type: &data::Type) {
             );
             String::from("Binary string type")
         }
-        data::Class::Simple(data::class::Simple::Timestamp) => {
-            summary!(
-                y,
-                "Implementations of this type must support all timestamps \
-                within the range [1000-01-01 00:00:00.000000, \
-                9999-12-31 23:59:59.999999] with microsecond precision. \
-                Timezone information is however not encoded, so contextual \
-                information would be needed to map the timestamp to a fixed \
-                point in time."
-            );
-            String::from("Timezone-naive timestamp type")
-        }
-        data::Class::Simple(data::class::Simple::TimestampTz) => {
-            summary!(
-                y,
-                "Implementations of this type must support all timestamps \
-                within the range [1000-01-01 00:00:00.000000 UTC, \
-                9999-12-31 23:59:59.999999 UTC] with microsecond precision."
-            );
-            String::from("Timezone-aware timestamp type")
-        }
         data::Class::Simple(data::class::Simple::Date) => {
             summary!(
                 y,
@@ -711,16 +666,6 @@ fn describe_type(y: &mut context::Context, data_type: &data::Type) {
                 the range [1000-01-01, 9999-12-31]."
             );
             String::from("Date type")
-        }
-        data::Class::Simple(data::class::Simple::Time) => {
-            summary!(
-                y,
-                "Implementations of this type must support all times of day \
-                with microsecond precision, not counting leap seconds; that \
-                is, any integer number of microseconds since the start of a \
-                day in the range [0, 24*60*60*10^6]."
-            );
-            String::from("Time-of-day type")
         }
         data::Class::Simple(data::class::Simple::IntervalYear) => {
             // FIXME: the way this type is defined makes no sense; its

@@ -1,0 +1,26 @@
+name: read-virtual-expressions-cast
+plan:
+  __test: [ level: w ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      read:
+        baseSchema:
+          names: [x]
+          struct:
+            nullability: NULLABILITY_REQUIRED
+            types:
+            - i64: { nullability: NULLABILITY_REQUIRED }
+        virtualTable:
+          expressions:
+          - fields:
+            - cast:
+                input: { literal: { i32: 1 } }
+                type: { i64: { nullability: NULLABILITY_REQUIRED } }
+          - fields:
+            - cast:
+                input: { literal: { i32: 2 } }
+                type: { string: { nullability: NULLABILITY_REQUIRED } }
+          expressions.0__test: [ type: "STRUCT<!>" ]
+          expressions.1__test: [ type: "STRUCT<!>" ]
+        __test: [ type: "NSTRUCT<x: i64>" ]

@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+---
+name: set-nullability-compound
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      set:
+        inputs:
+        - read:
+            namedTable: { names: [primary] }
+            baseSchema:
+              names: [a, b, c, d, e]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - decimal: { precision: 10, scale: 2, nullability: NULLABILITY_REQUIRED }
+                - list:
+                    nullability: NULLABILITY_REQUIRED
+                    type: { i64: { nullability: NULLABILITY_NULLABLE } }
+                - struct:
+                    nullability: NULLABILITY_NULLABLE
+                    types: [ { string: { nullability: NULLABILITY_REQUIRED } } ]
+                - map:
+                    nullability: NULLABILITY_REQUIRED
+                    key: { string: { nullability: NULLABILITY_REQUIRED } }
+                    value: { i32: { nullability: NULLABILITY_NULLABLE } }
+        - read:
+            namedTable: { names: [secondary] }
+            baseSchema:
+              names: [v, w, x, y, z]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - decimal: { precision: 10, scale: 2, nullability: NULLABILITY_NULLABLE }
+                - list:
+                    nullability: NULLABILITY_NULLABLE
+                    type: { i64: { nullability: NULLABILITY_NULLABLE } }
+                - struct:
+                    nullability: NULLABILITY_REQUIRED
+                    types: [ { string: { nullability: NULLABILITY_REQUIRED } } ]
+                - map:
+                    nullability: NULLABILITY_NULLABLE
+                    key: { string: { nullability: NULLABILITY_REQUIRED } }
+                    value: { i32: { nullability: NULLABILITY_NULLABLE } }
+        op: SET_OP_UNION_ALL
+        __test: [ type: "STRUCT<DECIMAL?<10, 2>, LIST?<i64?>, STRUCT?<string>, MAP?<string, i32?>>" ]

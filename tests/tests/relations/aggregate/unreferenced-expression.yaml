@@ -1,0 +1,31 @@
+name: aggregate-unreferenced-expression
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      aggregate:
+        input:
+          read:
+            baseSchema:
+              names: [a, b]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - string: { nullability: NULLABILITY_REQUIRED }
+                - fp32: { nullability: NULLABILITY_REQUIRED }
+            namedTable:
+              names:
+              - test
+        groupingExpressions:
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 0 } }
+        - selection:
+            rootReference: {}
+            directReference: { structField: { field: 1 } }
+        groupings:
+        - expressionReferences: [0]
+        __test:
+        - diag: { level: e, code: 5003, msg: "*grouping expression 1 is not referred to by any grouping set*" }
+        - type: "STRUCT<string, fp32?>"

@@ -19,3 +19,23 @@ plan:
               - test
         op: SET_OP_UNION_ALL
         __test: [ diag: { level: e, code: 5002, msg: "*set operations require at least two input relations*" } ]
+  # The too-few-inputs diagnostic is not fatal, so the derivation still runs.
+  # With no secondary input to intersect with, the primary's nullability stands:
+  # narrowing it to required here would claim knowledge the plan does not carry.
+  - rel:
+      set:
+        inputs:
+        - read:
+            baseSchema:
+              names: [a]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i64: { nullability: NULLABILITY_NULLABLE }
+            namedTable:
+              names:
+              - test
+        op: SET_OP_INTERSECTION_PRIMARY
+        __test:
+        - diag: { level: e, code: 5002, msg: "*set operations require at least two input relations*" }
+        - type: "STRUCT<i64?>"

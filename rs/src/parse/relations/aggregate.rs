@@ -18,7 +18,8 @@ use std::collections::HashSet;
 
 /// Type of output field.
 enum FieldType {
-    /// A field passed straight on from the input, but uniquified.
+    /// A grouping expression that is part of every grouping set, so it is
+    /// never null-filled and keeps its own nullability.
     GroupedField,
 
     /// Like GroupedField, but grouping sets exist that this field is not a
@@ -86,9 +87,23 @@ fn parse_measure(
     }
 }
 
-// use of deprecated field `aggregate_rel::Grouping::grouping_expressions`. We
-// allow this for backwards-compatibility.
-#[allow(deprecated)]
+/// Parse a reference to an expression in `AggregateRel.grouping_expressions`,
+/// returning the index it refers to.
+fn parse_expression_reference(
+    x: &u32,
+    _y: &mut context::Context,
+    num_grouping_expressions: usize,
+) -> diagnostic::Result<usize> {
+    match usize::try_from(*x) {
+        Ok(index) if index < num_grouping_expressions => Ok(index),
+        _ => Err(cause!(
+            RelationInvalid,
+            "grouping expression reference {x} is out of range; the \
+            relation defines {num_grouping_expressions} grouping expression(s)"
+        )),
+    }
+}
+
 /// Parse aggregate relation.
 pub fn parse_aggregate_rel(
     x: &substrait::AggregateRel,
@@ -100,64 +115,102 @@ pub fn parse_aggregate_rel(
     // Set schema context for the grouping and measure expressions.
     y.set_schema(in_type);
 
-    // Parse grouping sets.
-    let mut grouping_set_expressions: Vec<substrait::Expression> = vec![];
-    let mut fields = vec![];
+    // Parse the grouping expressions. These are shared between the grouping
+    // sets, which refer to them by index, so they must be parsed before the
+    // grouping sets themselves. Each of them yields an output field, so
+    // identical expressions yield identical fields, which is likely a mistake.
+    let all_grouping_expressions = &x.grouping_expressions;
+    let mut index = 0;
+    let (nodes, results) = proto_repeated_field!(x, y, grouping_expressions, |x, y| {
+        if let Some(first) = all_grouping_expressions[..index]
+            .iter()
+            .position(|e| e == x)
+        {
+            diagnostic!(
+                y,
+                Warning,
+                RedundantField,
+                "grouping expression {index} is identical to grouping expression {first}"
+            );
+        }
+        index += 1;
+        expressions::parse_expression(x, y)
+    });
+    let mut fields = nodes
+        .iter()
+        .zip(results)
+        .map(|(node, result)| Field {
+            expression: result.unwrap_or_default(),
+            data_type: node.data_type(),
+            field_type: FieldType::NullableGroupedField,
+        })
+        .collect::<Vec<_>>();
+
+    // Parse grouping sets. Each of them selects a subset of the grouping
+    // expressions above by index.
+    let num_grouping_expressions = x.grouping_expressions.len();
     let mut sets = vec![];
     proto_repeated_field!(x, y, groupings, |x, y| {
-        sets.push(vec![]);
-        proto_repeated_field!(x, y, grouping_expressions, |x, y| {
-            let result = expressions::parse_expression(x, y);
-
-            // See if we parsed this expression before. If not, add it to the
-            // field list. Return the index in the field list.
-            let index = grouping_set_expressions
-                .iter()
-                .enumerate()
-                .find(|(_, e)| e == &x)
-                .map(|(i, _)| i)
-                .unwrap_or_else(|| {
-                    // Create new field.
-                    grouping_set_expressions.push(x.clone());
-                    fields.push(Field {
-                        expression: result.as_ref().cloned().unwrap_or_default(),
-                        data_type: y.data_type(),
-                        field_type: FieldType::NullableGroupedField,
-                    });
-
-                    fields.len() - 1
-                });
-
-            // Add index of uniquified field to grouping set.
-            sets.last_mut().unwrap().push(index);
-
-            result
+        // Resolve the references, dropping the ones that could not be resolved
+        // as well as duplicates, since a grouping set is conceptually a set.
+        let mut set = HashSet::new();
+        proto_repeated_field!(x, y, expression_references, |x, y| {
+            let index = parse_expression_reference(x, y, num_grouping_expressions)?;
+            if !set.insert(index) {
+                diagnostic!(
+                    y,
+                    Warning,
+                    RedundantField,
+                    "grouping expression {index} is already part of this grouping set"
+                );
+            }
+            Ok(())
         });
-        match x.grouping_expressions.len() {
+        match set.len() {
             0 => summary!(y, "A grouping set that aggregates all rows."),
             1 => summary!(
                 y,
                 "A grouping set that aggregates all rows for which \
                 the expression yields the same value."
             ),
-            x => summary!(
+            n => summary!(
                 y,
                 "A grouping set that aggregates all rows for which \
-                the {x} expressions yield the same tuple of values."
+                the {n} expressions yield the same tuple of values."
             ),
         }
+        sets.push(set);
         Ok(())
     });
-    drop(grouping_set_expressions);
     let sets = sets;
+
+    // Substrait requires that every grouping expression is referred to by at
+    // least one grouping set, since an unreferenced one could only ever yield
+    // null.
+    let referenced = sets.iter().flatten().cloned().collect::<HashSet<_>>();
+    for index in 0..num_grouping_expressions {
+        if !referenced.contains(&index) {
+            diagnostic!(
+                y,
+                Error,
+                RelationInvalid,
+                "grouping expression {index} is not referred to by any grouping set"
+            );
+            let path = y
+                .path()
+                .with_repeated("grouping_expressions", index)
+                .to_path_buf();
+            link!(y, path, "Grouping expression {index} is defined here.");
+        }
+    }
 
     // Each field that is part of all sets will never be made nullable by the
     // aggregate relation, so its type does not need to be made nullable.
     let mut set_iter = sets.iter();
     if let Some(first_set) = set_iter.next() {
-        let mut fields_in_all_sets = first_set.iter().cloned().collect::<HashSet<_>>();
+        let mut fields_in_all_sets = first_set.clone();
         for set in set_iter {
-            fields_in_all_sets = &fields_in_all_sets & &set.iter().cloned().collect::<HashSet<_>>();
+            fields_in_all_sets = &fields_in_all_sets & set;
         }
         for index in fields_in_all_sets {
             fields[index].field_type = FieldType::GroupedField;
