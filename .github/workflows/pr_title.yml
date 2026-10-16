@@ -45,7 +45,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      outcome: ${{ steps.commitlint.outcome }}
+      outcome: ${{ steps.commitlint.outputs.verdict }}
       title: ${{ steps.pr.outputs.title }}
       body: ${{ steps.pr.outputs.body }}
     steps:
@@ -97,8 +97,12 @@ jobs:
               `${pr.title}\n\n${pr.body ?? ""}`,
             );
       # continue-on-error keeps a lint failure distinguishable from an
-      # infrastructure failure: only outcome == 'failure' means the title or
+      # infrastructure failure: only verdict == 'failure' means the title or
       # description is genuinely malformed, and only that should be commented on.
+      # Without --strict commitlint exits 1 both for lint errors and when it fails
+      # to run (e.g. the config does not load); with it, 3 means lint errors and
+      # 2 warnings only. Any other non-zero status says nothing about the PR text,
+      # so it sets no verdict and the comment job skips.
       # --no-install so this can only run the pinned local CLI, never fetch one.
       #
       # commitlint echoes the PR text to the log, one unindented line per body
@@ -114,14 +118,24 @@ jobs:
           token="$(openssl rand -hex 16)"
           echo "::stop-commands::$token"
           status=0
-          npx --no-install commitlint --verbose < "$RUNNER_TEMP/commit-msg.txt" || status=$?
+          npx --no-install commitlint --strict --verbose < "$RUNNER_TEMP/commit-msg.txt" || status=$?
           echo "::$token::"
+          case "$status" in
+            0|2) echo "verdict=success" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            3) echo "verdict=failure" >> "$GITHUB_OUTPUT" ;;
+          esac
           exit "$status"
       # Fail this job, rather than the comment job, so that the check which goes
       # red is the one whose name describes what is wrong.
       - if: steps.commitlint.outcome == 'failure'
+        env:
+          VERDICT: ${{ steps.commitlint.outputs.verdict }}
         run: |
-          echo "PR title and description do not follow the Conventional Commits specification." >&2
+          if [ "$VERDICT" = "failure" ]; then
+            echo "PR title and description do not follow the Conventional Commits specification." >&2
+          else
+            echo "commitlint failed to run (see above); this is not a problem with the PR text." >&2
+          fi
           exit 1
 
   comment:
