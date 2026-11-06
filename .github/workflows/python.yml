@@ -142,6 +142,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
       - name: Install dependencies
         run: python3 -m pip install --upgrade pip black==22.3.0 flake8==7.1.1
       - name: Black

@@ -1,0 +1,25 @@
+name: filter-cast-not-bool
+plan:
+  __test: [ level: w ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      filter:
+        input:
+          read:
+            baseSchema:
+              names: [a]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - i32: { nullability: NULLABILITY_REQUIRED }
+            namedTable: { names: [test] }
+        condition:
+          cast:
+            input: { literal: { i32: 1 } }
+            type: { i64: { nullability: NULLABILITY_REQUIRED } }
+            failureBehavior: FAILURE_BEHAVIOR_THROW_EXCEPTION
+          __test:
+          - type: "i64"
+          - diag: { level: e, code: 4005, msg: "*must yield booleans*i64*" }
+        __test: [ type: "NSTRUCT<a: i32>" ]
