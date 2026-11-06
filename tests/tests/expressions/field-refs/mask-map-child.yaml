@@ -1,0 +1,60 @@
+name: mask-map-child
+plan:
+  __test: [ level: i ]
+  version: { producer: validator-test }
+  relations:
+  - rel:
+      project:
+        input:
+          read:
+            baseSchema:
+              names: [required_map, a, b, nullable_map, c, d]
+              struct:
+                nullability: NULLABILITY_REQUIRED
+                types:
+                - map:
+                    nullability: NULLABILITY_REQUIRED
+                    key: { string: { nullability: NULLABILITY_REQUIRED } }
+                    value:
+                      struct:
+                        nullability: NULLABILITY_REQUIRED
+                        types:
+                        - i32: { nullability: NULLABILITY_REQUIRED }
+                        - string: { nullability: NULLABILITY_REQUIRED }
+                - map:
+                    nullability: NULLABILITY_NULLABLE
+                    key: { i64: { nullability: NULLABILITY_REQUIRED } }
+                    value:
+                      struct:
+                        nullability: NULLABILITY_NULLABLE
+                        types:
+                        - i32: { nullability: NULLABILITY_NULLABLE }
+                        - string: { nullability: NULLABILITY_REQUIRED }
+            namedTable: { names: [test] }
+        expressions:
+        - selection:
+            rootReference: {}
+            maskedReference:
+              select:
+                structItems:
+                - field: 0
+                  child:
+                    map:
+                      child:
+                        struct:
+                          structItems:
+                          - field: 0
+            __test: [ type: "MAP<string, STRUCT<i32>>" ]
+        - selection:
+            rootReference: {}
+            maskedReference:
+              select:
+                structItems:
+                - field: 1
+                  child:
+                    map:
+                      child:
+                        struct:
+                          structItems:
+                          - field: 0
+            __test: [ type: "MAP?<i64, STRUCT?<i32?>>" ]
