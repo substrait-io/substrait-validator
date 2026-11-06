@@ -53,6 +53,7 @@ pub fn parse_cast(
     let data_type = proto_required_field!(x, y, r#type, types::parse_type)
         .0
         .data_type();
+    y.set_data_type(data_type.clone());
     let input = proto_boxed_required_field!(x, y, input, expressions::parse_expression)
         .1
         .unwrap_or_default();

@@ -21,6 +21,8 @@ plan:
             - cast:
                 input: { literal: { i32: 2 } }
                 type: { string: { nullability: NULLABILITY_REQUIRED } }
-          expressions.0__test: [ type: "STRUCT<!>" ]
-          expressions.1__test: [ type: "STRUCT<!>" ]
+          expressions.0__test: [ type: "STRUCT<i64>" ]
+          expressions.1__test:
+          - type: "STRUCT<string>"
+          - diag: { level: e, code: 4005, msg: "*virtual table rows must have the same type*" }
         __test: [ type: "NSTRUCT<x: i64>" ]
