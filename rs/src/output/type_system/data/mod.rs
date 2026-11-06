@@ -58,7 +58,7 @@ pub fn new_list(element: Type, nullable: bool) -> Type {
 /// Creates a new map type.
 pub fn new_map(key: Type, value: Type, nullable: bool) -> Type {
     TypeDef::new(
-        Class::Compound(class::Compound::List),
+        Class::Compound(class::Compound::Map),
         nullable,
         Variation::SystemPreferred,
         vec![Parameter::from(key), Parameter::from(value)],
