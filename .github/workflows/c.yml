@@ -18,7 +18,9 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Configure
-        run: mkdir -p build && cd build && cmake ../c -DSUBSTRAIT_VALIDATOR_BUILD_TESTS=ON
+        run: >-
+          cmake -S c -B build -DSUBSTRAIT_VALIDATOR_BUILD_TESTS=ON
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - name: Build
         run: cmake --build build
       - name: Test
